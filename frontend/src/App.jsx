@@ -9,6 +9,8 @@ import Register from "./pages/Register";
 import Generate from "./pages/GenerateQuestions";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./context/ThemeContext";
+import SavedQuestions from "./pages/SavedQuestions";
+import SavedSingle from "./pages/SavedSingle";
 
 export default function App() {
   return (
@@ -16,9 +18,9 @@ export default function App() {
       <div className="min-h-screen flex flex-col bg-linear-to-b from-white/80 to-slate-50 dark:from-slate-900 dark:to-slate-950 transition-colors">
         <Navbar />
         <main className="flex-1 container mx-auto px-4 py-2">
-          <Routes >
+          <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />}/>
+            <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route
               path="/generate"
@@ -28,6 +30,23 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/saved"
+              element={
+                <ProtectedRoute>
+                  <SavedQuestions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/saved/:id"
+              element={
+                <ProtectedRoute>
+                  <SavedSingle />
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

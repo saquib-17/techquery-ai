@@ -13,3 +13,32 @@ api.interceptors.request.use(config => {
 }, err => Promise.reject(err));
 
 export default api;
+
+
+// Save questions set
+export const saveQuestions = (title, questions) => {
+  return api.post('/ai/save-questions', {
+    title,
+    questions
+  });
+};
+
+// Fetch user's saved question sets
+export const getMyQuestions = () => {
+  return api.get('/ai/my-questions');
+};
+
+// Delete question set
+export const deleteQuestions = (id) => {
+  return api.delete(`/ai/questions/${id}`);
+};
+
+// Update title
+export const updateTitle = (id, title) => {
+  return api.patch(`/ai/questions/${id}`, { title });
+};
+
+// Generate answers
+export const generateAnswers = (questions) => {
+  return api.post('/ai/answer-questions', { questions });
+};

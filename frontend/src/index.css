@@ -61,3 +61,7 @@ body::after {
 .animate-fadeIn {
   animation: fadeIn 1.5s ease-out;
 }
+
+button{
+  cursor: pointer;
+}

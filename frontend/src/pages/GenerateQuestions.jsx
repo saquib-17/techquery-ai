@@ -87,6 +87,7 @@
 
 import React, { useState } from "react";
 import api from "../services/api";
+import { saveQuestions } from "../services/api";
 
 export default function GenerateQuestions() {
   const [resume, setResume] = useState("");
@@ -107,6 +108,21 @@ export default function GenerateQuestions() {
       alert(err.response?.data?.message || "AI failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (questions.length === 0) return alert("Generate questions first!");
+
+    const title = prompt("Enter a title for this question set:");
+
+    if (!title || title.trim() === "") return;
+
+    try {
+      await saveQuestions(title, questions);
+      alert("Saved successfully!");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to save");
     }
   };
 
@@ -201,6 +217,15 @@ export default function GenerateQuestions() {
             >
               Reset
             </button>
+
+            {questions.length > 0 && (
+              <button
+                onClick={handleSave}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg cursor-pointer transition text-sm"
+              >
+                Save
+              </button>
+            )}
 
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Output will include easy, medium, hard and company-specific
