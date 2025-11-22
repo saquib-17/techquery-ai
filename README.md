@@ -1,6 +1,6 @@
 # 🚀 Project Name
 
-
+AI tool that generates technical interview questions using your resume and job description.
 
 ---
 
