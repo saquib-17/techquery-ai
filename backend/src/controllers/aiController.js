@@ -22,8 +22,13 @@ You are an expert technical interviewer.
 Generate 18-20 realistic, relevant, high-quality technical interview questions
 based on the Resume + Job Description.
 
+IMPORTANT NEW RULE:
+- At least 7-8 questions MUST be coding/programming based
+  (example: write a program / write a function / implement logic / use loops / solve problem)
+
 STRICT RULES:
 - Exactly 18-20 questions.
+- include both theoretical & coding questions
 - no numbering
 - no bullets
 - no categories
@@ -170,6 +175,105 @@ exports.updateTitle = async (req, res) => {
 /* -----------------------------------------------
    GENERATE ANSWERS — JSON MODE
 ------------------------------------------------*/
+// exports.generateAnswers = async (req, res) => {
+//     try {
+//         const { questions } = req.body;
+
+//         if (!questions || !Array.isArray(questions) || questions.length === 0) {
+//             return res.status(400).json({ message: "Questions required" });
+//         }
+
+//         const prompt = `
+// You must respond ONLY in valid JSON.
+
+// STRICT REQUIRED FORMAT:
+// {
+//   "answers": {
+//     "1": "text",
+//     "2": "text",
+//     "3": "text"
+//   }
+// }
+
+// RULES:
+// - answers MUST be an object
+// - keys MUST be numeric strings starting from "1"
+// - NEVER return an array in answers
+// - NEVER nest objects inside answers
+// - NEVER leave answers empty
+// - NEVER combine multiple answers under one key
+// - NO markdown
+// - NO backticks
+// - NO headings
+// - NO comments
+// - NO extra text before or after JSON
+
+// CODING QUESTIONS:
+// - return ONLY the function/method — NOT a full program
+// - NEVER output public class or main method
+// - NEVER output imports
+// - NEVER wrap code in a class
+// - NEVER combine code into one line
+// - code MUST be multi-line
+// - code MUST include indentation
+// - each statement MUST be on its own line
+// - AFTER code, write 1 short sentence explanation
+// - all inside ONE string
+
+
+// THEORY ANSWERS:
+// - MAX 2 sentences
+
+// Questions:
+// ${JSON.stringify(questions)}
+// `;
+
+
+
+
+
+//         const completion = await client.chat.completions.create({
+//             messages: [{ role: "user", content: prompt }],
+//             model: "llama-3.1-8b-instant",
+//             temperature: 0.3,
+//         });
+
+//         const raw = completion?.choices?.[0]?.message?.content;
+//         console.log("RAW AI OUTPUT ---->");
+//         console.log(raw);
+
+//        let parsed;
+// try {
+//     parsed = JSON.parse(raw);
+// } catch {
+//     const fixed = raw
+//         .replace(/,\s*}/g, "}")
+//         .replace(/,\s*]/g, "]")
+//         .trim();
+
+//     parsed = JSON.parse(fixed);
+// }
+
+// // convert answers into array ALWAYS
+// let arr;
+// if (Array.isArray(parsed.answers)) {
+//     arr = parsed.answers;
+// } else {
+//     arr = Object.values(parsed.answers);
+// }
+
+// res.json({
+//     success: true,
+//     answers: arr
+// });
+
+
+
+
+//     } catch (error) {
+//         res.status(500).json({ message: error.message });
+//     }
+// };
 exports.generateAnswers = async (req, res) => {
     try {
         const { questions } = req.body;
@@ -179,46 +283,59 @@ exports.generateAnswers = async (req, res) => {
         }
 
         const prompt = `
-Respond ONLY in PERFECT JSON.
-
+Respond ONLY in valid JSON.
+Format:
 {
-  "answers": [
-    "answer here",
-    "answer here"
-  ]
+  "answers": {
+    "1": "text",
+    "2": "text"
+  }
 }
 
-RULES:
-- answers[] length MUST match questions length
-- no markdown
-- no backticks
-- no comments
-- no numbering
-- no bullets
-- no prefixes like Q: or A:
-- each answer must be complete & professional
-- 3–6 sentences per answer
-
-Questions:
-${JSON.stringify(questions)}
+Rules:
+- answers must be an object
+- keys must be numbers as strings
+- each answer MUST be a string
+- do NOT add explanation
+- NO markdown
+- NO comments
 `;
 
         const completion = await client.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ role: "user", content: prompt + JSON.stringify(questions) }],
             model: "llama-3.1-8b-instant",
             temperature: 0.3,
         });
 
         const raw = completion.choices[0].message.content;
+        // console.log("RAW AI OUTPUT ---->");
+        // console.log(raw);
 
-        const parsed = JSON.parse(raw);
+        // FIX parser
+        let json;
 
-        res.json({
-            success: true,
-            answers: parsed.answers.map((a, i) => `${i + 1}. ${a}`),
-        });
+        try {
+            json = JSON.parse(raw);
+        } catch (err) {
+            const fixed = raw
+                .replace(/,\s*}/g, "}")
+                .replace(/,\s*]/g, "]")
+                .replace(/[\n\r\t]/g, " ");
+            json = JSON.parse(fixed);
+        }
+
+        let arr;
+
+        if (Array.isArray(json.answers)) {
+            arr = json.answers;
+        } else {
+            arr = Object.values(json.answers);
+        }
+
+        res.json({ success: true, answers: arr });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.log(error)
+        res.status(500).json({ message: "AI crashed parsing output" });
     }
 };

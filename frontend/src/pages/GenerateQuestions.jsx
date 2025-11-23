@@ -1,99 +1,16 @@
-// import React, { useState } from 'react'
-// import api from '../services/api'
-
-// export default function GenerateQuestions() {
-//   const [resume, setResume] = useState('')
-//   const [jd, setJd] = useState('')
-//   const [loading, setLoading] = useState(false)
-//   const [questions, setQuestions] = useState([])
-
-//   const handleGenerate = async () => {
-//     if (!resume || !jd) return alert('Paste resume and job description')
-//     setLoading(true)
-//     try {
-//       const { data } = await api.post('/ai/generate-questions', { resumeText: resume, jobDescription: jd })
-//       setQuestions(data.questions || [])
-//     } catch (err) {
-//       alert(err.response?.data?.message || 'AI failed')
-//     } finally {
-//       setLoading(false)
-//     }
-//   }
-
-//   return (
-
-//       <div className="max-w-5xl mx-auto space-y-6 ">
-
-//         {/* Text Areas */}
-//         <div className="grid md:grid-cols-2 gap-6 py-12">
-//           <textarea
-//             rows="12"
-//             spellCheck="false"
-//             value={resume}
-//             onChange={e => setResume(e.target.value)}
-//             placeholder="Paste your resume here..."
-//             className="w-full p-4 bg-white dark:bg-primary border border-gray-300 dark:border-gray-600 rounded-lg
-//             focus:ring-2 focus:ring-indigo-600 focus:outline-none resize-none text-gray-800 dark:text-gray-100"
-//           />
-
-//           <textarea
-//             rows="12"
-//             spellCheck="false"
-//             value={jd}
-//             onChange={e => setJd(e.target.value)}
-//             placeholder="Paste job description here..."
-//             className="w-full p-4 bg-white dark:bg-primary border border-gray-300 dark:border-gray-600 rounded-lg
-//             focus:ring-2 focus:ring-indigo-600 focus:outline-none resize-none text-gray-800 dark:text-gray-100"
-//           />
-//         </div>
-
-//         {/* Buttons */}
-//         <div className="flex items-center gap-4">
-//           <button
-//             onClick={handleGenerate}
-//             className="btn-primary cursor-pointer px-6 py-2 hover:opacity-90 transition"
-//           >
-//             {loading ? 'Generating...' : 'Generate Questions'}
-//           </button>
-
-//           <button
-//             onClick={() => { setResume(''); setJd(''); setQuestions([]) }}
-//             className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
-//           >
-//             Reset
-//           </button>
-//         </div>
-
-//         {/* Output */}
-//         {questions.length > 0 && (
-//           <div className="bg-white dark:bg-primary rounded-lg shadow p-6 space-y-4 border border-gray-200 dark:border-gray-950-">
-//             <h3 className="text-xl font-bold text-gray-400 dark:text-gray-50">
-//               Generated Questions
-//             </h3>
-//             <ul  className="list-decimal pl-6 space-y-2 text-gray-700 dark:text-gray-300">
-//               {questions.map((q, i) => (
-//                 <li key={i} className="leading-relaxed" >
-//                   {q.replace(/^\d+\.\s*/, '')}
-//                 </li>
-//               ))}
-//             </ul>
-//           </div>
-//         )}
-
-//       </div>
-
-//   )
-// }
 
 import React, { useState } from "react";
 import api from "../services/api";
 import { saveQuestions } from "../services/api";
+import { generateAnswers } from "../services/api";
 
 export default function GenerateQuestions() {
   const [resume, setResume] = useState("");
   const [jd, setJd] = useState("");
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState([]);
+  const [answers, setAnswers] = useState([]);
+  const [loadingAnswers, setLoadingAnswers] = useState(false);
 
   const handleGenerate = async () => {
     if (!resume || !jd) return alert("Paste resume and job description");
@@ -108,6 +25,27 @@ export default function GenerateQuestions() {
       alert(err.response?.data?.message || "AI failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateAnswers = async () => {
+    if (questions.length === 0) return alert("Generate questions first!");
+
+    try {
+      setLoadingAnswers(true);
+
+      const { data } = await generateAnswers(questions);
+
+      if (!data.success || !Array.isArray(data.answers)) {
+        alert("AI failed to generate answers");
+        return;
+      }
+
+      setAnswers(data.answers);
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to generate answers");
+    } finally {
+      setLoadingAnswers(false);
     }
   };
 
@@ -211,6 +149,15 @@ export default function GenerateQuestions() {
               {loading ? "Generating..." : "Generate Questions"}
             </button>
 
+            {questions.length > 0 && (
+              <button
+                onClick={handleGenerateAnswers}
+                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg cursor-pointer transition"
+              >
+                {loadingAnswers ? "Generating..." : "Generate Answers"}
+              </button>
+            )}
+
             <button
               onClick={handleReset}
               className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer text-sm"
@@ -260,6 +207,19 @@ export default function GenerateQuestions() {
             )}
           </div>
         </section>
+        {answers.length > 0 && (
+          <section className="bg-white dark:bg-primary rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600 space-y-4">
+            <h3 className="text-xl font-bold text-gray-400 dark:text-gray-50">
+              AI Answers
+            </h3>
+
+            <ul className="list-decimal pl-6 space-y-2 text-gray-300">
+              {answers.map((a, i) => (
+                <li key={i}>{a}</li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
     </div>
   );

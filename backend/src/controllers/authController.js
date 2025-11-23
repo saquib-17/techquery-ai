@@ -11,24 +11,31 @@ const generateToken = (user) => {
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: "7d",
+      expiresIn: "1h",
     }
   );
 };
 
 
 // Signup
+const { sendWelcomeEmail } = require("../utils/sendEmail");
 exports.registerUser = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    // Check user exist
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
     }
 
     const user = await User.create({ name, email, password, role });
+
+    // Send welcome email (async non-blocking)
+    try {
+      sendWelcomeEmail(user.email, user.name);
+    } catch (err) {
+      console.log("Email failed:", err.message);
+    }
 
     res.status(201).json({
       success: true,

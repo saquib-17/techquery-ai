@@ -189,18 +189,26 @@ const handleExportAnswersPDF = () => {
 
 
   const handleGenerateAnswers = async () => {
-    try {
-      setLoadingAnswers(true);
+  try {
+    setLoadingAnswers(true);
 
-      const { data } = await generateAnswers(setData.questions);
+    const { data } = await generateAnswers(setData.questions);
 
-      setAnswers(data.answers || []);
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to generate answers");
-    } finally {
-      setLoadingAnswers(false);
+    // SAFETY CHECK
+    if (!data.success || !Array.isArray(data.answers)) {
+      alert("AI could not generate answers. Please try again.");
+      return;
     }
-  };
+
+    setAnswers(data.answers);
+
+  } catch (err) {
+    alert(err.response?.data?.message || "Failed to generate answers");
+  } finally {
+    setLoadingAnswers(false);
+  }
+};
+
 
   useEffect(() => {
     fetchData();

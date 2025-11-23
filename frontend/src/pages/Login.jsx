@@ -10,13 +10,27 @@ export default function Login() {
   const navigate = useNavigate()
 
   // 🔥 Redirect if logged in
-  const token = localStorage.getItem('token')
-  if (token) {
-    try {
-      const decoded = jwtDecode(token)
-      if (decoded?.id) return <Navigate to="/generate" replace />
-    } catch {}
+  const token = localStorage.getItem("token");
+
+if (token) {
+  try {
+    const decoded = jwtDecode(token);
+
+    // check if expired
+    const now = Date.now() / 1000;
+    if (decoded.exp < now) {
+      localStorage.removeItem("token");
+      window.dispatchEvent(new Event("auth-changed"));
+    } else {
+      // still valid
+      return <Navigate to="/generate" replace />;
+    }
+
+  } catch {
+    localStorage.removeItem("token");
   }
+}
+
 
   const handleSubmit = async (e) => {
     e.preventDefault()
