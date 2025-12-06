@@ -1,15 +1,9 @@
-const nodemailer = require("nodemailer");
+// sendEmail.js (FINAL WORKING VERSION FOR RENDER)
+const sgMail = require("@sendgrid/mail");
 require("dotenv").config();
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+// set API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 exports.sendWelcomeEmail = async (to, name) => {
   const html = `
@@ -37,10 +31,16 @@ exports.sendWelcomeEmail = async (to, name) => {
     <small>Welcome aboard 🚀</small>
   `;
 
-  await transporter.sendMail({
-    from: `"TechQuery AI" <${process.env.EMAIL_USER}>`,
-    to,
-    subject: "🎉 Welcome to TechQuery AI — Your Account is Ready!",
-    html,
-  });
+  try {
+    await sgMail.send({
+      to,
+      from: process.env.SENDER_EMAIL, // MUST be verified in SendGrid
+      subject: "🎉 Welcome to TechQuery AI — Your Account is Ready!",
+      html,
+    });
+
+    console.log("SendGrid Email Sent to:", to);
+  } catch (err) {
+    console.error("SendGrid Error:", err.response?.body || err.message);
+  }
 };
