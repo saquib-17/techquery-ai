@@ -1,39 +1,9 @@
-<<<<<<< HEAD
 // sendEmail.js (FINAL WORKING VERSION FOR RENDER)
 const sgMail = require("@sendgrid/mail");
 require("dotenv").config();
 
 // set API key
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-=======
-// sendEmail.js
-const nodemailer = require("nodemailer");
-require("dotenv").config();
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: { rejectUnauthorized: false },
-  debug: true,
-  connectionTimeout: 20000,
-  greetingTimeout: 10000,
-  socketTimeout: 20000
-});
-
-// Run once at startup to see status in logs
-transporter.verify((err, success) => {
-  if (err) {
-    console.error("SMTP verify failed:", err && err.code ? `${err.code} - ${err.message}` : err);
-  } else {
-    console.log("SMTP ready to send emails");
-  }
-});
->>>>>>> 8f57f4a86b8c889995ce20745fd9692a1735bcc4
 
 exports.sendWelcomeEmail = async (to, name) => {
   const html = `
@@ -56,7 +26,6 @@ exports.sendWelcomeEmail = async (to, name) => {
   `;
 
   try {
-<<<<<<< HEAD
     await sgMail.send({
       to,
       from: process.env.SENDER_EMAIL, // MUST be verified in SendGrid
@@ -67,19 +36,5 @@ exports.sendWelcomeEmail = async (to, name) => {
     console.log("SendGrid Email Sent to:", to);
   } catch (err) {
     console.error("SendGrid Error:", err.response?.body || err.message);
-=======
-    const info = await transporter.sendMail({
-      from: `"TechQuery AI" <${process.env.EMAIL_USER}>`,
-      to,
-      subject: "🎉 Welcome to TechQuery AI — Your Account is Ready!",
-      html,
-    });
-    console.log("Email sent:", info && info.messageId ? info.messageId : info);
-    return { ok: true, info };
-  } catch (err) {
-    // Log useful short error for you to paste here
-    console.error("sendWelcomeEmail error:", err && err.code ? `${err.code} - ${err.message}` : err);
-    return { ok: false, error: err };
->>>>>>> 8f57f4a86b8c889995ce20745fd9692a1735bcc4
   }
 };
