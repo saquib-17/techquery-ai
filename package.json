@@ -1,0 +1,44 @@
+{
+  "name": "techquery-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TechQuery AI — AI-Powered Career Preparation, Technical Interview Preparation & Interview Simulation Platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@techquery/api",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present",
+    "test": "npm run test --workspace=@techquery/api",
+    "test:unit": "npm run test:unit --workspace=@techquery/api",
+    "test:integration": "npm run test:integration --workspace=@techquery/api",
+    "test:coverage": "npm run test:coverage --workspace=@techquery/api",
+    "test:a2": "tsx scripts/verify-a2.ts",
+    "test:a3": "tsx scripts/verify-a3.ts",
+    "test:a3:1": "tsx scripts/verify-a3-1.ts",
+    "test:a4": "tsx scripts/verify-a4.ts",
+    "db:validate": "npm run prisma:validate --workspace=@techquery/api",
+    "db:generate": "npm run prisma:generate --workspace=@techquery/api",
+    "db:migrate": "npm run prisma:migrate --workspace=@techquery/api"
+  },
+  "keywords": [
+    "career-preparation",
+    "interview-preparation",
+    "ai-gateway",
+    "full-stack",
+    "zero-cost"
+  ],
+  "author": "TechQuery AI Team",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "prisma": "^6.19.3",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3"
+  }
+}

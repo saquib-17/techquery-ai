@@ -1,0 +1,415 @@
+openapi: 3.1.0
+info:
+  title: TechQuery AI REST API
+  description: API specification for TechQuery AI - Unified AI Career & Technical Interview Preparation Platform.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local Development & Placement Demo Server (Mode A)
+  - url: https://techquery-backend.onrender.com/api/v1
+    description: Cloud Showcase Server (Mode B)
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new candidate account
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /auth/login:
+    post:
+      summary: Login user and receive tokens
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/refresh:
+    post:
+      summary: Refresh short-lived access token via HttpOnly cookie
+      tags: [Authentication]
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/me:
+    get:
+      summary: Get current authenticated user profile
+      tags: [Authentication]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Authenticated user details
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /resumes/upload:
+    post:
+      summary: Upload and parse candidate resume (PDF/DOCX)
+      tags: [Resume Intelligence]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '202':
+          description: Resume upload accepted for async extraction
+        '422':
+          description: Malformed or scanned image PDF
+
+  /resumes:
+    get:
+      summary: List all resumes for current user
+      tags: [Resume Intelligence]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Array of resumes
+
+  /resumes/{id}/analysis:
+    get:
+      summary: Get ATS audit and improvement suggestions
+      tags: [Resume Intelligence]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ATS analysis report
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /jd/analyze:
+    post:
+      summary: Analyze and decompose job description
+      tags: [Job Description Intelligence]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, rawText]
+              properties:
+                title:
+                  type: string
+                  example: Backend Engineer
+                company:
+                  type: string
+                  example: Razorpay
+                rawText:
+                  type: string
+                  example: Looking for an engineer with Node.js and PostgreSQL experience...
+      responses:
+        '201':
+          description: Structured JD created
+
+  /match/analyze:
+    post:
+      summary: Run deterministic + AI hybrid resume-to-JD match
+      tags: [Resume-JD Matching]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resumeId, jdId]
+              properties:
+                resumeId:
+                  type: string
+                  format: uuid
+                jdId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Gap analysis scorecard
+
+  /questions/generate:
+    post:
+      summary: Synthesize personalized interview questions
+      tags: [Question Studio]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [difficulty, count]
+              properties:
+                resumeId:
+                  type: string
+                  format: uuid
+                jdId:
+                  type: string
+                  format: uuid
+                topicFocus:
+                  type: string
+                  example: System Design & Databases
+                difficulty:
+                  type: string
+                  enum: [EASY, MEDIUM, HARD]
+                count:
+                  type: integer
+                  minimum: 10
+                  maximum: 20
+                  example: 15
+      responses:
+        '200':
+          description: Generated question set
+
+  /answers/generate:
+    post:
+      summary: Fetch or generate model answer with complexity analysis
+      tags: [Model Answers]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [questionId]
+              properties:
+                questionId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Model answer details
+
+  /dashboard/summary:
+    get:
+      summary: Get authentic dashboard metrics & preparation streak
+      tags: [Dashboard]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Preparation KPIs and activity matrix
+
+  /usage/tier:
+    patch:
+      summary: Simulated Pro tier toggle for placement demonstration
+      tags: [Usage & Tiers]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tier]
+              properties:
+                tier:
+                  type: string
+                  enum: [FREE, PRO]
+      responses:
+        '200':
+          description: Tier updated
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          format: email
+          example: candidate@example.com
+        password:
+          type: string
+          minLength: 8
+          example: Password123!
+        name:
+          type: string
+          example: Jane Doe
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: candidate@example.com
+        password:
+          type: string
+          example: Password123!
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                email:
+                  type: string
+                name:
+                  type: string
+                role:
+                  type: string
+                tier:
+                  type: string
+            accessToken:
+              type: string
+
+  responses:
+    ValidationError:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: VALIDATION_ERROR
+                  message:
+                    type: string
+                  details:
+                    type: array
+
+    UnauthorizedError:
+      description: Authentication missing or token expired
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: UNAUTHORIZED
+                  message:
+                    type: string
+
+    NotFoundError:
+      description: Resource not found or tenant access denied
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: NOT_FOUND
+
+    ConflictError:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: CONFLICT

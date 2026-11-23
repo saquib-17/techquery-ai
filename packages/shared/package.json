@@ -1,0 +1,20 @@
+{
+  "name": "@techquery/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared types, schemas, and domain contracts for TechQuery AI",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "shared",
+    "contracts",
+    "types"
+  ],
+  "author": "TechQuery AI Team",
+  "license": "UNLICENSED"
+}

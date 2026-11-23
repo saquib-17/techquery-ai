@@ -1,0 +1,20 @@
+{
+  "name": "@techquery/web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TechQuery AI — Modern Frontend Single-Page Application",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@techquery/shared": "*"
+  },
+  "keywords": [
+    "frontend",
+    "web",
+    "react",
+    "spa"
+  ],
+  "author": "TechQuery AI Team",
+  "license": "UNLICENSED"
+}
