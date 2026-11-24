@@ -8,6 +8,9 @@ import { notFoundHandler, errorHandler } from "./core/errors/errorHandler.js";
 import { ForbiddenError } from "./core/errors/AppError.js";
 import { healthRoutes } from "./modules/health/health.routes.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
+import { profileRoutes, onboardingRoutes } from "./modules/candidate/candidate.routes.js";
+import { resumeRoutes } from "./modules/resume/resume.routes.js";
+import { jobDescriptionRoutes } from "./modules/job-description/job-description.routes.js";
 
 /**
  * Express Application Factory.
@@ -78,6 +81,10 @@ export const createApp = (customRouter?: Router): Application => {
 
   // 6. Mount Feature Modules
   app.use("/api/v1/auth", authRoutes);
+  app.use("/api/v1/profile", profileRoutes);
+  app.use("/api/v1/onboarding", onboardingRoutes);
+  app.use("/api/v1/resumes", resumeRoutes);
+  app.use("/api/v1/job-descriptions", jobDescriptionRoutes);
 
   // Optional custom router for testing or extensions
   if (customRouter) {

@@ -56,3 +56,6 @@ Thumbs.db
 storage/
 apps/api/storage/
 uploads/
+apps/api/uploads/
+temp-test-storage/
+apps/api/temp-test-storage/

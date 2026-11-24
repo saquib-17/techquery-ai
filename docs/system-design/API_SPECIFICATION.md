@@ -178,85 +178,270 @@ All protected endpoints require a Bearer token in the `Authorization` header:
 
 ---
 
-## 3. Resume Intelligence Module (`/api/v1/resumes`)
+## 2.5 Candidate Profile Management (`/api/v1/profile`)
 
-### 3.1 Upload & Parse Resume
-- **Method / Route:** `POST /api/v1/resumes/upload`
-- **Auth Required:** Yes
-- **Content-Type:** `multipart/form-data`
-- **Payload:** File binary (`file`), max 5MB. Must be `.pdf` or `.docx`.
-- **Response (202 Accepted / 201 Created):**
+### 2.5.1 Get Profile
+- **Method / Route:** `GET /api/v1/profile`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):**
   ```json
   {
     "success": true,
     "data": {
-      "resumeId": "b1e2a3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
-      "originalFilename": "jane_doe_sde_resume.pdf",
-      "status": "PROCESSING",
-      "message": "Resume uploaded successfully. Extraction queued."
+      "profile": {
+        "id": "c2d3a9e0-8f1b-4f7d-9a6c-3e2b1a0d4f5e",
+        "userId": "u1d3a9e0-8f1b-4f7d-9a6c-3e2b1a0d4f5e",
+        "headline": "Full Stack Engineer",
+        "bio": "Passionate developer",
+        "targetRole": "Backend Developer",
+        "yearsOfExperience": 3,
+        "location": "Bengaluru, India",
+        "skills": ["TypeScript", "Node.js", "PostgreSQL"],
+        "targetCompanies": ["Google", "Swiggy"],
+        "linkedinUrl": "https://linkedin.com/in/example",
+        "githubUrl": "https://github.com/example",
+        "portfolioUrl": "https://example.com",
+        "preferredRoles": ["Backend Engineer", "Full Stack Engineer"],
+        "createdAt": "2026-11-24T08:00:00.000Z",
+        "updatedAt": "2026-11-24T08:00:00.000Z"
+      }
+    }
+  }
+  ```
+
+### 2.5.2 Create Profile
+- **Method / Route:** `POST /api/v1/profile`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (201 Created):** Created profile object. Returns `409 Conflict` (`PROFILE_ALREADY_EXISTS`) if profile already exists.
+
+### 2.5.3 Update Profile
+- **Method / Route:** `PATCH /api/v1/profile`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Updated profile object. Returns `404 Not Found` (`PROFILE_NOT_FOUND`) if no profile exists.
+
+---
+
+## 2.6 Onboarding Progress Management (`/api/v1/onboarding`)
+
+### 2.6.1 Get Onboarding State
+- **Method / Route:** `GET /api/v1/onboarding`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "onboarding": {
+        "id": "e2d3a9e0-8f1b-4f7d-9a6c-3e2b1a0d4f5e",
+        "userId": "u1d3a9e0-8f1b-4f7d-9a6c-3e2b1a0d4f5e",
+        "isCompleted": false,
+        "currentStep": 1,
+        "stepData": {},
+        "completedAt": null,
+        "createdAt": "2026-11-24T08:00:00.000Z",
+        "updatedAt": "2026-11-24T08:00:00.000Z"
+      }
+    }
+  }
+  ```
+
+### 2.6.2 Update Onboarding State
+- **Method / Route:** `PATCH /api/v1/onboarding`
+- **Auth Required:** Yes (Bearer JWT)
+- **Request Body:** Partial update fields (`currentStep`, `stepData`, `isCompleted`).
+- **Response (200 OK):** Updated onboarding state.
+
+---
+
+## 3. Resume Management Module (`/api/v1/resumes`)
+
+### 3.1 Upload Resume
+- **Method / Route:** `POST /api/v1/resumes`
+- **Auth Required:** Yes (Bearer JWT)
+- **Content-Type:** `multipart/form-data`
+- **Payload:** File field (`file`), max 5MB. Must be `.pdf` or `.docx`. Magic byte header validation enforced.
+- **Response (201 Created):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "resume": {
+        "id": "b1e2a3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+        "userId": "u1d3a9e0-8f1b-4f7d-9a6c-3e2b1a0d4f5e",
+        "originalFileName": "jane_doe_sde_resume.pdf",
+        "mimeType": "application/pdf",
+        "fileSize": 45000,
+        "processingStatus": "COMPLETED",
+        "isPrimary": true,
+        "hasExtractedText": true,
+        "createdAt": "2026-11-24T08:00:00.000Z",
+        "updatedAt": "2026-11-24T08:00:00.000Z"
+      }
     }
   }
   ```
 
 ### 3.2 List Resumes
 - **Method / Route:** `GET /api/v1/resumes`
-- **Auth Required:** Yes
-- **Response (200 OK):** Array of candidate resumes with status and ATS scores.
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Array of candidate resumes (public projections; internal physical paths strictly omitted).
 
-### 3.3 Get Resume ATS Analysis
-- **Method / Route:** `GET /api/v1/resumes/:id/analysis`
-- **Auth Required:** Yes
+### 3.3 Get Resume by ID
+- **Method / Route:** `GET /api/v1/resumes/:id`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Resume metadata and `extractedText`. Enforces ownership (404/403 on IDOR attempts).
+
+### 3.4 Download Resume
+- **Method / Route:** `GET /api/v1/resumes/:id/download`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Binary file stream with `Content-Type` and `Content-Disposition: attachment; filename="<originalFileName>"`.
+
+### 3.5 Set Primary Resume
+- **Method / Route:** `PATCH /api/v1/resumes/:id/primary`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Updated resume set to `isPrimary: true`, atomically demoting prior primary resumes in a transaction.
+
+### 3.6 Delete Resume
+- **Method / Route:** `DELETE /api/v1/resumes/:id`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Deletes database record and physical disk file idempotently. Auto-promotes newest remaining resume if primary was deleted.
+
+### 3.7 Trigger Resume Intelligence Analysis & ATS Audit
+- **Method / Route:** `POST /api/v1/resumes/:id/analyze`
+- **Auth Required:** Yes (Bearer JWT)
 - **Response (200 OK):**
   ```json
   {
     "success": true,
     "data": {
-      "resumeId": "b1e2a3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
-      "atsScore": 78,
-      "strengths": ["Quantified metrics in project bullets", "Clear section headers"],
-      "issues": ["Missing GitHub link", "Passive voice detected in work experience"],
-      "improvements": [
-        {
-          "original": "Worked on backend payment system using Node.js.",
-          "suggested": "Architected resilient Node.js payment gateway integration processing ₹15L+ monthly volume with zero transaction loss."
-        }
-      ]
+      "analysis": {
+        "id": "b1e2a3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+        "resumeId": "c2e3a4b5-d6e7-8f9a-0b1c-2d3e4f5a6b7c",
+        "atsScore": 84,
+        "sectionScores": {
+          "contact": 90,
+          "summary": 75,
+          "experience": 85,
+          "skills": 90,
+          "education": 80
+        },
+        "strengths": [
+          "Strong technical foundation evident in: TypeScript, Node.js, PostgreSQL.",
+          "Clear professional chronology and readable layout formatting."
+        ],
+        "issues": [
+          "Missing public GitHub repository link to showcase code and project defense."
+        ],
+        "improvements": [
+          {
+            "original": "Worked on backend services and APIs using modern frameworks.",
+            "suggested": "Architected and delivered 12+ high-throughput REST microservices processing 50k+ daily transactions with 99.9% uptime.",
+            "reason": "Applies Google X-Y-Z formula (Accomplished [X] as measured by [Y], by doing [Z])."
+          }
+        ],
+        "providerUsed": "MOCK",
+        "createdAt": "2026-11-24T18:00:00.000Z"
+      },
+      "parsedData": {
+        "summary": "Dedicated Software Engineer with proven expertise...",
+        "skills": {
+          "technical": ["TypeScript", "Node.js", "PostgreSQL"],
+          "tools": ["Git", "Docker", "VS Code"],
+          "soft": ["Problem Solving", "Team Leadership"]
+        },
+        "experience": [],
+        "education": [],
+        "projects": []
+      }
     }
   }
   ```
 
+### 3.8 Get Resume ATS Analysis
+- **Method / Route:** `GET /api/v1/resumes/:id/analysis`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Stored ATS analysis record. Returns `404 Not Found` (`ANALYSIS_NOT_FOUND`) if resume has not been analyzed yet.
+
+### 3.9 Get Structured Parsed Resume Data
+- **Method / Route:** `GET /api/v1/resumes/:id/parsed-data`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Extracted structured candidate career intelligence graph. Returns `404 Not Found` (`PARSED_DATA_NOT_FOUND`) if resume has not been analyzed yet.
+
 ---
 
-## 4. Job Description Module (`/api/v1/jd`)
+## 4. Job Description Module (`/api/v1/job-descriptions`)
 
-### 4.1 Ingest & Decompose Job Description
-- **Method / Route:** `POST /api/v1/jd/analyze`
-- **Auth Required:** Yes
+### 4.1 Create & Decompose Job Description
+- **Method / Route:** `POST /api/v1/job-descriptions`
+- **Auth Required:** Yes (Bearer JWT)
 - **Request Body:**
   ```json
   {
-    "title": "Backend SDE-1",
-    "company": "Swiggy",
-    "rawText": "Looking for a Backend SDE-1 with strong experience in Node.js, PostgreSQL, and Redis..."
+    "title": "Senior Backend Engineer",
+    "company": "TechQuery Innovations",
+    "rawText": "Looking for a Senior Backend Engineer with strong experience in Node.js, PostgreSQL, and Redis..."
   }
   ```
+- **Validation Rules:**
+  - `title`: string, trim, 2-150 chars.
+  - `company`: optional string, trim, max 150 chars.
+  - `rawText`: string, trim, 100-25,000 chars.
 - **Response (201 Created):**
   ```json
   {
     "success": true,
     "data": {
-      "jdId": "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b",
-      "title": "Backend SDE-1",
-      "company": "Swiggy",
-      "structured": {
-        "seniority": "JUNIOR_MID",
-        "mustHaveSkills": ["Node.js", "PostgreSQL", "Redis"],
-        "niceToHaveSkills": ["Docker", "Kubernetes", "gRPC"],
-        "responsibilities": ["Build high-throughput REST APIs", "Optimize SQL queries"]
+      "jobDescription": {
+        "id": "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b",
+        "userId": "u1d3a9e0-8f1b-4f7d-9a6c-3e2b1a0d4f5e",
+        "title": "Senior Backend Engineer",
+        "company": "TechQuery Innovations",
+        "rawText": "Looking for a Senior Backend Engineer...",
+        "structuredJson": {
+          "roleTitle": "Senior Backend Engineer",
+          "seniority": "SENIOR",
+          "experienceYears": { "min": 5, "max": 8 },
+          "mustHaveSkills": ["Node.js", "PostgreSQL", "Redis"],
+          "niceToHaveSkills": ["Docker", "Kubernetes", "AWS"],
+          "responsibilities": ["Design and implement distributed REST microservices."],
+          "techStackCategories": {
+            "languages": ["TypeScript", "SQL"],
+            "frameworks": ["Node.js", "Express"],
+            "databases": ["PostgreSQL", "Redis"],
+            "cloudAndDevops": ["Docker", "AWS"],
+            "toolsAndOther": ["Git", "REST APIs"]
+          }
+        },
+        "providerUsed": "MOCK",
+        "createdAt": "2026-11-24T19:00:00.000Z",
+        "updatedAt": "2026-11-24T19:00:00.000Z"
       }
     }
   }
   ```
+
+### 4.2 List User Job Descriptions
+- **Method / Route:** `GET /api/v1/job-descriptions`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Array of user's job descriptions (`id`, `userId`, `title`, `company`, `structuredJson`, `providerUsed`, `createdAt`, `updatedAt`). `rawText` is excluded from the summary listing for wire optimization.
+
+### 4.3 Get Job Description by ID
+- **Method / Route:** `GET /api/v1/job-descriptions/:id`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Full job description record including `rawText` and `structuredJson`.
+- **Security:** Strict BOLA/IDOR protection; returns `404 Not Found` if record does not exist or belongs to another candidate.
+
+### 4.4 Re-analyze Job Description
+- **Method / Route:** `POST /api/v1/job-descriptions/:id/reanalyze`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Re-runs AI decomposition on stored `rawText` and returns updated `jobDescription`.
+- **Security:** Strict BOLA/IDOR protection; returns `404 Not Found` if record does not exist or belongs to another candidate.
+
+### 4.5 Delete Job Description
+- **Method / Route:** `DELETE /api/v1/job-descriptions/:id`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** `{ "success": true, "message": "Job description deleted successfully" }`.
+- **Security:** Strict BOLA/IDOR protection; returns `404 Not Found` if record does not exist or belongs to another candidate.
 
 ---
 

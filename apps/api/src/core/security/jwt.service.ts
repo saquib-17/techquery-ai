@@ -62,7 +62,15 @@ export class JwtService {
 
     try {
       const decoded = jwt.verify(token, config.JWT_ACCESS_SECRET, verifyOptions) as any;
-      if (typeof decoded !== "object" || !decoded || !decoded.sub) {
+      if (
+        typeof decoded !== "object" ||
+        !decoded ||
+        typeof decoded.sub !== "string" ||
+        !decoded.sub.trim() ||
+        typeof decoded.role !== "string" ||
+        typeof decoded.tier !== "string" ||
+        typeof decoded.jti !== "string"
+      ) {
         throw new UnauthorizedError("Invalid token claims", "INVALID_TOKEN");
       }
 

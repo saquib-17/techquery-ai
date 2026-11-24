@@ -18,6 +18,13 @@ enum UserTier {
   PRO
 }
 
+enum ProcessingStatus {
+  UPLOADED
+  PENDING
+  PROCESSED
+  FAILED
+}
+
 model User {
   id           String         @id @default(uuid())
   email        String         @unique
@@ -31,8 +38,91 @@ model User {
 
   refreshTokens           RefreshToken[]
   emailVerificationTokens EmailVerificationToken[]
+  candidateProfile        CandidateProfile?
+  onboardingState         OnboardingState?
+  resumes                 Resume[]
+  jobDescriptions         JobDescription[]
 
   @@map("users")
+}
+
+model CandidateProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique @map("user_id")
+  fullName           String   @map("full_name")
+  phoneNumber        String?  @map("phone_number")
+  location           String?
+  headline           String?
+  summary            String?
+  currentRole        String?  @map("current_role")
+  yearsOfExperience  Int?     @map("years_of_experience")
+  highestEducation   String?  @map("highest_education")
+  university         String?
+  graduationYear     Int?     @map("graduation_year")
+  linkedinUrl        String?  @map("linkedin_url")
+  githubUrl          String?  @map("github_url")
+  portfolioUrl       String?  @map("portfolio_url")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_profiles")
+}
+
+model OnboardingState {
+  id                    String    @id @default(uuid())
+  userId                String    @unique @map("user_id")
+  onboardingCompleted   Boolean   @default(false) @map("onboarding_completed")
+  onboardingStep        String    @default("PROFILE") @map("onboarding_step")
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_states")
+}
+
+model Resume {
+  id               String           @id @default(uuid())
+  userId           String           @map("user_id")
+  originalFileName String           @map("original_file_name")
+  storedFileName   String           @unique @map("stored_file_name")
+  mimeType         String           @map("mime_type")
+  fileExtension    String           @map("file_extension")
+  fileSize         Int              @map("file_size")
+  storagePath      String           @map("storage_path")
+  extractedText    String?          @map("extracted_text")
+  parsedData       Json?            @map("parsed_data")
+  processingStatus ProcessingStatus @default(UPLOADED) @map("processing_status")
+  isPrimary        Boolean          @default(false) @map("is_primary")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis ResumeAnalysis?
+
+  @@index([userId])
+  @@index([userId, isPrimary])
+  @@map("resumes")
+}
+
+model ResumeAnalysis {
+  id            String   @id @default(uuid())
+  resumeId      String   @unique @map("resume_id")
+  atsScore      Int      @map("ats_score")
+  sectionScores Json     @map("section_scores")
+  strengths     Json
+  issues        Json
+  improvements  Json
+  providerUsed  String   @map("provider_used")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@map("resume_analyses")
 }
 
 model RefreshToken {
@@ -63,4 +153,21 @@ model EmailVerificationToken {
 
   @@index([userId])
   @@map("email_verification_tokens")
+}
+
+model JobDescription {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  title          String   @db.VarChar(150)
+  company        String?  @db.VarChar(150)
+  rawText        String   @map("raw_text") @db.Text
+  structuredJson Json     @map("structured_json")
+  providerUsed   String   @map("provider_used")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("job_descriptions")
 }

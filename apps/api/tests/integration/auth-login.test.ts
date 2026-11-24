@@ -145,4 +145,32 @@ describe("POST /api/v1/auth/login Integration Tests", () => {
     expect(res.body.success).toBe(false);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
   });
+
+  it("7. enforces sliding-window login rate limiting after 5 failed attempts", async () => {
+    const email = "rate.limit@example.com";
+
+    // Attempt 1 to 5 with wrong password
+    for (let i = 0; i < 5; i++) {
+      const res = await request(app)
+        .post("/api/v1/auth/login")
+        .send({
+          email,
+          password: "WrongPassword123!",
+        });
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe("INVALID_CREDENTIALS");
+    }
+
+    // 6th attempt must be rejected by rate limiter
+    const throttledRes = await request(app)
+      .post("/api/v1/auth/login")
+      .send({
+        email,
+        password: "WrongPassword123!",
+      });
+
+    expect(throttledRes.status).toBe(401);
+    expect(throttledRes.body.error.code).toBe("RATE_LIMIT_EXCEEDED");
+    expect(throttledRes.body.error.message).toContain("Too many login attempts");
+  });
 });

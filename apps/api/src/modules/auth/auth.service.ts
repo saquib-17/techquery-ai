@@ -36,6 +36,7 @@ export interface RefreshResult {
 export class AuthService {
   private resendAttempts = new Map<string, { count: number; firstAttempt: number }>();
   private loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
+  private refreshAttempts = new Map<string, { count: number; firstAttempt: number }>();
 
   constructor(
     private repository: AuthRepository = authRepository,
@@ -343,6 +344,26 @@ export class AuthService {
     }
 
     const tokenHash = TokenUtils.hashToken(rawRefreshToken);
+
+    // Sliding-window abuse throttling for refresh token operations (max 20 requests per 10 minutes per token hash)
+    const now = Date.now();
+    const windowMs = 10 * 60 * 1000;
+    const maxAttempts = 20;
+
+    const record = this.refreshAttempts.get(tokenHash);
+    if (record) {
+      if (now - record.firstAttempt < windowMs) {
+        if (record.count >= maxAttempts) {
+          throw new UnauthorizedError("Too many refresh requests. Please try again later.", "RATE_LIMIT_EXCEEDED");
+        }
+        record.count++;
+      } else {
+        this.refreshAttempts.set(tokenHash, { count: 1, firstAttempt: now });
+      }
+    } else {
+      this.refreshAttempts.set(tokenHash, { count: 1, firstAttempt: now });
+    }
+
     const tokenRecord = await this.repository.findRefreshTokenByHash(tokenHash);
 
     if (!tokenRecord) {

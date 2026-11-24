@@ -122,4 +122,46 @@ describe("JwtService Unit Tests", () => {
     expect(() => JwtService.verifyAccessToken("not-a-token")).toThrow(UnauthorizedError);
     expect(() => JwtService.verifyAccessToken("")).toThrow(UnauthorizedError);
   });
+
+  it("8. rejects manipulated payload signature mismatch", () => {
+    const validToken = JwtService.signAccessToken(samplePayload);
+    const [header, payload, sig] = validToken.split(".");
+
+    // Tamper with payload (elevating role to ADMIN)
+    const decodedPayload = JSON.parse(Buffer.from(payload, "base64url").toString());
+    decodedPayload.role = "ADMIN";
+    const tamperedPayload = Buffer.from(JSON.stringify(decodedPayload)).toString("base64url");
+    const tamperedToken = `${header}.${tamperedPayload}.${sig}`;
+
+    expect(() => JwtService.verifyAccessToken(tamperedToken)).toThrow(UnauthorizedError);
+  });
+
+  it("9. rejects token with missing required claims (e.g. role, tier, or jti)", () => {
+    const incompleteToken = jwt.sign(
+      { sub: samplePayload.userId }, // missing role, tier, jti
+      config.JWT_ACCESS_SECRET,
+      {
+        algorithm: "HS256",
+        issuer: config.JWT_ISSUER,
+        audience: config.JWT_AUDIENCE,
+      }
+    );
+
+    expect(() => JwtService.verifyAccessToken(incompleteToken)).toThrow(UnauthorizedError);
+  });
+
+  it("10. rejects token signed with alternate HMAC algorithm (e.g. HS512)", () => {
+    const hs512Token = jwt.sign(
+      { role: "CANDIDATE", tier: "FREE" },
+      config.JWT_ACCESS_SECRET,
+      {
+        algorithm: "HS512",
+        subject: samplePayload.userId,
+        issuer: config.JWT_ISSUER,
+        audience: config.JWT_AUDIENCE,
+      }
+    );
+
+    expect(() => JwtService.verifyAccessToken(hs512Token)).toThrow(UnauthorizedError);
+  });
 });

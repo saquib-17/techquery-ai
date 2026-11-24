@@ -17,7 +17,7 @@ The legacy app stored unhashed plain tokens in `localStorage`, exposing candidat
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **A: Pure localStorage JWT** | Low | High (Any XSS steals session) | Zero | Trivial | **REJECTED** |
 | **B: Stateful Server Sessions**| High | Low | Medium | Requires persistent Redis session store | **REJECTED (Exceeds free limits)** |
-| **C: Dual-Token Hybrid (Selected)**| **High** | **Low (Refresh token unreadable by JS)** | **Low (SameSite=Strict)** | Low (Stateless verification) | **APPROVED** |
+| **C: Dual-Token Hybrid (Selected)**| **High** | **Low (Refresh token unreadable by JS)** | **Mitigated (SameSite + Origin Check)** | Low (Stateless verification) | **APPROVED** |
 
 ```mermaid
 sequenceDiagram

@@ -35,6 +35,16 @@ export const errorHandler: ErrorRequestHandler = (
     statusCode = err.statusCode;
     code = err.code;
     message = err.message;
+  } else if ((err as any).name === "MulterError" || (err as any).code === "LIMIT_FILE_SIZE") {
+    if ((err as any).code === "LIMIT_FILE_SIZE") {
+      statusCode = 413;
+      code = "FILE_TOO_LARGE";
+      message = "File exceeds the 5MB upload limit";
+    } else {
+      statusCode = 400;
+      code = (err as any).code || "INVALID_FILE_UPLOAD";
+      message = err.message || "File upload validation failed";
+    }
   } else if ((err as any).type === "entity.too.large" || httpStatus === 413) {
     statusCode = 413;
     code = "PAYLOAD_TOO_LARGE";

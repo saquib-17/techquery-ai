@@ -43,7 +43,10 @@ TechQuery AI processes sensitive personal data (resumes, academic records, conta
 
 ### 2.3 Cross-Site Request Forgery (CSRF) & CORS
 - **CORS Configuration:** Origin whitelist strictly restricted to the frontend domain (`http://localhost:5173` in local development; `https://techquery-ai.vercel.app` in cloud production). Credentials enabled (`credentials: true`).
-- **CSRF Defense:** Refresh token cookie configured with `SameSite=Strict` (browser refuses to send cookie across third-party site requests). Access token transmitted strictly via `Authorization: Bearer` header.
+- **CSRF Defense-in-Depth:**
+  1. **Strict Cookie Attributes:** Refresh token cookie configured with `HttpOnly`, `SameSite=Strict` in production (`Lax` in development), and `Secure` in production.
+  2. **Origin & Referer Validation Middleware (`validateSameOrigin`):** Does not rely exclusively on browser `SameSite` enforcement. Evaluates `Origin` and `Referer` headers on all state-changing cookie-authenticated endpoints (`/refresh`, `/logout`, `/logout-all`). Unapproved cross-origins are rejected with `403 Forbidden` (`CSRF_ORIGIN_INVALID` or `CSRF_REFERER_INVALID`).
+  3. **Header-Based Authorization:** Access tokens are transmitted strictly via `Authorization: Bearer <token>`, which cannot be injected by ambient cross-site requests.
 
 ### 2.4 File Upload & Path Traversal Security
 - **Path Traversal Defense:** Original filenames are discarded for filesystem storage. Files are saved strictly using system-generated UUID strings (`${crypto.randomUUID()}.pdf`).

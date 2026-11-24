@@ -105,17 +105,20 @@ Stores resume document metadata, storage paths, and structured JSON graphs.
 ---
 
 ### 3.5 Table: `resume_analyses`
-Stores ATS health score, impact metrics, and Google X-Y-Z bullet rewrites.
+Stores ATS health score, impact metrics, section breakdowns, and Google X-Y-Z bullet rewrites.
 
 | Column Name | PostgreSQL Data Type | Modifiers | Constraints & Descriptions |
 | :--- | :--- | :--- | :--- |
-| `id` | `UUID` | NOT NULL | PRIMARY KEY, Default: `gen_random_uuid()` |
-| `resume_id` | `UUID` | NOT NULL | UNIQUE, FK ➔ `resumes(id)` ON DELETE CASCADE |
+| `id` | `UUID` / `TEXT` | NOT NULL | PRIMARY KEY, Default: `gen_random_uuid()` |
+| `resume_id` | `UUID` / `TEXT` | NOT NULL | UNIQUE, FK ➔ `resumes(id)` ON DELETE CASCADE |
 | `ats_score` | `INTEGER` | NOT NULL | Calculated score (0–100) |
+| `section_scores` | `JSONB` | NOT NULL | Category scores (`contact`, `summary`, `experience`, `skills`, `education`) |
 | `strengths` | `JSONB` | NOT NULL | Default: `'[]'`, list of strong areas |
 | `issues` | `JSONB` | NOT NULL | Default: `'[]'`, list of detected flaws |
 | `improvements` | `JSONB` | NOT NULL | Default: `'[]'`, Google X-Y-Z rewrites |
+| `provider_used`| `VARCHAR(50)` | NOT NULL | AI Provider (`OLLAMA`, `GROQ`, `MOCK`, `FALLBACK`) |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL | Default: `NOW()` |
+| `updated_at` | `TIMESTAMPTZ` | NOT NULL | Default: `NOW()` |
 
 ---
 
@@ -124,13 +127,17 @@ Stores ingested target job postings and decomposed competencies.
 
 | Column Name | PostgreSQL Data Type | Modifiers | Constraints & Descriptions |
 | :--- | :--- | :--- | :--- |
-| `id` | `UUID` | NOT NULL | PRIMARY KEY, Default: `gen_random_uuid()` |
-| `user_id` | `UUID` | NOT NULL | FK ➔ `users(id)` ON DELETE CASCADE, Index |
+| `id` | `UUID` / `TEXT` | NOT NULL | PRIMARY KEY, Default: `gen_random_uuid()` |
+| `user_id` | `UUID` / `TEXT` | NOT NULL | FK ➔ `users(id)` ON DELETE CASCADE, Index |
 | `title` | `VARCHAR(150)` | NOT NULL | Role title (e.g. "Software Engineer") |
 | `company` | `VARCHAR(150)` | NULLABLE | Target employer |
-| `raw_text` | `TEXT` | NOT NULL | Full raw job description text |
-| `structured_json`| `JSONB` | NULLABLE | Extracted must-have and nice-to-have skills |
+| `raw_text` | `TEXT` | NOT NULL | Full raw job description text (min 100 chars) |
+| `structured_json`| `JSONB` | NOT NULL | Extracted role, seniority, experienceYears, mustHaveSkills, niceToHaveSkills, responsibilities, techStackCategories |
+| `provider_used`| `VARCHAR(50)` | NOT NULL | AI Provider (`OLLAMA`, `GROQ`, `MOCK`, `FALLBACK`) |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL | Default: `NOW()` |
+| `updated_at` | `TIMESTAMPTZ` | NOT NULL | Default: `NOW()` |
+
+*Index:* `@@index([user_id, created_at])`
 
 ---
 

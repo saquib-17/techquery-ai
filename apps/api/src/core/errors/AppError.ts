@@ -24,20 +24,20 @@ export class AppError extends Error {
 }
 
 export class NotFoundError extends AppError {
-  constructor(message = "Resource not found") {
-    super(message, 404, "NOT_FOUND", true);
+  constructor(message = "Resource not found", code = "NOT_FOUND") {
+    super(message, 404, code, true);
   }
 }
 
 export class BadRequestError extends AppError {
-  constructor(message = "Bad request") {
-    super(message, 400, "BAD_REQUEST", true);
+  constructor(message = "Bad request", code = "BAD_REQUEST") {
+    super(message, 400, code, true);
   }
 }
 
 export class ServiceUnavailableError extends AppError {
-  constructor(message = "Service temporarily unavailable") {
-    super(message, 503, "SERVICE_UNAVAILABLE", true);
+  constructor(message = "Service temporarily unavailable", code = "SERVICE_UNAVAILABLE") {
+    super(message, 503, code, true);
   }
 }
 

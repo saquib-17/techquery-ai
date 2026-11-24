@@ -32,6 +32,12 @@ export const REDACTED_PATHS = [
   "*.MIGRATION_DATABASE_URL",
   "migrationDatabaseUrl",
   "*.migrationDatabaseUrl",
+  "GROQ_API_KEY",
+  "*.GROQ_API_KEY",
+  "groqApiKey",
+  "*.groqApiKey",
+  "apiKey",
+  "*.apiKey",
 ];
 
 const createLogger = (): Logger => {

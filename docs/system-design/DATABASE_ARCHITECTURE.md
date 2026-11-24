@@ -47,6 +47,8 @@ All relationships enforce explicit relational integrity with strictly defined de
 | :--- | :--- | :--- | :--- | :--- |
 | `users` | `user_profiles` | `user_id` | **CASCADE** | Profile has no meaning without user. |
 | `users` | `refresh_tokens` | `user_id` | **CASCADE** | Sessions must be purged on user deletion. |
+| `users` | `candidate_profiles` | `user_id` | **CASCADE** | Candidate profile purged on account deletion. |
+| `users` | `onboarding_states`  | `user_id` | **CASCADE** | Onboarding state purged on account deletion. |
 | `users` | `resumes` | `user_id` | **CASCADE** | Compliance with Indian DPDP Act Right to Erasure. |
 | `resumes` | `resume_analyses`| `resume_id` | **CASCADE** | Analysis belongs directly to resume version. |
 | `resumes` | `candidate_skills`| `resume_id`| **CASCADE** | Skills extracted from resume must cascade delete. |

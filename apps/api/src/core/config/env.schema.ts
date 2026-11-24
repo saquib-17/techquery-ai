@@ -12,6 +12,7 @@ export const LogLevelSchema = z.enum([
 
 export const NodeEnvSchema = z.enum(["development", "test", "production"]);
 export const AppModeSchema = z.enum(["local", "cloud"]);
+export const AiProviderSchema = z.enum(["ollama", "groq", "mock"]);
 
 const postgresUrlValidator = (url: string) =>
   url.startsWith("postgresql://") || url.startsWith("postgres://");
@@ -54,6 +55,14 @@ export const envSchema = z
     JWT_AUDIENCE: z.string().default("techquery-web"),
     JWT_EXPIRES_IN: z.string().default("15m"),
     REFRESH_TOKEN_EXPIRES_DAYS: z.coerce.number().int().positive().default(7),
+    STORAGE_DIR: z.string().default("./uploads/resumes"),
+    MAX_FILE_SIZE_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024), // 5MB
+    AI_PROVIDER: AiProviderSchema.default("ollama"),
+    OLLAMA_BASE_URL: z.string().url().default("http://localhost:11434"),
+    AI_LOCAL_MODEL: z.string().min(1).default("llama3.2:3b"),
+    GROQ_API_KEY: z.string().optional(),
+    GROQ_MODEL: z.string().min(1).default("llama-3.1-8b-instant"),
+    AI_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
   })
   .transform((data) => {
     // If LOG_LEVEL is not explicitly provided, choose based on NODE_ENV

@@ -121,4 +121,23 @@ describe("POST /api/v1/auth/logout & logout-all Integration Tests", () => {
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
   });
+
+  it("4. logout handles missing or invalid cookie safely and idempotently", async () => {
+    // Calling logout with no cookie/token provided
+    const resNoCookie = await request(app).post("/api/v1/auth/logout");
+    expect(resNoCookie.status).toBe(200);
+    expect(resNoCookie.body.success).toBe(true);
+
+    const cookies = resNoCookie.headers["set-cookie"];
+    expect(cookies).toBeDefined();
+    const cookieHeader = Array.isArray(cookies) ? cookies.join(";") : cookies;
+    expect(cookieHeader).toContain("refreshToken=;");
+
+    // Calling logout with a non-existent random token
+    const resBadToken = await request(app)
+      .post("/api/v1/auth/logout")
+      .set("Cookie", ["refreshToken=non_existent_token_123"]);
+    expect(resBadToken.status).toBe(200);
+    expect(resBadToken.body.success).toBe(true);
+  });
 });

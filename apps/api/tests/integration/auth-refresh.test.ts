@@ -174,4 +174,121 @@ describe("POST /api/v1/auth/refresh & Token Rotation Integration Tests", () => {
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
   });
+
+  it("5. concurrent refresh with same token: exactly one succeeds or race triggers reuse detection revoking family", async () => {
+    const passwordHash = await PasswordService.hashPassword("ValidPassword123!");
+    const user = await prisma.user.create({
+      data: {
+        name: "Concurrent Refresh User",
+        email: "concurrent.refresh@example.com",
+        passwordHash,
+        role: "CANDIDATE",
+        tier: "FREE",
+        isVerified: true,
+      },
+    });
+
+    const rawToken = TokenUtils.generateSecureToken();
+    const tokenHash = TokenUtils.hashToken(rawToken);
+    const familyId = "concurrent-family-test";
+
+    await prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        familyId,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        isRevoked: false,
+      },
+    });
+
+    // Fire two simultaneous refresh requests with the exact same token
+    const [res1, res2] = await Promise.all([
+      request(app).post("/api/v1/auth/refresh").set("Cookie", [`refreshToken=${rawToken}`]),
+      request(app).post("/api/v1/auth/refresh").set("Cookie", [`refreshToken=${rawToken}`]),
+    ]);
+
+    const statuses = [res1.status, res2.status].sort();
+
+    // Case A: Request 1 succeeds (200), Request 2 runs after rotation and hits reuse detection (401)
+    // Case B: Both detect race condition (one rotates, second triggers family revocation 401)
+    // Under all conditions, NEVER can both return 200!
+    expect(statuses[0]).toBe(200);
+    expect(statuses[1]).toBe(401);
+
+    const successfulRes = res1.status === 200 ? res1 : res2;
+    const failingRes = res1.status === 401 ? res1 : res2;
+
+    expect(successfulRes.body.success).toBe(true);
+    expect(failingRes.body.success).toBe(false);
+    expect(["TOKEN_REUSE_DETECTED", "INVALID_REFRESH_TOKEN"]).toContain(failingRes.body.error.code);
+
+    // Old token must be revoked
+    const oldRecord = await prisma.refreshToken.findUnique({ where: { tokenHash } });
+    expect(oldRecord?.isRevoked).toBe(true);
+  });
+
+  it("6. rejects newly issued token if the family was revoked due to old token reuse replay", async () => {
+    const passwordHash = await PasswordService.hashPassword("ValidPassword123!");
+    const user = await prisma.user.create({
+      data: {
+        name: "Replay Attack User",
+        email: "replay.attack@example.com",
+        passwordHash,
+        role: "CANDIDATE",
+        tier: "FREE",
+        isVerified: true,
+      },
+    });
+
+    // 1. Initial token T1
+    const rawT1 = TokenUtils.generateSecureToken();
+    const hashT1 = TokenUtils.hashToken(rawT1);
+    const familyId = "replay-family-test";
+
+    await prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashT1,
+        familyId,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        isRevoked: false,
+      },
+    });
+
+    // 2. Legitimate rotation: T1 -> T2
+    const rotateRes = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("Cookie", [`refreshToken=${rawT1}`]);
+
+    expect(rotateRes.status).toBe(200);
+
+    const setCookie = rotateRes.headers["set-cookie"];
+    expect(setCookie).toBeDefined();
+    const cookieStr = Array.isArray(setCookie) ? setCookie.join(";") : setCookie;
+    const rawT2Match = cookieStr.match(/refreshToken=([^;]+)/);
+    expect(rawT2Match).not.toBeNull();
+    const rawT2 = rawT2Match![1];
+
+    // 3. Attacker replays T1 (the old consumed token)
+    const replayRes = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("Cookie", [`refreshToken=${rawT1}`]);
+
+    expect(replayRes.status).toBe(401);
+    expect(replayRes.body.error.code).toBe("TOKEN_REUSE_DETECTED");
+
+    // 4. Legitimate user now tries to use T2 (the newly issued token) -> MUST BE REJECTED because entire family was revoked!
+    const t2Res = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("Cookie", [`refreshToken=${rawT2}`]);
+
+    expect(t2Res.status).toBe(401);
+    expect(t2Res.body.error.code).toBe("TOKEN_REUSE_DETECTED");
+
+    // Verify all tokens in this family are revoked in DB
+    const familyTokens = await prisma.refreshToken.findMany({ where: { familyId } });
+    expect(familyTokens.length).toBeGreaterThanOrEqual(2);
+    expect(familyTokens.every((t) => t.isRevoked)).toBe(true);
+  });
 });
