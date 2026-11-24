@@ -14,6 +14,8 @@ import {
 import { deterministicParseJd } from "./job-description.fallback.js";
 import { NotFoundError } from "../../core/errors/AppError.js";
 import type { JobDescription } from "@prisma/client";
+import { usageService } from "../usage/usage.service.js";
+import { activityService } from "../dashboard/activity.service.js";
 
 export class JobDescriptionService {
   constructor(
@@ -28,6 +30,8 @@ export class JobDescriptionService {
     userId: string,
     input: CreateJobDescriptionInput
   ): Promise<JobDescription> {
+    await usageService.assertWithinQuota(userId, "jobDescriptions");
+
     const validated = CreateJobDescriptionSchema.parse(input);
 
     const prompt = PromptRegistry.buildJdDecomposePrompt(validated.rawText);
@@ -43,7 +47,7 @@ export class JobDescriptionService {
       }
     );
 
-    return this.repo.create({
+    const created = await this.repo.create({
       userId,
       title: validated.title,
       company: validated.company ?? null,
@@ -51,6 +55,14 @@ export class JobDescriptionService {
       structuredJson: aiResult.data,
       providerUsed: aiResult.providerUsed,
     });
+
+    await activityService.logActivity(userId, "JD_ANALYZED", {
+      jdId: created.id,
+      title: created.title,
+      company: created.company,
+    });
+
+    return created;
   }
 
   /**

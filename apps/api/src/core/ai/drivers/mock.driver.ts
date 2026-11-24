@@ -27,6 +27,18 @@ export class MockDriver implements AIGatewayProvider {
       return this.generateMockJdDecompose(prompt);
     }
 
+    if (taskType === "MATCH_ANALYSIS") {
+      return this.generateMockMatchAnalysis(prompt);
+    }
+
+    if (taskType === "QGEN") {
+      return this.generateMockQuestionSet(prompt);
+    }
+
+    if (taskType === "AGEN") {
+      return this.generateMockAnswer(prompt);
+    }
+
     // Default generic valid JSON
     return JSON.stringify({
       message: "Mock completion generated",
@@ -324,5 +336,225 @@ export class MockDriver implements AIGatewayProvider {
     };
 
     return JSON.stringify(mockResponse);
+  }
+
+  private generateMockMatchAnalysis(prompt: string): string {
+    const lower = prompt.toLowerCase();
+
+    // Check for matched skills in prompt context
+    const matchedMatch = prompt.match(/Factual Matched Skills:\s*([^\n]+)/i);
+    const missingMatch = prompt.match(/Identified Skill Gaps:\s*([^\n]+)/i);
+
+    const matchedRaw = matchedMatch ? matchedMatch[1].trim() : "";
+    const missingRaw = missingMatch ? missingMatch[1].trim() : "";
+
+    const strengths: string[] = [
+      matchedRaw && !matchedRaw.includes("None detected")
+        ? `Strong technical alignment demonstrated in core stack: ${matchedRaw}.`
+        : "Demonstrated solid foundation in core engineering principles and modern software architecture.",
+      "Clear professional trajectory with hands-on development and implementation experience.",
+      "Good synergy between verified candidate projects and target role responsibilities.",
+    ];
+
+    const weaknesses: string[] = [];
+    if (missingRaw && !missingRaw.includes("None")) {
+      weaknesses.push(`Noticeable skill gaps identified in target requirements: ${missingRaw}.`);
+    } else {
+      weaknesses.push("Minor lack of explicit metrics detailing business impact and system throughput in past roles.");
+    }
+
+    const recommendations: string[] = [
+      missingRaw && !missingRaw.includes("None")
+        ? `Dedicate focused revision to key missing competencies (${missingRaw}) before technical interviews.`
+        : "Review distributed system design patterns and concurrency trade-offs.",
+      "Prepare concrete project defense stories applying the STAR methodology (Situation, Task, Action, Result).",
+      "Highlight architecture optimization metrics and performance improvements in discussions with hiring managers.",
+    ];
+
+    const mockEvaluation = {
+      experienceMatch: lower.includes("intern")
+        ? "Candidate possesses early-career / foundational experience suitable for entry-level and internship tracks."
+        : "Candidate background and tenure align well with the expected complexity and technical ownership of this role.",
+      projectRelevance: "Past project portfolio exhibits direct practical relevance to the engineering challenges outlined in the job description.",
+      strengths,
+      weaknesses,
+      recommendations,
+    };
+
+    return JSON.stringify(mockEvaluation);
+  }
+
+  private generateMockQuestionSet(prompt: string): string {
+    // 1. Extract requested count (default to 10)
+    const countMatch = prompt.match(/Total Questions Required:\s*Generate exactly\s*(\d+)/i);
+    const count = countMatch ? Math.max(1, parseInt(countMatch[1], 10)) : 10;
+
+    // 2. Extract difficulty
+    const diffMatch = prompt.match(/Target Difficulty:\s*([A-Z]+)/i);
+    const difficulty = (diffMatch && ["EASY", "MEDIUM", "HARD"].includes(diffMatch[1].toUpperCase())
+      ? diffMatch[1].toUpperCase()
+      : "MEDIUM") as "EASY" | "MEDIUM" | "HARD";
+
+    // 3. Extract allowed categories
+    const validCategories = ["THEORETICAL", "CODING", "SYSTEM_DESIGN", "BEHAVIORAL", "PROJECT_DEFENSE"] as const;
+    const catMatch = prompt.match(/Allowed Categories:\s*([^\n]+)/i);
+    let allowedCategories: Array<typeof validCategories[number]> = [];
+
+    if (catMatch) {
+      const rawCats = catMatch[1].split(",").map((c) => c.trim().toUpperCase());
+      allowedCategories = validCategories.filter((c) => rawCats.includes(c));
+    }
+    if (allowedCategories.length === 0) {
+      allowedCategories = [...validCategories];
+    }
+
+    // 4. Extract topic focus
+    const topicMatch = prompt.match(/Topic Focus:\s*([^\n]+)/i);
+    const topicFocus = topicMatch ? topicMatch[1].trim() : "Full-Stack Software Engineering";
+
+    // 5. Extract skills from prompt
+    const candidateSkills: string[] = [];
+    const skillTokens = [
+      "typescript", "node.js", "postgresql", "docker", "aws", "react", "redis",
+      "graphql", "kubernetes", "python", "golang", "microservices", "sql", "git"
+    ];
+
+    const lower = prompt.toLowerCase();
+    for (const token of skillTokens) {
+      if (lower.includes(token)) {
+        // Pretty format token
+        candidateSkills.push(
+          token === "node.js" ? "Node.js" :
+          token === "typescript" ? "TypeScript" :
+          token === "postgresql" ? "PostgreSQL" :
+          token === "docker" ? "Docker" :
+          token === "aws" ? "AWS" :
+          token === "react" ? "React" :
+          token === "redis" ? "Redis" :
+          token === "graphql" ? "GraphQL" :
+          token === "kubernetes" ? "Kubernetes" :
+          token === "sql" ? "SQL" :
+          token.charAt(0).toUpperCase() + token.slice(1)
+        );
+      }
+    }
+
+    if (candidateSkills.length === 0) {
+      candidateSkills.push("TypeScript", "Node.js", "PostgreSQL", "System Architecture", "Docker");
+    }
+
+    // 6. Generate exact requested count of questions
+    const questions: Array<{
+      category: string;
+      difficulty: string;
+      targetedSkill: string;
+      questionText: string;
+      interviewerIntent: string;
+      keyEvaluationPoints: string[];
+    }> = [];
+
+    for (let i = 0; i < count; i++) {
+      const category = allowedCategories[i % allowedCategories.length];
+      const targetedSkill = candidateSkills[i % candidateSkills.length];
+
+      let questionText = "";
+      let interviewerIntent = "";
+
+      switch (category) {
+        case "THEORETICAL":
+          questionText = `Explain the internal mechanics of ${targetedSkill} and discuss how it handles concurrency, memory allocation, and performance optimization in distributed environments.`;
+          interviewerIntent = `Assesses candidate's foundational mastery, memory model knowledge, and execution dynamics in ${targetedSkill}.`;
+          break;
+        case "CODING":
+          questionText = `Design and implement an efficient, thread-safe data structure or algorithm leveraging ${targetedSkill} that processes continuous data streams with optimal O(N) time and O(1) space complexity.`;
+          interviewerIntent = `Tests algorithmic problem solving, edge-case validation, and idiomatic coding practices using ${targetedSkill}.`;
+          break;
+        case "SYSTEM_DESIGN":
+          questionText = `Architect a fault-tolerant, horizontally scalable system using ${targetedSkill} that handles 50,000 requests/sec with sub-50ms p99 latency, zero single points of failure, and data consistency.`;
+          interviewerIntent = `Evaluates high-level system decomposition, partitioning strategies, caching tiers, and failure isolation using ${targetedSkill}.`;
+          break;
+        case "BEHAVIORAL":
+          questionText = `Describe a situation from your past engineering experience where a technical trade-off involving ${targetedSkill} caused disagreements within the team. How did you resolve it and deliver on time?`;
+          interviewerIntent = `Assesses conflict resolution, engineering communication, collaborative decision-making, and pragmatic trade-off balancing.`;
+          break;
+        case "PROJECT_DEFENSE":
+          questionText = `In your resume project featuring ${targetedSkill}, what were the most critical performance bottlenecks you diagnosed, and why did you choose that specific architectural approach over alternatives?`;
+          interviewerIntent = `Probes candidate's genuine ownership, technical defense under scrutiny, and post-mortem reflection on real-world implementations.`;
+          break;
+      }
+
+      questions.push({
+        category,
+        difficulty,
+        targetedSkill,
+        questionText,
+        interviewerIntent,
+        keyEvaluationPoints: [
+          `Clear architectural and conceptual command of ${targetedSkill}`,
+          "Identification of edge-cases, failure modes, and recovery paths",
+          "Structured communication and reasoning under technical scrutiny",
+        ],
+      });
+    }
+
+    return JSON.stringify({
+      title: `${topicFocus} (${difficulty}) - Interview Practice Set`,
+      questions,
+    });
+  }
+
+  private generateMockAnswer(prompt: string): string {
+    const catMatch = prompt.match(/Category:\s*([A-Z_]+)/i);
+    const category = catMatch ? catMatch[1].trim().toUpperCase() : "THEORETICAL";
+
+    const skillMatch = prompt.match(/Targeted Skill:\s*([^\n]+)/i);
+    const targetedSkill = skillMatch ? skillMatch[1].trim() : "Software Engineering";
+
+    const isBehavioral =
+      category === "BEHAVIORAL" || category === "PROJECT_DEFENSE";
+
+    if (isBehavioral) {
+      return JSON.stringify({
+        shortSummary: `In my previous role, I demonstrated engineering leadership and proactive resolution when navigating architectural bottlenecks around ${targetedSkill}.`,
+        detailedExplanation:
+          `**Situation**: During a critical production rollout involving ${targetedSkill}, our distributed cluster experienced unexpected latency regressions impacting 15% of inbound checkout workflows.\n\n` +
+          `**Task**: As lead developer on the incident response team, my responsibility was to immediately identify the root cause, mitigate the customer-facing slowdown, and implement a resilient long-term architectural solution within 48 hours.\n\n` +
+          `**Action**: I analyzed distributed APM traces and database query logs to isolate lock contention on the ${targetedSkill} connection pool. I introduced an asynchronous event-driven queue with dead-letter buffering, implemented circuit breakers, and coordinated pair-debugging sessions with the infrastructure team.\n\n` +
+          `**Result**: We restored P99 response times to under 35ms, achieved 100% message delivery guarantee, and successfully handled 2.5x traffic surges during the subsequent promotional event with zero service degradation.`,
+        codeSnippet: null,
+        timeComplexity: null,
+        spaceComplexity: null,
+        commonMistakes: [
+          "Speaking in broad generalities without articulating individual technical ownership ('We fixed it' instead of 'I analyzed and implemented').",
+          "Omitting measurable, quantifiable business results or performance metrics from the outcome.",
+          "Failing to discuss post-incident learnings, automated testing, or long-term preventive measures.",
+        ],
+      });
+    }
+
+    // Technical categories: THEORETICAL, CODING, SYSTEM_DESIGN
+    const isCoding = category === "CODING";
+    const isSystemDesign = category === "SYSTEM_DESIGN";
+
+    const codeSnippet = isCoding
+      ? `// Optimized algorithmic solution for ${targetedSkill}\nexport function processBatch<T>(items: T[]): Map<string, T> {\n  const seen = new Map<string, T>();\n  for (let i = 0; i < items.length; i++) {\n    const item = items[i];\n    const key = (item as any)?.id ?? String(i);\n    if (!seen.has(key)) {\n      seen.set(key, item);\n    }\n  }\n  return seen;\n}`
+      : `// Idiomatic implementation / architecture query for ${targetedSkill}\nSELECT id, status, updated_at\nFROM transactions\nWHERE tenant_id = $1 AND status = 'COMPLETED'\nORDER BY created_at DESC\nLIMIT 100;`;
+
+    return JSON.stringify({
+      shortSummary: `${targetedSkill} balances processing efficiency and memory usage through structured indexing, optimized caching tiers, and controlled concurrency primitives.`,
+      detailedExplanation:
+        `To address this question thoroughly, we evaluate the architectural design, failure modes, and operational trade-offs of ${targetedSkill}.\n\n` +
+        `1. **Core Architectural Mechanism**: ${targetedSkill} manages state and execution by minimizing synchronization bottlenecks. In ${isSystemDesign ? "distributed system architectures" : "computational execution"}, maintaining low latency requires avoiding unindexed lookups and excessive memory allocations.\n\n` +
+        `2. **Concurrency & Edge Cases**: Under concurrent load, we safeguard against race conditions and connection exhaustion by employing idempotency tokens, connection pooling, and circuit-breaker patterns.\n\n` +
+        `3. **Trade-offs**: While this pattern achieves optimal lookup speeds (${isCoding ? "O(1) average lookup" : "sub-10ms response"}), it requires predictable auxiliary memory (${isCoding ? "O(N) heap space" : "cache storage overhead"}) that must be budgeted against system constraints.`,
+      codeSnippet,
+      timeComplexity: isCoding ? "O(N)" : "O(log N)",
+      spaceComplexity: "O(N)",
+      commonMistakes: [
+        `Neglecting edge cases such as null/empty inputs or concurrent connection exhaustion in ${targetedSkill}.`,
+        "Assuming infinite memory or neglecting garbage collection pressure under continuous high-volume workloads.",
+        "Over-engineering a distributed solution when a simple in-memory or single-index pattern is sufficient.",
+      ],
+    });
   }
 }

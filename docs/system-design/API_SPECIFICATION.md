@@ -445,11 +445,11 @@ All protected endpoints require a Bearer token in the `Authorization` header:
 
 ---
 
-## 5. Resume-JD Matching Module (`/api/v1/match`)
+## 5. Resume-JD Matching Module (`/api/v1/matches` & `/api/v1/match`)
 
-### 5.1 Run Gap Analysis
-- **Method / Route:** `POST /api/v1/match/analyze`
-- **Auth Required:** Yes
+### 5.1 Evaluate / Upsert Match
+- **Method / Route:** `POST /api/v1/matches` (also aliased at `POST /api/v1/match/analyze`)
+- **Auth Required:** Yes (Bearer JWT)
 - **Request Body:**
   ```json
   {
@@ -457,62 +457,216 @@ All protected endpoints require a Bearer token in the `Authorization` header:
     "jdId": "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b"
   }
   ```
+- **Validation Rules:**
+  - `resumeId`: UUID string, required.
+  - `jdId`: UUID string, required.
+- **Security:** Strict BOLA/IDOR protection; verifies that both `resumeId` and `jdId` exist and belong to the authenticated user (returns `404 Not Found` if either does not exist or belongs to another user).
+- **Upsert Semantics:** If a match report already exists for the given `(resumeId, jdId)` pair, it is cleanly updated with fresh calculations and qualitative evaluation without duplicate key errors.
+- **Response (201 Created):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "match": {
+        "id": "m1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+        "userId": "u1d3a9e0-8f1b-4f7d-9a6c-3e2b1a0d4f5e",
+        "resumeId": "b1e2a3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+        "jdId": "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b",
+        "matchScore": 84,
+        "scoreBreakdown": {
+          "mustHaveSkillsScore": 100,
+          "niceToHaveSkillsScore": 67,
+          "experienceScore": 100,
+          "domainScore": 75
+        },
+        "matchedSkills": ["Node.js", "TypeScript", "PostgreSQL", "Docker"],
+        "missingSkills": [
+          { "skill": "Kubernetes", "importance": "MEDIUM", "category": "General" }
+        ],
+        "analysisJson": {
+          "experienceMatch": "Candidate possesses 6 years of experience, exceeding the 5-year requirement.",
+          "projectRelevance": "Demonstrated background in scalable microservices and cloud deployments directly aligns with core responsibilities.",
+          "strengths": [
+            "100% must-have core skill coverage (Node.js, TypeScript, PostgreSQL, Docker)",
+            "Senior-level backend architecture experience"
+          ],
+          "weaknesses": [
+            "Missing hands-on Kubernetes orchestration experience mentioned in nice-to-have requirements"
+          ],
+          "recommendations": [
+            "Highlight container deployment pipelines in AWS ECS to compensate for Kubernetes",
+            "Prepare for deep dive discussion on PostgreSQL indexing and query optimization"
+          ]
+        },
+        "providerUsed": "MOCK",
+        "createdAt": "2026-11-24T19:40:00.000Z",
+        "updatedAt": "2026-11-24T19:40:00.000Z"
+      }
+    }
+  }
+  ```
+
+### 5.2 List User Matches
+- **Method / Route:** `GET /api/v1/matches`
+- **Auth Required:** Yes (Bearer JWT)
 - **Response (200 OK):**
   ```json
   {
     "success": true,
     "data": {
-      "matchScore": 72,
-      "alignmentCategory": "STRONG_MATCH",
-      "matchedSkills": ["Node.js", "PostgreSQL"],
-      "missingSkills": [
-        { "skill": "Redis", "importance": "HIGH" },
-        { "skill": "Docker", "importance": "MEDIUM" }
-      ],
-      "analysis": {
-        "experienceMatch": "Meets 1-2 years criteria",
-        "projectRelevance": "High overlap with e-commerce payment project",
-        "recommendation": "Brush up on Redis caching and distributed locks before technical round."
-      }
+      "matches": [
+        {
+          "id": "m1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+          "userId": "u1d3a9e0-8f1b-4f7d-9a6c-3e2b1a0d4f5e",
+          "resumeId": "b1e2a3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+          "jdId": "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b",
+          "matchScore": 84,
+          "scoreBreakdown": { ... },
+          "matchedSkills": ["Node.js", "TypeScript", "PostgreSQL", "Docker"],
+          "missingSkills": [ ... ],
+          "analysisJson": { ... },
+          "providerUsed": "MOCK",
+          "createdAt": "2026-11-24T19:40:00.000Z",
+          "updatedAt": "2026-11-24T19:40:00.000Z",
+          "resume": {
+            "id": "b1e2a3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+            "originalFileName": "jane_doe_sde_resume.pdf",
+            "isPrimary": true
+          },
+          "jobDescription": {
+            "id": "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b",
+            "title": "Senior Backend Engineer",
+            "company": "TechScale Inc."
+          }
+        }
+      ]
+    }
+  }
+  ```
+
+### 5.3 Get Match by ID
+- **Method / Route:** `GET /api/v1/matches/:id`
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Strict BOLA/IDOR protection; returns `404 Not Found` if match does not exist or belongs to another user.
+- **Response (200 OK):** Full match report including resume and job description metadata summaries.
+
+### 5.4 Delete Match
+- **Method / Route:** `DELETE /api/v1/matches/:id`
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Strict BOLA/IDOR protection; returns `404 Not Found` if match does not exist or belongs to another user.
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "success": true,
+      "message": "Match report deleted successfully"
     }
   }
   ```
 
 ---
 
-## 6. Question Studio Module (`/api/v1/questions`)
+## 6. Question Studio Module (`/api/v1/questions` & `/api/v1/question-sets`)
 
 ### 6.1 Generate Personalized Questions
-- **Method / Route:** `POST /api/v1/questions/generate`
-- **Auth Required:** Yes
+- **Method / Route:** `POST /api/v1/questions/generate` (aliased at `POST /api/v1/questions` & `POST /api/v1/question-sets`)
+- **Auth Required:** Yes (Bearer JWT)
 - **Request Body:**
   ```json
   {
     "resumeId": "b1e2a3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
     "jdId": "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b",
+    "matchId": "m1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+    "title": "Backend SDE-1 Prep (Swiggy)",
     "topicFocus": "Backend & System Design",
     "difficulty": "MEDIUM",
-    "count": 15
+    "categories": ["THEORETICAL", "CODING", "SYSTEM_DESIGN", "BEHAVIORAL", "PROJECT_DEFENSE"],
+    "count": 10
   }
   ```
+- **Validation Rules:**
+  - `resumeId`, `jdId`, `matchId`: optional UUID strings. If provided, user ownership is strictly verified (returns `404 Not Found` if missing or owned by another user).
+  - `title`: optional string, min 3, max 200 chars.
+  - `topicFocus`: optional string, min 3, max 100 chars (default: `"Full-Stack & Core Software Engineering"`).
+  - `difficulty`: enum (`"EASY"` | `"MEDIUM"` | `"HARD"`), default `"MEDIUM"`.
+  - `categories`: array of `QuestionCategory`, min 1 item (default: all 5 categories).
+  - `count`: integer coerced, min 3, max 20, default 10.
+- **Response (201 Created):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "questionSet": {
+        "id": "f7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
+        "userId": "u1d3a9e0-8f1b-4f7d-9a6c-3e2b1a0d4f5e",
+        "resumeId": "b1e2a3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+        "jdId": "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b",
+        "matchId": "m1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+        "title": "Backend SDE-1 Prep (Swiggy)",
+        "topicFocus": "Backend & System Design",
+        "difficulty": "MEDIUM",
+        "totalCount": 10,
+        "providerUsed": "MOCK",
+        "createdAt": "2026-11-24T20:00:00.000Z",
+        "updatedAt": "2026-11-24T20:00:00.000Z",
+        "questions": [
+          {
+            "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+            "category": "THEORETICAL",
+            "difficulty": "MEDIUM",
+            "targetedSkill": "PostgreSQL",
+            "questionText": "Explain how B-Tree indexing works in PostgreSQL and when a composite index should be preferred over separate single indexes.",
+            "interviewerIntent": "Assesses query optimization knowledge and understanding of disk I/O.",
+            "keyEvaluationPoints": ["Leftmost prefix rule", "Index scan vs Sequential scan", "Write overhead"]
+          }
+        ]
+      }
+    }
+  }
+  ```
+
+### 6.2 List User Question Sets
+- **Method / Route:** `GET /api/v1/questions` (aliased at `GET /api/v1/question-sets`)
+- **Auth Required:** Yes (Bearer JWT)
 - **Response (200 OK):**
   ```json
   {
     "success": true,
     "data": {
-      "setId": "f7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
-      "title": "Backend SDE-1 Prep (Swiggy)",
-      "total": 15,
-      "questions": [
+      "questionSets": [
         {
-          "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
-          "category": "THEORETICAL",
-          "targetedSkill": "PostgreSQL",
-          "questionText": "Explain how B-Tree indexing works in PostgreSQL and when a composite index should be preferred over separate single indexes.",
-          "interviewerIntent": "Assesses query optimization knowledge and understanding of disk I/O.",
-          "keyEvaluationPoints": ["Leftmost prefix rule", "Index scan vs Sequential scan", "Write overhead"]
+          "id": "f7a8b9c0-d1e2-3f4a-5b6c-7d8e9f0a1b2c",
+          "userId": "u1d3a9e0-8f1b-4f7d-9a6c-3e2b1a0d4f5e",
+          "title": "Backend SDE-1 Prep (Swiggy)",
+          "topicFocus": "Backend & System Design",
+          "difficulty": "MEDIUM",
+          "totalCount": 10,
+          "providerUsed": "MOCK",
+          "createdAt": "2026-11-24T20:00:00.000Z"
         }
       ]
+    }
+  }
+  ```
+
+### 6.3 Get Question Set by ID
+- **Method / Route:** `GET /api/v1/questions/:id` (aliased at `GET /api/v1/question-sets/:id`)
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Strict BOLA/IDOR protection; returns `404 Not Found` if set does not exist or belongs to another candidate.
+- **Response (200 OK):** Full question set including all nested questions.
+
+### 6.4 Delete Question Set
+- **Method / Route:** `DELETE /api/v1/questions/:id` (aliased at `DELETE /api/v1/question-sets/:id`)
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Strict BOLA/IDOR protection; returns `404 Not Found` if set does not exist or belongs to another candidate. Cascades deletion to child questions.
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "success": true,
+      "message": "Question set deleted successfully"
     }
   }
   ```
@@ -522,26 +676,65 @@ All protected endpoints require a Bearer token in the `Authorization` header:
 ## 7. Model Answer Engine (`/api/v1/answers`)
 
 ### 7.1 Generate or Fetch Model Answer
-- **Method / Route:** `POST /api/v1/answers/generate`
-- **Auth Required:** Yes
+- **Method / Route:** `POST /api/v1/answers/generate` (also aliased at `POST /api/v1/answers`)
+- **Auth Required:** Yes (Bearer JWT)
 - **Request Body:**
   ```json
   {
-    "questionId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+    "questionId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "style": "INTERVIEW", // optional: "CONCISE" | "DETAILED" | "INTERVIEW" (default: "INTERVIEW")
+    "regenerate": false    // optional: boolean (default: false)
   }
   ```
+- **Caching & Upsert Semantics:**
+  - If an answer already exists for `questionId` with matching `style` and `regenerate: false`, returns cached answer (`200 OK`).
+  - If `regenerate: true` or `style` is changed, re-generates and updates the existing answer record (`200 OK`).
+  - If generated for the first time, returns `201 Created`.
+- **Security:** Strict BOLA/IDOR protection; verifies that the question belongs to the authenticated user via `question -> questionSet -> userId` (returns `404 Not Found` if not found or owned by another user).
+- **Response (201 Created / 200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "answer": {
+        "id": "e9c1b2a3-f4d5-6e7a-8b9c-0d1e2f3a4b5c",
+        "questionId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+        "shortSummary": "B-Tree indexes maintain a balanced tree of sorted keys allowing O(log N) lookup, insertion, and range queries.",
+        "detailedExplanation": "PostgreSQL uses Lehman & Yao B-Tree algorithms to allow concurrent readers and writers without global tree locks...",
+        "codeSnippet": "CREATE INDEX idx_user_created ON users(tenant_id, created_at DESC);",
+        "timeComplexity": "O(log N)",
+        "spaceComplexity": "O(N)",
+        "commonMistakes": [
+          "Indexing low-cardinality boolean columns",
+          "Forgetting leftmost column rule in composite indexes"
+        ],
+        "style": "INTERVIEW",
+        "providerUsed": "MOCK",
+        "createdAt": "2026-11-24T21:00:00.000Z",
+        "updatedAt": "2026-11-24T21:00:00.000Z"
+      }
+    }
+  }
+  ```
+- **Behavioral Questions Format:** For `BEHAVIORAL` or `PROJECT_DEFENSE` questions, `detailedExplanation` is structured in 4-part STAR format (`**Situation**`, `**Task**`, `**Action**`, `**Result**`), and `codeSnippet`, `timeComplexity`, and `spaceComplexity` are strictly `null`.
+
+### 7.2 Get Model Answer by Question ID
+- **Method / Route:** `GET /api/v1/answers/:questionId`
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Strict BOLA/IDOR protection; returns `404 Not Found` (`ANSWER_NOT_FOUND`) if answer has not yet been generated or if the question belongs to another candidate.
+- **Response (200 OK):** Stored `answer` record.
+
+### 7.3 Delete Model Answer
+- **Method / Route:** `DELETE /api/v1/answers/:questionId`
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Strict BOLA/IDOR protection; returns `404 Not Found` (`ANSWER_NOT_FOUND`) if answer does not exist or belongs to another candidate.
 - **Response (200 OK):**
   ```json
   {
     "success": true,
     "data": {
-      "questionId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
-      "shortSummary": "B-Tree indexes maintain a balanced tree of sorted keys allowing O(log N) lookup, insertion, and range queries.",
-      "detailedExplanation": "PostgreSQL uses Lehman & Yao B-Tree algorithms to allow concurrent readers and writers without global tree locks...",
-      "codeSnippet": "CREATE INDEX idx_user_created ON users(tenant_id, created_at DESC);",
-      "timeComplexity": "O(log N)",
-      "spaceComplexity": "O(N)",
-      "commonMistakes": ["Indexing low-cardinality boolean columns", "Forgetting leftmost column rule in composite indexes"]
+      "success": true,
+      "message": "Model answer deleted successfully"
     }
   }
   ```
@@ -560,3 +753,109 @@ All protected endpoints require a Bearer token in the `Authorization` header:
 - **Auth Required:** Yes
 - **Request Body:** `{ "tier": "PRO" }`
 - **Response (200 OK):** `{ "success": true, "tier": "PRO" }`
+
+---
+
+## 9. Saved Collections & PDF Export (`/api/v1/collections`, `/api/v1/question-sets/:id/export/pdf`)
+
+### 9.1 Create Collection
+- **Method / Route:** `POST /api/v1/collections`
+- **Auth Required:** Yes (Bearer JWT)
+- **Request Body:**
+  ```json
+  {
+    "name": "Stripe Systems Round Prep",
+    "description": "High priority distributed systems & concurrency questions"
+  }
+  ```
+- **Response (201 Created):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": "uuid",
+      "userId": "uuid",
+      "name": "Stripe Systems Round Prep",
+      "description": "High priority distributed systems & concurrency questions",
+      "createdAt": "2026-11-24T22:00:00.000Z",
+      "updatedAt": "2026-11-24T22:00:00.000Z",
+      "items": [],
+      "_count": { "items": 0 }
+    }
+  }
+  ```
+
+### 9.2 List Collections
+- **Method / Route:** `GET /api/v1/collections`
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Returns only collections owned by authenticated user (`userId`).
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": "uuid",
+        "userId": "uuid",
+        "name": "Stripe Systems Round Prep",
+        "description": "High priority distributed systems & concurrency questions",
+        "createdAt": "2026-11-24T22:00:00.000Z",
+        "updatedAt": "2026-11-24T22:00:00.000Z",
+        "_count": { "items": 5 }
+      }
+    ]
+  }
+  ```
+
+### 9.3 Get Collection by ID
+- **Method / Route:** `GET /api/v1/collections/:id`
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Strict BOLA/IDOR protection; returns `404 Not Found` (`COLLECTION_NOT_FOUND`) if collection does not exist or belongs to another user.
+- **Response (200 OK):** Collection entity with ordered items, questions, and model answers.
+
+### 9.4 Update Collection
+- **Method / Route:** `PATCH /api/v1/collections/:id`
+- **Auth Required:** Yes (Bearer JWT)
+- **Request Body:** `{ "name": "Updated Name", "description": "Updated Description" }`
+- **Response (200 OK):** Updated collection entity.
+
+### 9.5 Delete Collection
+- **Method / Route:** `DELETE /api/v1/collections/:id`
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Strict BOLA/IDOR protection; cascade deletes collection items.
+- **Response (200 OK):** `{ "success": true, "message": "Collection deleted successfully" }`
+
+### 9.6 Add Question to Collection
+- **Method / Route:** `POST /api/v1/collections/:id/items`
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Dual-ownership verification (`collection.userId === userId` and `question.questionSet.userId === userId`). Prevents duplicate bookmarking (`409 Conflict` / `ALREADY_IN_COLLECTION`).
+- **Request Body:** `{ "questionId": "uuid" }`
+- **Response (201 Created):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": "uuid",
+      "collectionId": "uuid",
+      "questionId": "uuid",
+      "addedAt": "2026-11-24T22:00:00.000Z",
+      "question": { "id": "uuid", "questionText": "..." }
+    }
+  }
+  ```
+
+### 9.7 Remove Question from Collection
+- **Method / Route:** `DELETE /api/v1/collections/:id/items/:questionId`
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Strict BOLA/IDOR protection; returns `404 Not Found` if item or collection does not belong to user.
+- **Response (200 OK):** `{ "success": true, "message": "Question removed from collection" }`
+
+### 9.8 Export Collection as PDF
+- **Method / Route:** `GET /api/v1/collections/:id/export/pdf`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Streaming `application/pdf` binary with `Content-Disposition: attachment; filename="<collection_name>.pdf"`.
+
+### 9.9 Export Question Set as PDF
+- **Method / Route:** `GET /api/v1/question-sets/:id/export/pdf`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):** Streaming `application/pdf` binary with `Content-Disposition: attachment; filename="<question_set_title>.pdf"`.

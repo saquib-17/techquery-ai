@@ -18,11 +18,36 @@ enum UserTier {
   PRO
 }
 
+enum ActivityType {
+  RESUME_UPLOADED
+  JD_ANALYZED
+  MATCH_EVALUATED
+  QUESTIONS_GENERATED
+  ANSWER_GENERATED
+  COLLECTION_CREATED
+  PDF_EXPORTED
+  TIER_CHANGED
+}
+
 enum ProcessingStatus {
   UPLOADED
   PENDING
   PROCESSED
   FAILED
+}
+
+enum QuestionCategory {
+  THEORETICAL
+  CODING
+  SYSTEM_DESIGN
+  BEHAVIORAL
+  PROJECT_DEFENSE
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
 }
 
 model User {
@@ -42,6 +67,10 @@ model User {
   onboardingState         OnboardingState?
   resumes                 Resume[]
   jobDescriptions         JobDescription[]
+  jobMatches              JobMatch[]
+  questionSets            QuestionSet[]
+  collections             SavedCollection[]
+  activities              UserActivity[]
 
   @@map("users")
 }
@@ -102,6 +131,8 @@ model Resume {
 
   user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   analysis ResumeAnalysis?
+  matches  JobMatch[]
+  questionSets QuestionSet[]
 
   @@index([userId])
   @@index([userId, isPrimary])
@@ -167,7 +198,147 @@ model JobDescription {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matches JobMatch[]
+  questionSets QuestionSet[]
 
   @@index([userId, createdAt])
   @@map("job_descriptions")
+}
+
+model JobMatch {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  resumeId       String   @map("resume_id")
+  jdId           String   @map("jd_id")
+  matchScore     Int      @map("match_score")
+  scoreBreakdown Json     @map("score_breakdown")
+  matchedSkills  Json     @map("matched_skills")
+  missingSkills  Json     @map("missing_skills")
+  analysisJson   Json     @map("analysis_json")
+  providerUsed   String   @map("provider_used")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume         Resume         @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  jobDescription JobDescription @relation(fields: [jdId], references: [id], onDelete: Cascade)
+  questionSets   QuestionSet[]
+
+  @@unique([resumeId, jdId])
+  @@index([userId, createdAt])
+  @@index([resumeId])
+  @@index([jdId])
+  @@map("job_matches")
+}
+
+model QuestionSet {
+  id           String             @id @default(uuid())
+  userId       String             @map("user_id")
+  resumeId     String?            @map("resume_id")
+  jdId         String?            @map("jd_id")
+  matchId      String?            @map("match_id")
+  title        String             @db.VarChar(200)
+  topicFocus   String             @map("topic_focus") @db.VarChar(100)
+  difficulty   QuestionDifficulty @default(MEDIUM)
+  totalCount   Int                @default(0) @map("total_count")
+  providerUsed String             @map("provider_used") @db.VarChar(50)
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume         Resume?         @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  jobDescription JobDescription? @relation(fields: [jdId], references: [id], onDelete: SetNull)
+  jobMatch       JobMatch?       @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  questions      Question[]
+
+  @@index([userId, createdAt])
+  @@index([resumeId])
+  @@index([jdId])
+  @@index([matchId])
+  @@map("question_sets")
+}
+
+model Question {
+  id                  String             @id @default(uuid())
+  questionSetId       String             @map("question_set_id")
+  questionText        String             @map("question_text") @db.Text
+  category            QuestionCategory
+  difficulty          QuestionDifficulty
+  targetedSkill       String             @map("targeted_skill") @db.VarChar(100)
+  interviewerIntent   String             @map("interviewer_intent") @db.Text
+  keyEvaluationPoints Json               @default("[]") @map("key_evaluation_points")
+  createdAt           DateTime           @default(now()) @map("created_at")
+
+  questionSet     QuestionSet      @relation(fields: [questionSetId], references: [id], onDelete: Cascade)
+  answer          Answer?
+  collectionItems CollectionItem[]
+
+  @@index([questionSetId])
+  @@index([targetedSkill])
+  @@index([category])
+  @@map("questions")
+}
+
+model Answer {
+  id                  String   @id @default(uuid())
+  questionId          String   @unique @map("question_id")
+  shortSummary        String   @map("short_summary") @db.Text
+  detailedExplanation String   @map("detailed_explanation") @db.Text
+  codeSnippet         String?  @map("code_snippet") @db.Text
+  timeComplexity      String?  @map("time_complexity") @db.VarChar(50)
+  spaceComplexity     String?  @map("space_complexity") @db.VarChar(50)
+  commonMistakes      Json     @default("[]") @map("common_mistakes")
+  style               String   @default("INTERVIEW") @db.VarChar(30)
+  providerUsed        String   @map("provider_used") @db.VarChar(50)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("answers")
+}
+
+model SavedCollection {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String   @db.VarChar(150)
+  description String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CollectionItem[]
+
+  @@index([userId, createdAt])
+  @@map("saved_collections")
+}
+
+model CollectionItem {
+  id           String   @id @default(uuid())
+  collectionId String   @map("collection_id")
+  questionId   String   @map("question_id")
+  addedAt      DateTime @default(now()) @map("added_at")
+
+  collection SavedCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  question   Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, questionId])
+  @@index([collectionId])
+  @@index([questionId])
+  @@map("collection_items")
+}
+
+model UserActivity {
+  id           String       @id @default(uuid())
+  userId       String       @map("user_id")
+  activityType ActivityType @map("activity_type")
+  activityDate DateTime     @map("activity_date") @db.Date
+  metadata     Json         @default("{}")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, activityDate(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("user_activities")
 }

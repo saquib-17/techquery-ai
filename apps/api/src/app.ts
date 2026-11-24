@@ -11,6 +11,12 @@ import { authRoutes } from "./modules/auth/auth.routes.js";
 import { profileRoutes, onboardingRoutes } from "./modules/candidate/candidate.routes.js";
 import { resumeRoutes } from "./modules/resume/resume.routes.js";
 import { jobDescriptionRoutes } from "./modules/job-description/job-description.routes.js";
+import { matchingRoutes } from "./modules/matching/matching.routes.js";
+import { questionRoutes } from "./modules/questions/question.routes.js";
+import { answerRoutes } from "./modules/answers/answer.routes.js";
+import { collectionRoutes } from "./modules/collections/collection.routes.js";
+import { usageRoutes } from "./modules/usage/usage.routes.js";
+import { dashboardRoutes } from "./modules/dashboard/dashboard.routes.js";
 
 /**
  * Express Application Factory.
@@ -85,6 +91,14 @@ export const createApp = (customRouter?: Router): Application => {
   app.use("/api/v1/onboarding", onboardingRoutes);
   app.use("/api/v1/resumes", resumeRoutes);
   app.use("/api/v1/job-descriptions", jobDescriptionRoutes);
+  app.use("/api/v1/matches", matchingRoutes);
+  app.use("/api/v1/match", matchingRoutes);
+  app.use("/api/v1/questions", questionRoutes);
+  app.use("/api/v1/question-sets", questionRoutes);
+  app.use("/api/v1/answers", answerRoutes);
+  app.use("/api/v1/collections", collectionRoutes);
+  app.use("/api/v1/usage", usageRoutes);
+  app.use("/api/v1/dashboard", dashboardRoutes);
 
   // Optional custom router for testing or extensions
   if (customRouter) {

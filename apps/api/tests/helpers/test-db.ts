@@ -24,6 +24,14 @@ export const assertTestDatabase = async (): Promise<string> => {
  */
 export const cleanTestDatabase = async (): Promise<void> => {
   await assertTestDatabase();
+  await prisma.userActivity.deleteMany({});
+  await prisma.collectionItem.deleteMany({});
+  await prisma.savedCollection.deleteMany({});
+  await prisma.answer.deleteMany({});
+  await prisma.question.deleteMany({});
+  await prisma.questionSet.deleteMany({});
+  await prisma.jobMatch.deleteMany({});
+  await prisma.jobDescription.deleteMany({});
   await prisma.resumeAnalysis.deleteMany({});
   await prisma.resume.deleteMany({});
   await prisma.candidateProfile.deleteMany({});

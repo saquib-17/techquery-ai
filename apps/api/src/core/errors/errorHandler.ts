@@ -45,6 +45,10 @@ export const errorHandler: ErrorRequestHandler = (
       code = (err as any).code || "INVALID_FILE_UPLOAD";
       message = err.message || "File upload validation failed";
     }
+  } else if ((err as any).name === "ZodError") {
+    statusCode = 400;
+    code = "VALIDATION_ERROR";
+    message = (err as any).issues?.[0]?.message || "Validation failed";
   } else if ((err as any).type === "entity.too.large" || httpStatus === 413) {
     statusCode = 413;
     code = "PAYLOAD_TOO_LARGE";

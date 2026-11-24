@@ -142,20 +142,25 @@ Stores ingested target job postings and decomposed competencies.
 ---
 
 ### 3.7 Table: `job_matches`
-Junction table storing deterministic + AI hybrid match results.
+Junction table storing deterministic weighted score + AI hybrid qualitative match results.
 
 | Column Name | PostgreSQL Data Type | Modifiers | Constraints & Descriptions |
 | :--- | :--- | :--- | :--- |
-| `id` | `UUID` | NOT NULL | PRIMARY KEY, Default: `gen_random_uuid()` |
-| `resume_id` | `UUID` | NOT NULL | FK ➔ `resumes(id)` ON DELETE CASCADE, Index |
-| `jd_id` | `UUID` | NOT NULL | FK ➔ `job_descriptions(id)` ON DELETE CASCADE, Index |
-| `match_score` | `INTEGER` | NOT NULL | 0–100 match index |
-| `matched_skills` | `JSONB` | NOT NULL | Overlapping skill tokens |
-| `missing_skills` | `JSONB` | NOT NULL | Categorized gap list (Critical vs Secondary) |
-| `analysis_json` | `JSONB` | NOT NULL | Qualitative domain & project relevance analysis |
+| `id` | `UUID` / `TEXT` | NOT NULL | PRIMARY KEY, Default: `gen_random_uuid()` |
+| `user_id` | `UUID` / `TEXT` | NOT NULL | FK ➔ `users(id)` ON DELETE CASCADE, Index |
+| `resume_id` | `UUID` / `TEXT` | NOT NULL | FK ➔ `resumes(id)` ON DELETE CASCADE, Index |
+| `jd_id` | `UUID` / `TEXT` | NOT NULL | FK ➔ `job_descriptions(id)` ON DELETE CASCADE, Index |
+| `match_score` | `INTEGER` | NOT NULL | 0–100 deterministic weighted match score |
+| `score_breakdown` | `JSONB` | NOT NULL | Must-have (50%), Nice-to-have (20%), Experience (20%), Domain (10%) |
+| `matched_skills` | `JSONB` | NOT NULL | Array of overlapping skill names (case-preserved) |
+| `missing_skills` | `JSONB` | NOT NULL | Array of `{ skill, importance: "HIGH"|"MEDIUM"|"LOW", category }` |
+| `analysis_json` | `JSONB` | NOT NULL | Qualitative narrative: experienceMatch, projectRelevance, strengths, weaknesses, recommendations |
+| `provider_used` | `VARCHAR(50)` | NOT NULL | AI Provider (`OLLAMA`, `GROQ`, `MOCK`, `FALLBACK`) |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL | Default: `NOW()` |
+| `updated_at` | `TIMESTAMPTZ` | NOT NULL | Default: `NOW()` |
 
-*Unique Constraint:* `UNIQUE(resume_id, jd_id)` to prevent duplicate match records.
+*Unique Constraint:* `UNIQUE(resume_id, jd_id)` to prevent duplicate match records.  
+*Indexes:* `@@index([user_id, created_at])`, `@@index([resume_id])`, `@@index([jd_id])`.
 
 ---
 
@@ -192,10 +197,14 @@ CREATE TABLE question_sets (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     resume_id UUID REFERENCES resumes(id) ON DELETE SET NULL,
     jd_id UUID REFERENCES job_descriptions(id) ON DELETE SET NULL,
+    match_id UUID REFERENCES job_matches(id) ON DELETE SET NULL,
     title VARCHAR(200) NOT NULL,
     topic_focus VARCHAR(100) NOT NULL,
-    difficulty question_difficulty_enum NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    difficulty question_difficulty_enum NOT NULL DEFAULT 'MEDIUM',
+    total_count INTEGER NOT NULL DEFAULT 0,
+    provider_used VARCHAR(50) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Table: questions
@@ -210,6 +219,14 @@ CREATE TABLE questions (
     key_evaluation_points JSONB NOT NULL DEFAULT '[]',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX question_sets_user_id_created_at_idx ON question_sets(user_id, created_at);
+CREATE INDEX question_sets_resume_id_idx ON question_sets(resume_id);
+CREATE INDEX question_sets_jd_id_idx ON question_sets(jd_id);
+CREATE INDEX question_sets_match_id_idx ON question_sets(match_id);
+CREATE INDEX questions_question_set_id_idx ON questions(question_set_id);
+CREATE INDEX questions_targeted_skill_idx ON questions(targeted_skill);
+CREATE INDEX questions_category_idx ON questions(category);
 ```
 
 ---
@@ -219,15 +236,21 @@ Stores model answers and complexity metrics (1-to-1 with `questions`).
 
 | Column Name | PostgreSQL Data Type | Modifiers | Constraints & Descriptions |
 | :--- | :--- | :--- | :--- |
-| `id` | `UUID` | NOT NULL | PRIMARY KEY, Default: `gen_random_uuid()` |
-| `question_id` | `UUID` | NOT NULL | UNIQUE, FK ➔ `questions(id)` ON DELETE CASCADE |
+| `id` | `UUID` / `TEXT` | NOT NULL | PRIMARY KEY, Default: `gen_random_uuid()` |
+| `question_id` | `UUID` / `TEXT` | NOT NULL | UNIQUE, FK ➔ `questions(id)` ON DELETE CASCADE |
 | `short_summary` | `TEXT` | NOT NULL | 2–3 sentence executive summary |
-| `detailed_explanation`| `TEXT`| NOT NULL | Comprehensive technical deep dive |
-| `code_snippet` | `TEXT` | NULLABLE | Implementation code |
-| `time_complexity` | `VARCHAR(50)` | NULLABLE | e.g. "O(N log N)" |
-| `space_complexity`| `VARCHAR(50)` | NULLABLE | e.g. "O(1)" |
-| `common_mistakes` | `JSONB` | NOT NULL | Default: `'[]'`, anti-patterns to avoid |
+| `detailed_explanation`| `TEXT`| NOT NULL | Comprehensive technical deep dive (or STAR structure) |
+| `code_snippet` | `TEXT` | NULLABLE | Implementation code or query snippet (null for behavioral) |
+| `time_complexity` | `VARCHAR(50)` | NULLABLE | e.g. "O(log N)" or "O(N)" (null for behavioral) |
+| `space_complexity`| `VARCHAR(50)` | NULLABLE | e.g. "O(1)" or "O(N)" (null for behavioral) |
+| `common_mistakes` | `JSONB` | NOT NULL | Default: `'[]'`, anti-patterns/pitfalls to avoid |
+| `style` | `VARCHAR(30)` | NOT NULL | Default: `'INTERVIEW'` (`CONCISE`, `DETAILED`, `INTERVIEW`) |
+| `provider_used`| `VARCHAR(50)` | NOT NULL | AI Provider (`OLLAMA`, `GROQ`, `MOCK`, `FALLBACK`) |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL | Default: `NOW()` |
+| `updated_at` | `TIMESTAMPTZ` | NOT NULL | Default: `NOW()` |
+
+*Unique Constraint:* `UNIQUE(question_id)`.  
+*Cascade Rule:* `ON DELETE CASCADE` via `questions(id)`.
 
 ---
 
@@ -241,8 +264,11 @@ CREATE TABLE saved_collections (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(150) NOT NULL,
     description VARCHAR(255),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX idx_saved_collections_user_created ON saved_collections(user_id, created_at DESC);
 
 -- Table: collection_items
 CREATE TABLE collection_items (

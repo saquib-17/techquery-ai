@@ -19,6 +19,8 @@ import {
   deterministicParseResume,
   deterministicAtsAudit,
 } from "./resume-intelligence.fallback.js";
+import { usageService } from "../usage/usage.service.js";
+import { activityService } from "../dashboard/activity.service.js";
 
 // Public sanitized resume projection that NEVER leaks storagePath or internal server details
 export interface PublicResume {
@@ -63,6 +65,9 @@ export class ResumeService {
     fileBuffer: Buffer,
     originalName: string
   ): Promise<PublicResume> {
+    // 0. Quota check (Free tier: max 3 resumes, Pro tier: max 10)
+    await usageService.assertWithinQuota(userId, "resumes");
+
     // 1. Sanitize original filename (remove directory components, control characters)
     const sanitizedOriginalName = path.basename(originalName).trim();
     if (!sanitizedOriginalName) {
@@ -102,6 +107,11 @@ export class ResumeService {
       if (onboarding && onboarding.onboardingStep === "RESUME") {
         await this.candidateRepo.updateOnboarding(userId, { onboardingStep: "SKILLS" });
       }
+
+      await activityService.logActivity(userId, "RESUME_UPLOADED", {
+        resumeId: resumeRecord.id,
+        fileName: sanitizedOriginalName,
+      });
     } catch (dbErr) {
       // Rollback physical file on DB failure
       await this.storage.delete(storedFileName).catch(() => { });
