@@ -499,4 +499,19 @@ model Answer {
 
   @@map("answers")
 }
+
+model UserActivity {
+  id           String       @id @default(uuid()) @db.Uuid
+  userId       String       @map("user_id") @db.Uuid
+  activityType ActivityType @map("activity_type")
+  activityDate DateTime     @map("activity_date") @db.Date
+  metadata     Json         @default("{}")
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, activityDate(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("user_activities")
+}
 ```

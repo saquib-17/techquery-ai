@@ -743,16 +743,99 @@ All protected endpoints require a Bearer token in the `Authorization` header:
 
 ## 8. Dashboard & Usage Management (`/api/v1/dashboard`, `/api/v1/usage`)
 
-### 8.1 Get Dashboard Metrics
+### 8.1 Get Dashboard Summary & Preparation Streaks
 - **Method / Route:** `GET /api/v1/dashboard/summary`
-- **Auth Required:** Yes
-- **Response (200 OK):** Real database stats: questions generated, resumes parsed, active streak days.
+- **Auth Required:** Yes (Bearer JWT)
+- **Security:** Strict tenant isolation; all metrics, streak analysis, and activity events are scoped to `req.user.userId`.
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "metrics": {
+        "resumesCount": 2,
+        "jobDescriptionsCount": 3,
+        "jobMatchesCount": 2,
+        "averageMatchScore": 81.5,
+        "questionSetsCount": 4,
+        "questionsCount": 20,
+        "answersCount": 12,
+        "collectionsCount": 2,
+        "bookmarkedQuestionsCount": 6
+      },
+      "streak": {
+        "currentStreak": 3,
+        "longestStreak": 5,
+        "totalActiveDays": 8,
+        "lastActiveDate": "2026-11-24",
+        "activityMatrix": [
+          { "date": "2026-11-24", "count": 6 },
+          { "date": "2026-11-23", "count": 4 },
+          { "date": "2026-11-22", "count": 2 }
+        ]
+      },
+      "recentActivities": [
+        {
+          "id": "uuid",
+          "userId": "uuid",
+          "activityType": "QUESTIONS_GENERATED",
+          "activityDate": "2026-11-24T00:00:00.000Z",
+          "metadata": { "topicFocus": "Distributed Systems", "difficulty": "HARD" },
+          "createdAt": "2026-11-24T16:30:00.000Z"
+        }
+      ],
+      "usage": {
+        "tier": "FREE",
+        "quotas": {
+          "resumes": { "used": 2, "limit": 3, "remaining": 1, "isUnlimited": false },
+          "jobDescriptions": { "used": 3, "limit": 5, "remaining": 2, "isUnlimited": false },
+          "questionSetsMonthly": { "used": 2, "limit": 5, "remaining": 3, "isUnlimited": false },
+          "answersMonthly": { "used": 8, "limit": 20, "remaining": 12, "isUnlimited": false }
+        }
+      }
+    }
+  }
+  ```
 
-### 8.2 Demo Pro Tier Toggle
+### 8.2 Get Usage Quotas
+- **Method / Route:** `GET /api/v1/usage/quotas`
+- **Auth Required:** Yes (Bearer JWT)
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "tier": "FREE",
+      "quotas": {
+        "resumes": { "used": 2, "limit": 3, "remaining": 1, "isUnlimited": false },
+        "jobDescriptions": { "used": 3, "limit": 5, "remaining": 2, "isUnlimited": false },
+        "questionSetsMonthly": { "used": 2, "limit": 5, "remaining": 3, "isUnlimited": false },
+        "answersMonthly": { "used": 8, "limit": 20, "remaining": 12, "isUnlimited": false }
+      }
+    }
+  }
+  ```
+
+### 8.3 Demo Pro Tier Toggle
 - **Method / Route:** `PATCH /api/v1/usage/tier`
-- **Auth Required:** Yes
-- **Request Body:** `{ "tier": "PRO" }`
-- **Response (200 OK):** `{ "success": true, "tier": "PRO" }`
+- **Auth Required:** Yes (Bearer JWT)
+- **Request Body:** `{ "tier": "PRO" }` (or `"FREE"`)
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "tier": "PRO",
+      "message": "Tier updated to PRO successfully",
+      "quotas": {
+        "resumes": { "used": 2, "limit": 10, "remaining": 8, "isUnlimited": false },
+        "jobDescriptions": { "used": 3, "limit": 50, "remaining": 47, "isUnlimited": false },
+        "questionSetsMonthly": { "used": 2, "limit": 50, "remaining": 48, "isUnlimited": false },
+        "answersMonthly": { "used": 8, "limit": null, "remaining": null, "isUnlimited": true }
+      }
+    }
+  }
+  ```
 
 ---
 
