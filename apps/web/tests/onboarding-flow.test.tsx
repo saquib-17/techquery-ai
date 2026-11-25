@@ -7,6 +7,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { AuthProvider } from "@/features/auth/auth.context";
 import { OnboardingGuard } from "@/app/guards";
 import { OnboardingPage } from "@/features/onboarding/pages/OnboardingPage";
+import { ProfilePage } from "@/features/onboarding/pages/ProfilePage";
 import { ProfileSettingsDialog } from "@/features/onboarding/components/ProfileSettingsDialog";
 import * as authApi from "@/features/auth/auth.api";
 import * as candidateApi from "@/features/onboarding/candidate.api";
@@ -333,6 +334,87 @@ describe("Candidate Onboarding Wizard, OnboardingGuard & Profile Editor (Phase F
         })
       );
       expect(onClose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("4. ProfilePage renders identity summary, completeness bar, and saves edited fields via PATCH /profile", async () => {
+    vi.mocked(candidateApi.getProfileApi).mockResolvedValue({
+      id: "prof-1",
+      userId: "user-1",
+      fullName: "Saquib Ansari",
+      phoneNumber: null,
+      location: "Bengaluru, India",
+      headline: "Backend Engineer",
+      summary: "Core Skills: TypeScript, Node.js",
+      currentRole: "SDE-1",
+      yearsOfExperience: 2,
+      highestEducation: "MCA",
+      university: "NIT",
+      graduationYear: 2026,
+      linkedinUrl: null,
+      githubUrl: null,
+      portfolioUrl: null,
+      createdAt: "2026-11-25T00:00:00Z",
+      updatedAt: "2026-11-25T00:00:00Z",
+    });
+
+    vi.mocked(candidateApi.updateProfileApi).mockResolvedValue({
+      id: "prof-1",
+      userId: "user-1",
+      fullName: "Saquib Ansari",
+      phoneNumber: null,
+      location: "Hyderabad, India",
+      headline: "Backend Engineer",
+      summary: "Core Skills: TypeScript, Node.js",
+      currentRole: "Staff Backend Engineer",
+      yearsOfExperience: 2,
+      highestEducation: "MCA",
+      university: "NIT",
+      graduationYear: 2026,
+      linkedinUrl: null,
+      githubUrl: null,
+      portfolioUrl: null,
+      createdAt: "2026-11-25T00:00:00Z",
+      updatedAt: "2026-11-25T00:00:00Z",
+    });
+
+    render(
+      createTestWrapper(
+        ["/profile"],
+        <Routes>
+          <Route path="/profile" element={<ProfilePage />} />
+        </Routes>
+      )
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Profile Completeness")).toBeInTheDocument();
+      expect(screen.getByText("78%")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Sign Out All Devices/i })).toBeInTheDocument();
+      expect(screen.getAllByText("SDE-1").length).toBeGreaterThanOrEqual(1);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Edit Profile/i }));
+    expect(screen.getByText("Editing Mode")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Target Role"), {
+      target: { value: "Staff Backend Engineer" },
+    });
+    fireEvent.change(screen.getByLabelText("Location"), {
+      target: { value: "Hyderabad, India" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Save Profile Changes/i }));
+
+    await waitFor(() => {
+      expect(candidateApi.updateProfileApi).toHaveBeenCalledWith(
+        expect.objectContaining({
+          currentRole: "Staff Backend Engineer",
+          location: "Hyderabad, India",
+        })
+      );
+      expect(screen.getByRole("button", { name: /Edit Profile/i })).toBeInTheDocument();
+      expect(screen.getAllByText("Staff Backend Engineer").length).toBeGreaterThanOrEqual(1);
     });
   });
 });

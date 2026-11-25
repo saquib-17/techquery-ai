@@ -13,17 +13,25 @@ export function MetricKpiGrid({ metrics }: MetricKpiGridProps) {
       ? Math.min(100, Math.round((metrics.answersCount / metrics.questionsCount) * 100))
       : 0;
 
-  const avgScoreDisplay =
-    metrics.averageMatchScore !== null ? `${metrics.averageMatchScore}%` : "—";
+  const avgScore = metrics.averageMatchScore;
+  const avgScoreDisplay = avgScore !== null ? `${avgScore}%` : "—";
+  const ringPct = avgScore !== null ? Math.max(0, Math.min(100, avgScore)) : 0;
+  const ringRadius = 17;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const ringStrokeDashoffset =
+    ringCircumference - (ringPct / 100) * ringCircumference;
+  const ringColor =
+    avgScore !== null && avgScore >= 75 ? "#0F766E" : "#D97706";
 
   const cards = [
     {
       label: "Average Match Score",
       value: avgScoreDisplay,
       subtext: `${metrics.jobMatchesCount} ${metrics.jobMatchesCount === 1 ? "evaluation" : "evaluations"}`,
-      badgeText: metrics.averageMatchScore !== null && metrics.averageMatchScore >= 75 ? "Strong Fit" : "Skill Alignment",
-      badgeVariant: (metrics.averageMatchScore !== null && metrics.averageMatchScore >= 75 ? "emerald" : "amber") as "emerald" | "amber",
+      badgeText: avgScore !== null && avgScore >= 75 ? "Strong Fit" : "Skill Alignment",
+      badgeVariant: (avgScore !== null && avgScore >= 75 ? "emerald" : "amber") as "emerald" | "amber",
       icon: Target,
+      hasRing: true,
     },
     {
       label: "Questions Generated",
@@ -32,6 +40,7 @@ export function MetricKpiGrid({ metrics }: MetricKpiGridProps) {
       badgeText: "5 Categories",
       badgeVariant: "neutral" as const,
       icon: Sparkles,
+      hasRing: false,
     },
     {
       label: "Model Answers Ready",
@@ -40,6 +49,7 @@ export function MetricKpiGrid({ metrics }: MetricKpiGridProps) {
       badgeText: "STAR & Big-O",
       badgeVariant: "emerald" as const,
       icon: BookOpenCheck,
+      hasRing: false,
     },
     {
       label: "Saved Library",
@@ -48,6 +58,7 @@ export function MetricKpiGrid({ metrics }: MetricKpiGridProps) {
       badgeText: "PDF Ready",
       badgeVariant: "mono" as const,
       icon: Bookmark,
+      hasRing: false,
     },
   ];
 
@@ -64,10 +75,42 @@ export function MetricKpiGrid({ metrics }: MetricKpiGridProps) {
                   <Icon className="h-3.5 w-3.5" />
                 </div>
               </div>
-              <div className="mt-3 flex items-baseline justify-between gap-2">
-                <span className="text-2xl font-bold font-mono tracking-tight text-ink tabular-nums">
-                  {item.value}
-                </span>
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  {item.hasRing && (
+                    <svg
+                      width="44"
+                      height="44"
+                      viewBox="0 0 44 44"
+                      className="shrink-0 -rotate-90"
+                      aria-label="Average match score ring"
+                    >
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r={ringRadius}
+                        fill="none"
+                        stroke="#E4E4E7"
+                        strokeWidth="4"
+                      />
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r={ringRadius}
+                        fill="none"
+                        stroke={ringColor}
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeDasharray={ringCircumference}
+                        strokeDashoffset={ringStrokeDashoffset}
+                        className="transition-all duration-500 ease-out"
+                      />
+                    </svg>
+                  )}
+                  <span className="text-2xl font-bold font-mono tracking-tight text-ink tabular-nums">
+                    {item.value}
+                  </span>
+                </div>
                 <Badge variant={item.badgeVariant}>{item.badgeText}</Badge>
               </div>
               <p className="mt-2 text-xs text-ink-subtle tabular-nums">{item.subtext}</p>

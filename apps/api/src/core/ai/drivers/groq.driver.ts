@@ -1,6 +1,7 @@
 import { config } from "../../config/index.js";
 import { logger } from "../../logger/index.js";
 import { ServiceUnavailableError } from "../../errors/AppError.js";
+import { JsonSanitizer } from "../json-sanitizer.js";
 import type { AIGatewayProvider, CompletionOptions, AIProviderId } from "../ai.types.js";
 
 export class GroqDriver implements AIGatewayProvider {
@@ -35,8 +36,8 @@ export class GroqDriver implements AIGatewayProvider {
         model: config.GROQ_MODEL,
         messages,
         temperature: options?.temperature ?? 0.1,
-        max_tokens: options?.maxTokens ?? 2048,
-        response_format: options?.jsonMode !== false ? { type: "json_object" } : undefined,
+        max_tokens: options?.maxTokens ?? 4096,
+        ...(options?.jsonMode !== false ? { response_format: { type: "json_object" } } : {}),
       };
 
       const response = await fetch(this.endpoint, {
@@ -66,10 +67,14 @@ export class GroqDriver implements AIGatewayProvider {
       }
 
       const data = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
+        choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
       };
 
-      return data.choices?.[0]?.message?.content || "{}";
+      const rawContent = data.choices?.[0]?.message?.content || "{}";
+      if (options?.jsonMode !== false) {
+        return JsonSanitizer.extractJson(rawContent);
+      }
+      return rawContent.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
     } catch (err: any) {
       if (err.name === "AbortError") {
         throw new ServiceUnavailableError(

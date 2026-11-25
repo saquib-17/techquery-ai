@@ -198,7 +198,7 @@ describe("Question & Model Answer Studio (Phase F7)", () => {
       ).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Coding" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Coding \(1\)$/i }));
 
     expect(
       screen.getByText(/Implement a thread-safe Token Bucket rate limiter/i),
@@ -207,7 +207,7 @@ describe("Question & Model Answer Studio (Phase F7)", () => {
       screen.queryByText(/Tell me about a production outage you resolved/i),
     ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Behavioral" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Behavioral \(1\)$/i }));
 
     expect(
       screen.getByText(/Tell me about a production outage you resolved/i),

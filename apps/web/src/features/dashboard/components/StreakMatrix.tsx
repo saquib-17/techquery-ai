@@ -72,12 +72,8 @@ export function StreakMatrix({ streak }: StreakMatrixProps) {
               30-day activity matrix across resumes, matching, questions, and exports.
             </CardDescription>
           </div>
-          <Badge
-            variant={streak.currentStreak > 0 ? "amber" : "neutral"}
-            className="px-2.5 py-1 text-xs"
-          >
-            <Flame className="h-3.5 w-3.5" />
-            <span>{streak.currentStreak}d Current Streak</span>
+          <Badge variant="neutral" className="px-2.5 py-1 text-xs">
+            Last 30 Days
           </Badge>
         </div>
       </CardHeader>

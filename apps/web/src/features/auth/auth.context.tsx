@@ -57,6 +57,57 @@ function decodeJwtClaims(token: string): {
   }
 }
 
+interface RestoredSession {
+  accessToken: string;
+  user: AuthUser;
+}
+
+// Module-level single-flight lock prevents React 19 <StrictMode> double-mounts
+// from firing two concurrent POST /auth/refresh requests (which triggers
+// refresh token rotation reuse detection and revokes the session).
+let inFlightRestorePromise: Promise<RestoredSession> | null = null;
+
+function restoreSessionSingleFlight(): Promise<RestoredSession> {
+  if (inFlightRestorePromise) {
+    return inFlightRestorePromise;
+  }
+
+  inFlightRestorePromise = (async () => {
+    const { accessToken: refreshedToken } = await refreshApi();
+    setAccessToken(refreshedToken);
+    const claims = decodeJwtClaims(refreshedToken);
+
+    let restoredName = "Candidate";
+    try {
+      const profileRes = await api.get<{
+        success: boolean;
+        data: { profile?: { fullName?: string } };
+      }>("/profile");
+      if (profileRes.data?.data?.profile?.fullName) {
+        restoredName = profileRes.data.data.profile.fullName;
+      }
+    } catch {
+      // Profile may not be created yet (pre-onboarding); fallback safely
+    }
+
+    return {
+      accessToken: refreshedToken,
+      user: {
+        id: claims.userId ?? "",
+        name: restoredName,
+        email: "",
+        role: claims.role ?? "CANDIDATE",
+        tier: claims.tier ?? "FREE",
+        isVerified: true,
+      },
+    };
+  })().finally(() => {
+    inFlightRestorePromise = null;
+  });
+
+  return inFlightRestorePromise;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<AuthUser | null>(null);
   const [accessToken, setTokenState] = React.useState<string | null>(null);
@@ -73,35 +124,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function restoreSession() {
       try {
-        const { accessToken: refreshedToken } = await refreshApi();
+        const restored = await restoreSessionSingleFlight();
         if (cancelled) return;
 
-        applyAccessToken(refreshedToken);
-        const claims = decodeJwtClaims(refreshedToken);
-
-        let restoredName = "Candidate";
-        try {
-          const profileRes = await api.get<{
-            success: boolean;
-            data: { profile?: { fullName?: string } };
-          }>("/profile");
-          if (profileRes.data?.data?.profile?.fullName) {
-            restoredName = profileRes.data.data.profile.fullName;
-          }
-        } catch {
-          // Profile may not be created yet (pre-onboarding); fallback safely
-        }
-
-        if (!cancelled) {
-          setUser({
-            id: claims.userId ?? "",
-            name: restoredName,
-            email: "",
-            role: claims.role ?? "CANDIDATE",
-            tier: claims.tier ?? "FREE",
-            isVerified: true,
-          });
-        }
+        applyAccessToken(restored.accessToken);
+        setUser(restored.user);
       } catch {
         if (!cancelled) {
           applyAccessToken(null);
@@ -114,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    restoreSession();
+    void restoreSession();
     return () => {
       cancelled = true;
     };

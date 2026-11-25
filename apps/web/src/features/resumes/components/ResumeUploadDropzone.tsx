@@ -12,9 +12,13 @@ const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 export interface ResumeUploadDropzoneProps {
   onUploaded?: (resumeId: string) => void;
+  compact?: boolean;
 }
 
-export function ResumeUploadDropzone({ onUploaded }: ResumeUploadDropzoneProps) {
+export function ResumeUploadDropzone({
+  onUploaded,
+  compact = false,
+}: ResumeUploadDropzoneProps) {
   const inputRef = React.useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const [uploadError, setUploadError] = React.useState<{
@@ -99,7 +103,10 @@ export function ResumeUploadDropzone({ onUploaded }: ResumeUploadDropzoneProps) 
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         className={cn(
-          "flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-5 text-center transition-colors cursor-pointer",
+          "rounded-xl border-2 border-dashed transition-colors cursor-pointer",
+          compact
+            ? "flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3"
+            : "flex flex-col items-center justify-center p-5 text-center",
           isDragging
             ? "border-primary bg-primary-soft/60"
             : "border-border-strong bg-surface hover:border-primary/50 hover:bg-surface-muted/40"
@@ -115,10 +122,29 @@ export function ResumeUploadDropzone({ onUploaded }: ResumeUploadDropzoneProps) 
         />
 
         {uploadMutation.isPending ? (
-          <div className="py-2 flex flex-col items-center gap-2 text-primary">
-            <Spinner size="md" />
+          <div className="py-1 flex items-center gap-2 text-primary">
+            <Spinner size="sm" />
             <p className="text-xs font-medium text-ink">Extracting &amp; validating document...</p>
           </div>
+        ) : compact ? (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary border border-primary/20">
+                <UploadCloud className="h-4 w-4" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-semibold text-ink">
+                  Upload another resume (PDF or DOCX up to 5MB)
+                </p>
+                <p className="text-[11px] text-ink-subtle">
+                  Drop a file here or click to browse
+                </p>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-md border border-border bg-canvas px-2.5 py-1 text-xs font-medium text-ink">
+              Choose File
+            </span>
+          </>
         ) : (
           <>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary border border-primary/20">

@@ -69,7 +69,7 @@ export function ResumePortfolioSidebar({
           </h3>
         </div>
 
-        <ul className="space-y-2">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {resumes.map((resume) => {
             const isSelected = resume.id === selectedId;
             const uploadedDate = new Date(resume.createdAt).toLocaleDateString("en-US", {

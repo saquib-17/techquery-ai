@@ -214,4 +214,71 @@ describe("Matching Calculator & Schemas Unit Tests", () => {
       expect(prompt).toContain("85/100");
     });
   });
+
+  describe("Phrase-level JD requirement token matching", () => {
+    it("credits atomic resume skills inside phrase-level JD requirements without false substring positives", () => {
+      const resume: Resume = {
+        id: "res-phrase-1",
+        userId: "user-123",
+        originalFileName: "cv.pdf",
+        storedFileName: "cv.pdf",
+        mimeType: "application/pdf",
+        fileExtension: "pdf",
+        fileSize: 1024,
+        storagePath: "/tmp/cv.pdf",
+        extractedText: "Full-stack engineer experienced with Node.js, React, TypeScript, and PostgreSQL.",
+        parsedData: {
+          skills: {
+            technical: ["Node.js", "React", "TypeScript", "PostgreSQL"],
+            tools: ["Git"],
+            soft: [],
+          },
+        },
+        processingStatus: "PROCESSED",
+        isPrimary: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const jd: JobDescription = {
+        id: "jd-phrase-1",
+        userId: "user-123",
+        title: "Full-Stack Engineer",
+        company: "Acme",
+        rawText: "Full-stack development with Node.js, Express.js, React, and TypeScript.",
+        structuredJson: {
+          roleTitle: "Full-Stack Engineer",
+          seniority: "MID",
+          experienceYears: { min: 2, max: 5 },
+          mustHaveSkills: [
+            "Full-stack development with Node.js, Express.js, React, and TypeScript",
+            "Relational database experience with PostgreSQL or MySQL",
+          ],
+          niceToHaveSkills: ["Systems programming in Go"],
+          responsibilities: ["Ship web features"],
+          techStackCategories: {
+            languages: ["TypeScript"],
+            frameworks: ["React"],
+            databases: ["PostgreSQL"],
+            cloudAndDevops: [],
+            toolsAndOther: ["Git"],
+          },
+        },
+        providerUsed: "MOCK",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const result = calculateDeterministicMatch(resume, jd, 3);
+      expect(result.scoreBreakdown.mustHaveSkillsScore).toBe(100);
+      expect(result.matchedSkills).toContain(
+        "Full-stack development with Node.js, Express.js, React, and TypeScript"
+      );
+      expect(result.matchedSkills).toContain(
+        "Relational database experience with PostgreSQL or MySQL"
+      );
+      // "Go" should NOT match "PostgreSQL" or other words
+      expect(result.missingSkills.some((m) => m.skill === "Systems programming in Go")).toBe(true);
+    });
+  });
 });

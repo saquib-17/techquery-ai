@@ -8,6 +8,7 @@ import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage";
 import { OnboardingPage } from "@/features/onboarding/pages/OnboardingPage";
+import { ProfilePage } from "@/features/onboarding/pages/ProfilePage";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { ResumesPage } from "@/features/resumes/pages/ResumesPage";
 import { JobDescriptionsPage } from "@/features/job-descriptions/pages/JobDescriptionsPage";
@@ -56,6 +57,7 @@ export function App() {
                   <Route path="/matches" element={<MatchesPage />} />
                   <Route path="/questions" element={<QuestionsPage />} />
                   <Route path="/library" element={<LibraryPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/usage" element={<UsagePage />} />
                   </Route>
                 </Route>

@@ -9,6 +9,7 @@ import {
   Sparkles,
   Bookmark,
   Gauge,
+  UserCircle,
   Menu,
   X,
   Flame,
@@ -20,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/auth.context";
 import { useToast } from "@/components/ui/toast";
 import { useProfileQuery } from "@/features/onboarding/useCandidateProfile";
-import { ProfileSettingsDialog } from "@/features/onboarding/components/ProfileSettingsDialog";
 import { useDashboardSummaryQuery } from "@/features/dashboard/useDashboardSummary";
 
 export interface NavItem {
@@ -53,7 +53,10 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: "Account",
-    items: [{ label: "Quotas & Plan", to: "/usage", icon: Gauge }],
+    items: [
+      { label: "Candidate Profile", to: "/profile", icon: UserCircle },
+      { label: "Quotas & Plan", to: "/usage", icon: Gauge },
+    ],
   },
 ];
 
@@ -64,6 +67,7 @@ const ROUTE_TITLES: Record<string, string> = {
   "/matches": "Match Studio",
   "/questions": "Question Studio",
   "/library": "Saved Library",
+  "/profile": "Candidate Profile",
   "/usage": "Quotas & Plan",
 };
 
@@ -81,7 +85,6 @@ export function AppLayout({
   candidateTier,
 }: AppLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const [profileModalOpen, setProfileModalOpen] = React.useState(false);
   const [isSigningOut, setIsSigningOut] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -144,7 +147,7 @@ export function AppLayout({
               TechQuery AI
             </span>
             <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-subtle">
-              V1 Workbench
+              INTERVIEW STUDIO
             </span>
           </div>
         </div>
@@ -215,8 +218,8 @@ export function AppLayout({
       <div className="border-t border-border p-3 space-y-2">
         <button
           type="button"
-          onClick={() => setProfileModalOpen(true)}
-          aria-label="Edit candidate profile"
+          onClick={() => navigate("/profile")}
+          aria-label="Open candidate profile"
           className="w-full text-left flex items-center justify-between gap-2 rounded-lg border border-border bg-surface p-2.5 hover:border-border-strong hover:bg-surface-muted/40 transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2.5 min-w-0">
@@ -315,11 +318,6 @@ export function AppLayout({
           <Outlet />
         </main>
       </div>
-
-      <ProfileSettingsDialog
-        open={profileModalOpen}
-        onClose={() => setProfileModalOpen(false)}
-      />
     </div>
   );
 }

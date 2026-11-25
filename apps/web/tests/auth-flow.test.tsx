@@ -1,8 +1,9 @@
+import { StrictMode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ToastProvider } from "@/components/ui/toast";
-import { AuthProvider } from "@/features/auth/auth.context";
+import { AuthProvider, useAuth } from "@/features/auth/auth.context";
 import { PublicRoute, ProtectedRoute } from "@/app/guards";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { RegisterPage } from "@/features/auth/pages/RegisterPage";
@@ -260,5 +261,52 @@ describe("Authentication Pages & Route Guards (Phase F2)", () => {
     await waitFor(() => {
       expect(screen.getByText("Protected Dashboard")).toBeInTheDocument();
     });
+  });
+
+  it("5. deduplicates POST /auth/refresh under React.StrictMode and restores session on reload", async () => {
+    const payloadB64 = btoa(
+      JSON.stringify({ sub: "user-strict-1", role: "CANDIDATE", tier: "PRO" })
+    );
+    vi.mocked(authApi.refreshApi).mockResolvedValue({
+      accessToken: `header.${payloadB64}.sig`,
+    });
+
+    function SessionProbe() {
+      const { isAuthenticated, user } = useAuth();
+      return (
+        <div>
+          <span>{isAuthenticated ? "AUTH_OK" : "AUTH_NONE"}</span>
+          <span>{user?.id}</span>
+          <span>{user?.tier}</span>
+        </div>
+      );
+    }
+
+    render(
+      <StrictMode>
+        <ToastProvider>
+          <AuthProvider>
+            <MemoryRouter initialEntries={["/dashboard"]}>
+              <Routes>
+                <Route element={<PublicRoute />}>
+                  <Route path="/login" element={<div>Login Screen</div>} />
+                </Route>
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/dashboard" element={<SessionProbe />} />
+                </Route>
+              </Routes>
+            </MemoryRouter>
+          </AuthProvider>
+        </ToastProvider>
+      </StrictMode>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("AUTH_OK")).toBeInTheDocument();
+      expect(screen.getByText("user-strict-1")).toBeInTheDocument();
+      expect(screen.getByText("PRO")).toBeInTheDocument();
+    });
+
+    expect(authApi.refreshApi).toHaveBeenCalledTimes(1);
   });
 });

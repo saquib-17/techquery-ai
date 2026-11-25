@@ -173,6 +173,12 @@ export function LibraryPage() {
             <Button
               type="button"
               variant="outline"
+              disabled={activeCollection.items.length === 0}
+              title={
+                activeCollection.items.length === 0
+                  ? "Add at least one question to export a PDF"
+                  : undefined
+              }
               isLoading={isExportingPdf}
               onClick={() => void handleExportPdf()}
             >
@@ -193,11 +199,14 @@ export function LibraryPage() {
         </div>
       </div>
 
-      {/* Main Workbench */}
+      {/* Main Full-Width Workbench */}
       {collectionsQuery.isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <Skeleton className="h-72 rounded-xl lg:col-span-4" />
-          <Skeleton className="h-96 rounded-xl lg:col-span-8" />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Skeleton className="h-24 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
+          </div>
+          <Skeleton className="h-96 rounded-xl" />
         </div>
       ) : collections.length === 0 ? (
         <EmptyState
@@ -211,16 +220,16 @@ export function LibraryPage() {
           }}
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column (4 cols): Saved Collections */}
-          <div className="lg:col-span-4 space-y-3">
-            <div className="flex items-center justify-between px-1">
+        <div className="space-y-5">
+          {/* Top Saved Collections Bar */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between px-0.5">
               <span className="text-xs font-semibold uppercase tracking-wider text-ink-subtle">
                 Collections ({collections.length})
               </span>
             </div>
 
-            <ul className="space-y-2.5">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {collections.map((col) => {
                 const selected = col.id === selectedCollectionId;
                 return (
@@ -279,7 +288,8 @@ export function LibraryPage() {
 
                     <div className="mt-2.5 flex items-center justify-between">
                       <Badge variant="mono" className="text-[10px]">
-                        {col.itemCount} questions
+                        {col.itemCount}{" "}
+                        {col.itemCount === 1 ? "question" : "questions"}
                       </Badge>
                     </div>
                   </li>
@@ -288,8 +298,8 @@ export function LibraryPage() {
             </ul>
           </div>
 
-          {/* Right Column (8 cols): Collection Items */}
-          <div className="lg:col-span-8 space-y-4">
+          {/* Full-Width Bookmarked Questions List */}
+          <div className="space-y-4">
             {detailQuery.isLoading ? (
               <div className="space-y-4">
                 <Skeleton className="h-40 rounded-xl" />

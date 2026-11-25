@@ -1,15 +1,22 @@
+import * as React from "react";
 import { Link } from "react-router-dom";
 import {
   Building2,
   GitCompare,
   Sparkles,
   CheckCircle2,
+  PlusCircle,
   Layers,
   ListChecks,
+  FileText,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useJobDescriptionDetailQuery } from "@/features/job-descriptions/useJobDescriptions";
 import type { JobDescriptionItem } from "@/features/job-descriptions/jd.api";
 
 export interface JdDetailPanelProps {
@@ -24,6 +31,10 @@ function formatExperienceRange(min: number, max: number | null): string {
 }
 
 export function JdDetailPanel({ jd }: JdDetailPanelProps) {
+  const [showRawText, setShowRawText] = React.useState(false);
+  const needsRawFetch = showRawText && !jd.rawText?.trim();
+  const detailQuery = useJobDescriptionDetailQuery(jd.id, needsRawFetch);
+  const resolvedRawText = jd.rawText?.trim() || detailQuery.data?.rawText?.trim() || "";
   const parsed = jd.structuredJson;
   const techBuckets = [
     { label: "Languages", items: parsed.techStackCategories.languages },
@@ -77,35 +88,42 @@ export function JdDetailPanel({ jd }: JdDetailPanelProps) {
 
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-border pt-5">
           {/* Must-Have Skills */}
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-subtle">
               Must-Have Skills ({parsed.mustHaveSkills.length})
             </h4>
-            <div className="flex flex-wrap gap-1.5">
+            <ul className="space-y-1.5">
               {parsed.mustHaveSkills.map((skill) => (
-                <Badge key={skill} variant="emerald">
-                  <CheckCircle2 className="h-3 w-3" />
-                  {skill}
-                </Badge>
+                <li
+                  key={skill}
+                  className="flex items-start gap-2 rounded-lg border border-border bg-canvas px-3 py-2 text-[13.5px] leading-snug text-ink"
+                >
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+                  <span>{skill}</span>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
 
           {/* Nice-to-Have Skills */}
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-subtle">
               Nice-to-Have Skills ({parsed.niceToHaveSkills.length})
             </h4>
             {parsed.niceToHaveSkills.length === 0 ? (
               <p className="text-xs text-ink-subtle">None specified</p>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
+              <ul className="space-y-1.5">
                 {parsed.niceToHaveSkills.map((skill) => (
-                  <Badge key={skill} variant="neutral">
-                    {skill}
-                  </Badge>
+                  <li
+                    key={skill}
+                    className="flex items-start gap-2 rounded-lg border border-border bg-canvas px-3 py-2 text-[13.5px] leading-snug text-ink-muted"
+                  >
+                    <PlusCircle className="h-4 w-4 shrink-0 text-ink-subtle mt-0.5" />
+                    <span>{skill}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
         </CardContent>
@@ -156,6 +174,39 @@ export function JdDetailPanel({ jd }: JdDetailPanelProps) {
               </li>
             ))}
           </ul>
+        </CardContent>
+      </Card>
+
+      {/* Original Job Posting Collapsible */}
+      <Card>
+        <CardContent className="p-4">
+          <button
+            type="button"
+            onClick={() => setShowRawText((prev) => !prev)}
+            className="flex w-full items-center justify-between text-xs font-semibold text-ink hover:text-primary transition-colors cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-ink-subtle" />
+              {showRawText ? "Hide Original Job Posting" : "Show Original Job Posting"}
+            </span>
+            {showRawText ? (
+              <ChevronUp className="h-4 w-4 text-ink-subtle" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-ink-subtle" />
+            )}
+          </button>
+
+          {showRawText && (
+            <div className="mt-3 max-h-72 overflow-y-auto rounded-lg border border-border bg-canvas p-4 font-mono text-xs leading-relaxed text-ink-muted whitespace-pre-wrap">
+              {detailQuery.isLoading ? (
+                <Skeleton className="h-24 w-full rounded-md" />
+              ) : resolvedRawText ? (
+                resolvedRawText
+              ) : (
+                "No raw posting text recorded for this entry."
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

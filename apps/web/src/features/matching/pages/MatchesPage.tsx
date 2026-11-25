@@ -4,16 +4,7 @@ import { GitCompare, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Dialog,
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
@@ -144,10 +135,8 @@ export function MatchesPage() {
       {isLoadingPrerequisites ? (
         <div className="space-y-5">
           <Skeleton className="h-24 w-full rounded-xl" />
-          <div className="grid gap-6 lg:grid-cols-12">
-            <Skeleton className="h-72 rounded-xl lg:col-span-4" />
-            <Skeleton className="h-96 rounded-xl lg:col-span-8" />
-          </div>
+          <Skeleton className="h-14 w-full rounded-xl" />
+          <Skeleton className="h-96 w-full rounded-xl" />
         </div>
       ) : resumes.length === 0 || jobDescriptions.length === 0 ? (
         <EmptyState
@@ -186,89 +175,71 @@ export function MatchesPage() {
               description="Select a resume and target job description above, then click Evaluate Compatibility to generate your first skill gap matrix."
             />
           ) : (
-            <div className="grid gap-6 lg:grid-cols-12">
-              {/* Left Column: Match History */}
-              <div className="lg:col-span-4">
-                <Card className="border-zinc-200 bg-white">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">
-                        Match History
-                      </CardTitle>
-                      <Badge variant="neutral" className="font-mono">
-                        {matches.length}
-                      </Badge>
-                    </div>
-                    <CardDescription>
-                      Select a saved evaluation to inspect its skill gap matrix.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {matches.map((item) => {
-                      const isSelected = activeMatch?.id === item.id;
-                      const scoreVariant =
-                        item.matchScore >= 75
-                          ? "emerald"
-                          : item.matchScore >= 50
-                            ? "amber"
-                            : "danger";
-                      return (
-                        <div
-                          key={item.id}
-                          className={cn(
-                            "group flex items-start justify-between gap-2 rounded-lg border p-3 transition-colors",
-                            isSelected
-                              ? "border-teal-700 bg-teal-50/40"
-                              : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50/70",
-                          )}
+            <div className="space-y-5">
+              {/* Compact Horizontal Saved Evaluations Strip */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-0.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                    Saved Evaluations ({matches.length})
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {matches.map((item) => {
+                    const isSelected = activeMatch?.id === item.id;
+                    const scoreVariant =
+                      item.matchScore >= 75
+                        ? "emerald"
+                        : item.matchScore >= 50
+                          ? "amber"
+                          : "danger";
+                    return (
+                      <div
+                        key={item.id}
+                        className={cn(
+                          "group inline-flex items-center gap-2 rounded-xl border px-3 py-2 transition-colors",
+                          isSelected
+                            ? "border-teal-700 bg-teal-50/60"
+                            : "border-zinc-200 bg-white hover:border-zinc-300",
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMatchId(item.id)}
+                          className="inline-flex items-center gap-2 text-left cursor-pointer"
                         >
-                          <button
-                            type="button"
-                            onClick={() => setSelectedMatchId(item.id)}
-                            className="min-w-0 flex-1 text-left"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="truncate text-sm font-medium text-zinc-900">
-                                {item.jobDescription?.title ?? "Target Role"}
-                              </p>
-                              <Badge
-                                variant={scoreVariant}
-                                className="shrink-0 font-mono"
-                              >
-                                {item.matchScore}%
-                              </Badge>
-                            </div>
-                            <p className="mt-1 truncate font-mono text-xs text-zinc-500">
-                              {item.resume?.originalFileName ?? "Resume"}
-                            </p>
-                          </button>
-
-                          <button
-                            type="button"
-                            aria-label={`Delete match for ${
-                              item.jobDescription?.title ?? "Target Role"
-                            }`}
-                            onClick={() => setMatchToDelete(item)}
-                            className="mt-0.5 rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 focus:opacity-100"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
+                          <span className="text-xs font-semibold text-zinc-900">
+                            {item.jobDescription?.title ?? "Target Role"}
+                          </span>
+                          <span className="hidden sm:inline font-mono text-[11px] text-zinc-500">
+                            • {item.resume?.originalFileName ?? "Resume"}
+                          </span>
+                          <Badge variant={scoreVariant} className="font-mono text-[11px]">
+                            {item.matchScore}%
+                          </Badge>
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Delete match for ${
+                            item.jobDescription?.title ?? "Target Role"
+                          }`}
+                          onClick={() => setMatchToDelete(item)}
+                          className="rounded p-1 text-zinc-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Right Column: Active Skill Gap Matrix */}
-              <div className="lg:col-span-8">
-                {activeMatch ? (
-                  <SkillGapMatrixCard
-                    match={activeMatch}
-                    onRequestDelete={(m) => setMatchToDelete(m)}
-                  />
-                ) : null}
-              </div>
+              {/* Full-Width Skill Gap Matrix */}
+              {activeMatch ? (
+                <SkillGapMatrixCard
+                  match={activeMatch}
+                  onRequestDelete={(m) => setMatchToDelete(m)}
+                />
+              ) : null}
             </div>
           )}
         </>

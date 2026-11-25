@@ -14,6 +14,9 @@ export class JsonSanitizer {
 
     let text = raw.trim();
 
+    // 0. Strip <think>...</think> reasoning blocks emitted by reasoning models
+    text = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+
     // 1. Remove markdown code blocks if present (```json ... ``` or ``` ... ```)
     const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
     if (codeBlockMatch && codeBlockMatch[1]) {

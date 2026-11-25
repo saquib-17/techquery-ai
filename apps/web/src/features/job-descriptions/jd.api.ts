@@ -51,6 +51,15 @@ export async function getJobDescriptionsApi(): Promise<JobDescriptionItem[]> {
   return res.data.data.jobDescriptions;
 }
 
+export async function getJobDescriptionByIdApi(
+  id: string
+): Promise<JobDescriptionItem> {
+  const res = await api.get<ApiEnvelope<{ jobDescription: JobDescriptionItem }>>(
+    `/job-descriptions/${id}`
+  );
+  return res.data.data.jobDescription;
+}
+
 export async function createJobDescriptionApi(
   payload: CreateJdPayload
 ): Promise<JobDescriptionItem> {

@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowRight,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Lightbulb,
   Sparkles,
   Trash2,
@@ -70,11 +73,15 @@ export function SkillGapMatrixCard({
   match,
   onRequestDelete,
 }: SkillGapMatrixCardProps) {
+  const [showAllGaps, setShowAllGaps] = useState(false);
   const tier = getScoreTier(match.matchScore);
   const breakdown = match.scoreBreakdown;
   const analysis = match.analysisJson;
   const matchedSkills = match.matchedSkills ?? [];
   const missingSkills = match.missingSkills ?? [];
+  const visibleMissingSkills = showAllGaps
+    ? missingSkills
+    : missingSkills.slice(0, 6);
 
   const breakdownRows = breakdown
     ? [
@@ -214,66 +221,68 @@ export function SkillGapMatrixCard({
         </CardContent>
       </Card>
 
-      {/* Two-Column Skill Gap Matrix */}
-      <div className="grid gap-5 md:grid-cols-2">
-        <Card className="border-zinc-200 bg-white">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <CheckCircle2 className="h-4 w-4 text-teal-700" />
-                Matched Skills
-              </CardTitle>
-              <Badge variant="emerald" className="font-mono">
-                {matchedSkills.length}
-              </Badge>
+      {/* Full-Width Matched Skills Card */}
+      <Card className="w-full border-zinc-200 bg-white">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CheckCircle2 className="h-4 w-4 text-[#0F766E]" />
+              Matched Skills
+            </CardTitle>
+            <Badge variant="emerald" className="font-mono">
+              {matchedSkills.length}
+            </Badge>
+          </div>
+          <CardDescription>
+            Verified skills present in both your resume and the JD.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {matchedSkills.length === 0 ? (
+            <p className="text-sm text-zinc-500">
+              No overlapping skills were detected automatically.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {matchedSkills.map((skill) => (
+                <span
+                  key={skill}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[#99F6E4] bg-[#F0FDFA] px-2.5 py-1 text-xs font-medium text-[#0F766E]"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                  <span>{skill}</span>
+                </span>
+              ))}
             </div>
-            <CardDescription>
-              Verified skills present in both your resume and the JD.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {matchedSkills.length === 0 ? (
-              <p className="text-sm text-zinc-500">
-                No overlapping skills were detected automatically.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {matchedSkills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="inline-flex items-center rounded-md border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-800"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card className="border-zinc-200 bg-white">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                Missing &amp; Gap Skills
-              </CardTitle>
-              <Badge variant="amber" className="font-mono">
-                {missingSkills.length}
-              </Badge>
-            </div>
-            <CardDescription>
-              Prioritized gaps to address in your resume or interview prep.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {missingSkills.length === 0 ? (
-              <p className="text-sm text-teal-700">
-                No critical skill gaps detected for this role.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {missingSkills.map((item) => (
+      {/* Full-Width 2-Column Missing & Gap Skills Card */}
+      <Card className="w-full border-zinc-200 bg-white">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              Missing &amp; Gap Skills
+            </CardTitle>
+            <Badge variant="amber" className="font-mono">
+              {missingSkills.length}
+            </Badge>
+          </div>
+          <CardDescription>
+            Prioritized gaps to address in your resume or interview prep.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {missingSkills.length === 0 ? (
+            <p className="text-sm text-teal-700">
+              No critical skill gaps detected for this role.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {visibleMissingSkills.map((item) => (
                   <div
                     key={`${item.skill}-${item.category}`}
                     className="flex items-center justify-between gap-2 rounded-lg border border-amber-200/70 bg-amber-50/40 px-3 py-2"
@@ -290,10 +299,32 @@ export function SkillGapMatrixCard({
                   </div>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+
+              {missingSkills.length > 6 && (
+                <div className="border-t border-zinc-100 pt-3 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllGaps((prev) => !prev)}
+                    className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-[#0F766E] hover:bg-[#F0FDFA] transition-colors cursor-pointer"
+                  >
+                    {showAllGaps ? (
+                      <>
+                        <span>Show top 6</span>
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Show all ({missingSkills.length} gaps)</span>
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* AI Tailoring & Qualitative Analysis */}
       {analysis ? (
@@ -358,7 +389,7 @@ export function SkillGapMatrixCard({
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Actionable Next Steps
                 </h4>
-                <ul className="mt-2 space-y-2 text-sm text-zinc-800">
+                <ul className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2.5 text-sm text-zinc-800">
                   {analysis.recommendations.map((rec) => (
                     <li
                       key={rec}

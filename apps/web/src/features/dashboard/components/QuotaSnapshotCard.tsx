@@ -27,7 +27,7 @@ export function QuotaSnapshotCard({ usage }: QuotaSnapshotCardProps) {
           </Badge>
         </div>
         <CardDescription>
-          Live PostgreSQL allowance tracking (₹0 local-first).
+          Track your monthly AI generation &amp; storage limits.
         </CardDescription>
       </CardHeader>
 
@@ -51,9 +51,8 @@ export function QuotaSnapshotCard({ usage }: QuotaSnapshotCardProps) {
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-surface-muted border border-border/60">
                   <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      isNearLimit ? "bg-amber" : "bg-primary"
-                    }`}
+                    className={`h-full rounded-full transition-all duration-300 ${isNearLimit ? "bg-amber" : "bg-primary"
+                      }`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>

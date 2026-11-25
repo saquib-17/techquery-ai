@@ -203,6 +203,11 @@ describe("Job Descriptions & Match Studio (Phase F6)", () => {
         screen.getByRole("link", { name: /Generate Questions/i }),
       ).toHaveAttribute("href", "/questions?jdId=jd-1");
     });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Show Original Job Posting/i }),
+    );
+    expect(screen.getByText(SAMPLE_JD_RAW_TEXT)).toBeInTheDocument();
   });
 
   it("2. displays quota upgrade prompt when JD creation hits 429 QUOTA_EXCEEDED", async () => {

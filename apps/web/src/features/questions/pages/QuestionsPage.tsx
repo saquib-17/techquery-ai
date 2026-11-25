@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   Download,
   Plus,
+  Search,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { ApiClientError } from "@/lib/api";
@@ -56,6 +58,7 @@ export function QuestionsPage() {
   const [selectedSetId, setSelectedSetId] = React.useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] =
     React.useState<CategoryFilter>("ALL");
+  const [searchQuery, setSearchQuery] = React.useState("");
   const [generatorOpen, setGeneratorOpen] =
     React.useState<boolean>(hasHandoffParams);
   const [deleteTarget, setDeleteTarget] =
@@ -80,11 +83,38 @@ export function QuestionsPage() {
   const detailQuery = useQuestionSetDetailQuery(selectedSetId);
   const activeSet = detailQuery.data ?? null;
 
+  const categoryCounts = React.useMemo(() => {
+    const items = activeSet?.questions ?? [];
+    const counts: Record<CategoryFilter, number> = {
+      ALL: items.length,
+      THEORETICAL: 0,
+      CODING: 0,
+      SYSTEM_DESIGN: 0,
+      BEHAVIORAL: 0,
+      PROJECT_DEFENSE: 0,
+    };
+    for (const q of items) {
+      if (q.category in counts) {
+        counts[q.category]++;
+      }
+    }
+    return counts;
+  }, [activeSet]);
+
   const filteredQuestions = React.useMemo(() => {
     const items = activeSet?.questions ?? [];
-    if (categoryFilter === "ALL") return items;
-    return items.filter((q) => q.category === categoryFilter);
-  }, [activeSet, categoryFilter]);
+    const byCategory =
+      categoryFilter === "ALL"
+        ? items
+        : items.filter((q) => q.category === categoryFilter);
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return byCategory;
+    return byCategory.filter(
+      (item) =>
+        item.questionText.toLowerCase().includes(q) ||
+        item.targetedSkill.toLowerCase().includes(q),
+    );
+  }, [activeSet, categoryFilter, searchQuery]);
 
   const activeDrawerQuestion: QuestionItem | null = React.useMemo(() => {
     if (!drawerQuestionId || !activeSet) return null;
@@ -172,11 +202,14 @@ export function QuestionsPage() {
         </div>
       </div>
 
-      {/* Main Workbench */}
+      {/* Main Full-Width Workbench */}
       {setsQuery.isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <Skeleton className="h-72 rounded-xl lg:col-span-4" />
-          <Skeleton className="h-96 rounded-xl lg:col-span-8" />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Skeleton className="h-24 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
+          </div>
+          <Skeleton className="h-96 rounded-xl" />
         </div>
       ) : questionSets.length === 0 ? (
         <EmptyState
@@ -187,16 +220,16 @@ export function QuestionsPage() {
           onAction={() => setGeneratorOpen(true)}
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column (4 cols): Saved Question Sets */}
-          <div className="lg:col-span-4 space-y-3">
-            <div className="flex items-center justify-between px-1">
+        <div className="space-y-5">
+          {/* Top Saved Question Sets Bar */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between px-0.5">
               <span className="text-xs font-semibold uppercase tracking-wider text-ink-subtle">
                 Saved Question Sets ({questionSets.length})
               </span>
             </div>
 
-            <ul className="space-y-2.5">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {questionSets.map((setItem) => {
                 const selected = setItem.id === selectedSetId;
                 return (
@@ -205,6 +238,7 @@ export function QuestionsPage() {
                     onClick={() => {
                       setSelectedSetId(setItem.id);
                       setCategoryFilter("ALL");
+                      setSearchQuery("");
                     }}
                     className={cn(
                       "rounded-xl border p-4 transition-colors cursor-pointer",
@@ -254,24 +288,37 @@ export function QuestionsPage() {
             </ul>
           </div>
 
-          {/* Right Column (8 cols): Category Filter & Question Cards */}
-          <div className="lg:col-span-8 space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              {FILTER_PILLS.map((pill) => (
-                <button
-                  key={pill.value}
-                  type="button"
-                  onClick={() => setCategoryFilter(pill.value)}
-                  className={cn(
-                    "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer",
-                    categoryFilter === pill.value
-                      ? "border-primary bg-primary-soft text-primary"
-                      : "border-border bg-surface text-ink-muted hover:border-border-strong hover:text-ink",
-                  )}
-                >
-                  {pill.label}
-                </button>
-              ))}
+          {/* Filter & Search Toolbar + Full-Width Question Cards */}
+          <div className="space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {FILTER_PILLS.map((pill) => (
+                  <button
+                    key={pill.value}
+                    type="button"
+                    onClick={() => setCategoryFilter(pill.value)}
+                    className={cn(
+                      "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer",
+                      categoryFilter === pill.value
+                        ? "border-primary bg-primary-soft text-primary"
+                        : "border-border bg-surface text-ink-muted hover:border-border-strong hover:text-ink",
+                    )}
+                  >
+                    {pill.label} ({categoryCounts[pill.value]})
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative w-full lg:w-64 shrink-0">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-subtle" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter questions or skills..."
+                  aria-label="Filter questions"
+                  className="h-8 pl-8 text-xs"
+                />
+              </div>
             </div>
 
             {detailQuery.isLoading ? (

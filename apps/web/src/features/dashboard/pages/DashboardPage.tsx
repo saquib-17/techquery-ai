@@ -6,7 +6,7 @@ import {
   AlertCircle,
   RefreshCw,
   ArrowRight,
-  Compass,
+  CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "@/features/auth/auth.context";
 import { useProfileQuery } from "@/features/onboarding/useCandidateProfile";
@@ -51,61 +51,62 @@ function DashboardSkeleton() {
   );
 }
 
-function getRecommendedNextStep(metrics: DashboardMetrics): {
-  stepBadge: string;
+interface ReadinessStage {
+  step: number;
   title: string;
-  description: string;
-  ctaLabel: string;
+  subtitle: string;
+  done: boolean;
   to: string;
-} {
-  if (metrics.resumesCount === 0) {
-    return {
-      stepBadge: "Step 01 / 04",
-      title: "Upload your primary resume",
-      description:
-        "Start by uploading a PDF or DOCX resume to unlock automated ATS diagnostics and skill extraction.",
-      ctaLabel: "Upload Resume",
+}
+
+function getReadinessStages(metrics: DashboardMetrics): ReadinessStage[] {
+  const matchSubtitle =
+    metrics.jobMatchesCount > 0 && metrics.averageMatchScore !== null
+      ? `${metrics.averageMatchScore}% score across ${metrics.jobMatchesCount} ${metrics.jobMatchesCount === 1 ? "match" : "matches"}`
+      : "Compare your resume against a JD";
+
+  const practiceDone = metrics.questionsCount > 0 && metrics.answersCount > 0;
+  const practiceSubtitle =
+    metrics.questionsCount > 0
+      ? `${metrics.answersCount}/${metrics.questionsCount} answered`
+      : "Generate & rehearse target questions";
+
+  return [
+    {
+      step: 1,
+      title: "Resume Uploaded",
+      subtitle:
+        metrics.resumesCount > 0
+          ? `${metrics.resumesCount} ${metrics.resumesCount === 1 ? "resume" : "resumes"} on file`
+          : "Upload PDF or DOCX for ATS audit",
+      done: metrics.resumesCount > 0,
       to: "/resumes",
-    };
-  }
-  if (metrics.jobDescriptionsCount === 0) {
-    return {
-      stepBadge: "Step 02 / 04",
-      title: "Decompose a target job description",
-      description:
-        "Paste a real job posting to extract must-have vs. nice-to-have skills and seniority expectations.",
-      ctaLabel: "Analyze JD",
+    },
+    {
+      step: 2,
+      title: "Target JD Analyzed",
+      subtitle:
+        metrics.jobDescriptionsCount > 0
+          ? `${metrics.jobDescriptionsCount} ${metrics.jobDescriptionsCount === 1 ? "posting" : "postings"} decomposed`
+          : "Extract must-have & nice-to-have skills",
+      done: metrics.jobDescriptionsCount > 0,
       to: "/job-descriptions",
-    };
-  }
-  if (metrics.jobMatchesCount === 0) {
-    return {
-      stepBadge: "Step 03 / 04",
-      title: "Run Resume-to-JD Skill-Gap Match",
-      description:
-        "Compute your weighted alignment score and surface missing skills before generating interview questions.",
-      ctaLabel: "Open Match Studio",
+    },
+    {
+      step: 3,
+      title: "Resume-JD Match Run",
+      subtitle: matchSubtitle,
+      done: metrics.jobMatchesCount > 0,
       to: "/matches",
-    };
-  }
-  if (metrics.questionSetsCount === 0) {
-    return {
-      stepBadge: "Step 04 / 04",
-      title: "Generate tailored interview questions",
-      description:
-        "Synthesize calibrated questions across coding, system design, and behavioral categories.",
-      ctaLabel: "Generate Questions",
+    },
+    {
+      step: 4,
+      title: "Question Set & Answers",
+      subtitle: practiceSubtitle,
+      done: practiceDone,
       to: "/questions",
-    };
-  }
-  return {
-    stepBadge: "Ready for Review",
-    title: "Curate & export your study sheet",
-    description:
-      "Bookmark your highest-priority questions into a collection and export a clean PDF prep packet.",
-    ctaLabel: "Open Saved Library",
-    to: "/library",
-  };
+    },
+  ];
 }
 
 export function DashboardPage() {
@@ -144,7 +145,8 @@ export function DashboardPage() {
     );
   }
 
-  const nextStep = getRecommendedNextStep(data.metrics);
+  const stages = getReadinessStages(data.metrics);
+  const completedStagesCount = stages.filter((s) => s.done).length;
 
   return (
     <div className="space-y-6">
@@ -194,35 +196,55 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 3: 8-col ActivityFeed + 4-col Recommended Next Step */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Row 3: 8-col ActivityFeed + 4-col Interview Readiness Checklist */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-8">
           <ActivityFeed activities={data.recentActivities} />
         </div>
         <div className="lg:col-span-4">
-          <Card className="h-full flex flex-col justify-between bg-surface-muted/40">
-            <CardHeader>
+          <Card className="border-border bg-surface">
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-primary border border-primary/20">
-                  <Compass className="h-4 w-4" />
-                </div>
-                <Badge variant="mono">{nextStep.stepBadge}</Badge>
+                <CardTitle className="text-base">
+                  Interview Readiness Checklist
+                </CardTitle>
+                <Badge variant="emerald" className="font-mono text-[11px]">
+                  {completedStagesCount}/4 Done
+                </Badge>
               </div>
-              <CardTitle className="pt-2">Recommended Next Step</CardTitle>
-              <CardDescription className="text-ink font-medium pt-1">
-                {nextStep.title}
+              <CardDescription>
+                Complete each stage to calibrate your interview prep.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-ink-muted leading-relaxed">
-                {nextStep.description}
-              </p>
-              <Link to={nextStep.to} className="block">
-                <Button className="w-full justify-between">
-                  <span>{nextStep.ctaLabel}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
+            <CardContent className="divide-y divide-border pt-0">
+              {stages.map((stage) => (
+                <Link
+                  key={stage.step}
+                  to={stage.to}
+                  className="group flex items-center justify-between gap-3 py-3 first:pt-2 last:pb-1 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {stage.done ? (
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary border border-primary/20">
+                        <CheckCircle2 className="h-4 w-4" />
+                      </div>
+                    ) : (
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-mono font-semibold text-ink-muted border border-border">
+                        {stage.step}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-ink truncate group-hover:text-primary transition-colors">
+                        {stage.title}
+                      </p>
+                      <p className="text-xs text-ink-muted truncate">
+                        {stage.subtitle}
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-ink-subtle group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                </Link>
+              ))}
             </CardContent>
           </Card>
         </div>

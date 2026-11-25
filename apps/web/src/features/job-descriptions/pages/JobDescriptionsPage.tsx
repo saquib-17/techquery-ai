@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Briefcase, Plus, Trash2, Building2 } from "lucide-react";
+import { Briefcase, Plus, Trash2, Building2, Search } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
   useJobDescriptionsQuery,
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 
@@ -21,8 +22,19 @@ export function JobDescriptionsPage() {
   const { toast } = useToast();
 
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = React.useState("");
   const [createOpen, setCreateOpen] = React.useState(false);
   const [deleteTarget, setDeleteTarget] = React.useState<JobDescriptionItem | null>(null);
+
+  const filteredJobDescriptions = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return jobDescriptions;
+    return jobDescriptions.filter((jd) => {
+      const role = (jd.structuredJson?.roleTitle || jd.title || "").toLowerCase();
+      const company = (jd.company || "").toLowerCase();
+      return role.includes(q) || company.includes(q);
+    });
+  }, [jobDescriptions, searchQuery]);
 
   React.useEffect(() => {
     if (jobDescriptions.length === 0) {
@@ -57,7 +69,7 @@ export function JobDescriptionsPage() {
             Job Description Intelligence
           </h2>
           <p className="mt-1 text-sm text-ink-muted">
-            Decompose target job postings into must-have skills, seniority bands, and key responsibilities.
+            Paste any job posting to extract required skills, tech stack, and role expectations.
           </p>
         </div>
 
@@ -68,12 +80,12 @@ export function JobDescriptionsPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-4 space-y-2.5">
-            <Skeleton className="h-24 w-full rounded-xl" />
-            <Skeleton className="h-24 w-full rounded-xl" />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
           </div>
-          <Skeleton className="lg:col-span-8 h-80 w-full rounded-xl" />
+          <Skeleton className="h-80 w-full rounded-xl" />
         </div>
       ) : jobDescriptions.length === 0 ? (
         <EmptyState
@@ -84,14 +96,29 @@ export function JobDescriptionsPage() {
           onAction={() => setCreateOpen(true)}
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column (4 cols): Saved JDs */}
-          <div className="lg:col-span-4 space-y-2.5">
-            <h3 className="px-1 text-xs font-semibold uppercase tracking-wider text-ink-subtle">
-              Saved Postings ({jobDescriptions.length})
-            </h3>
-            <ul className="space-y-2">
-              {jobDescriptions.map((jd) => {
+        <div className="space-y-5">
+          {/* Top Compact Saved Job Postings Selector Bar */}
+          <div className="space-y-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-0.5">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-subtle">
+                Saved Postings ({jobDescriptions.length})
+              </h3>
+              {jobDescriptions.length > 2 && (
+                <div className="relative w-full sm:w-64">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-subtle" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Filter by role or company..."
+                    aria-label="Filter saved postings"
+                    className="h-8 pl-8 text-xs"
+                  />
+                </div>
+              )}
+            </div>
+
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {filteredJobDescriptions.map((jd) => {
                 const isSelected = jd.id === selectedJd?.id;
                 return (
                   <li
@@ -130,7 +157,7 @@ export function JobDescriptionsPage() {
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                    <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                    <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                       <Badge variant="emerald" className="text-[10px]">
                         {jd.structuredJson?.seniority || "MID"}
                       </Badge>
@@ -144,8 +171,8 @@ export function JobDescriptionsPage() {
             </ul>
           </div>
 
-          {/* Right Column (8 cols): Structured JD Detail */}
-          <div className="lg:col-span-8">
+          {/* Full-Width Structured JD Detail */}
+          <div>
             {selectedJd && <JdDetailPanel jd={selectedJd} />}
           </div>
         </div>

@@ -72,10 +72,22 @@ export function normalizeSkill(skill: string): string {
   return SKILL_ALIASES[clean] || clean;
 }
 
+function matchesTokenBoundary(haystackLower: string, needleLower: string): boolean {
+  if (needleLower.length < 2) return false;
+  const escaped = needleLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const boundaryRegex = new RegExp(`(?<![a-z0-9])${escaped}(?![a-z0-9])`, "i");
+  return boundaryRegex.test(haystackLower);
+}
+
 /**
- * Checks whether candidate skill set contains the target skill (by exact or normalized match or substring).
+ * Checks whether candidate skill set contains the target skill (by exact, normalized, alias,
+ * phrase-token boundary match, or whole-token match in extracted resume text).
  */
-export function skillSetHas(candidateSkillTokens: Set<string>, fullResumeTextLower: string, targetSkill: string): boolean {
+export function skillSetHas(
+  candidateSkillTokens: Set<string>,
+  fullResumeTextLower: string,
+  targetSkill: string
+): boolean {
   const normalizedTarget = normalizeSkill(targetSkill);
   if (candidateSkillTokens.has(normalizedTarget)) return true;
 
@@ -86,10 +98,21 @@ export function skillSetHas(candidateSkillTokens: Set<string>, fullResumeTextLow
     }
   }
 
-  // Fallback: check whole-word boundary in raw extracted resume text
-  const escaped = normalizedTarget.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const wordBoundaryRegex = new RegExp(`\\b${escaped}\\b`, "i");
-  return wordBoundaryRegex.test(fullResumeTextLower);
+  // Check if any candidate skill (or its aliases) appears as a distinct token inside a phrase-level JD requirement
+  const targetLower = targetSkill.toLowerCase();
+  for (const candidateToken of candidateSkillTokens) {
+    if (matchesTokenBoundary(targetLower, candidateToken)) {
+      return true;
+    }
+    for (const [alias, canonical] of Object.entries(SKILL_ALIASES)) {
+      if (canonical === candidateToken && matchesTokenBoundary(targetLower, alias)) {
+        return true;
+      }
+    }
+  }
+
+  // Fallback: check token boundary in raw extracted resume text
+  return matchesTokenBoundary(fullResumeTextLower, normalizedTarget);
 }
 
 /**

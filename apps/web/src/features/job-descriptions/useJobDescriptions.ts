@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashboardKeys } from "@/features/dashboard/useDashboardSummary";
 import {
   getJobDescriptionsApi,
+  getJobDescriptionByIdApi,
   createJobDescriptionApi,
   deleteJobDescriptionApi,
   type CreateJdPayload,
@@ -9,12 +10,21 @@ import {
 
 export const jdKeys = {
   all: ["jobDescriptions"] as const,
+  detail: (id: string) => ["jobDescriptions", id] as const,
 };
 
 export function useJobDescriptionsQuery() {
   return useQuery({
     queryKey: jdKeys.all,
     queryFn: getJobDescriptionsApi,
+  });
+}
+
+export function useJobDescriptionDetailQuery(id: string | null, enabled = true) {
+  return useQuery({
+    queryKey: jdKeys.detail(id ?? ""),
+    queryFn: () => getJobDescriptionByIdApi(id!),
+    enabled: Boolean(id) && enabled,
   });
 }
 

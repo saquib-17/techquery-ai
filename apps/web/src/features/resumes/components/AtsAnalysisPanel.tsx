@@ -1,14 +1,18 @@
+import * as React from "react";
 import {
   Sparkles,
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
   ArrowRight,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 import type { ResumeAnalysis } from "@/features/resumes/resumes.api";
 
 export interface AtsAnalysisPanelProps {
@@ -22,14 +26,30 @@ function getScoreBadge(score: number): {
   label: string;
   variant: "emerald" | "amber" | "danger";
   barClass: string;
+  strokeColor: string;
 } {
   if (score >= 75) {
-    return { label: "ATS Strong", variant: "emerald", barClass: "bg-primary" };
+    return {
+      label: "ATS Strong",
+      variant: "emerald",
+      barClass: "bg-primary",
+      strokeColor: "#0F766E",
+    };
   }
   if (score >= 50) {
-    return { label: "Needs Polish", variant: "amber", barClass: "bg-amber" };
+    return {
+      label: "Needs Polish",
+      variant: "amber",
+      barClass: "bg-amber",
+      strokeColor: "#D97706",
+    };
   }
-  return { label: "High Risk", variant: "danger", barClass: "bg-danger" };
+  return {
+    label: "High Risk",
+    variant: "danger",
+    barClass: "bg-danger",
+    strokeColor: "#DC2626",
+  };
 }
 
 export function AtsAnalysisPanel({
@@ -38,6 +58,27 @@ export function AtsAnalysisPanel({
   isAnalyzing,
   onRunAudit,
 }: AtsAnalysisPanelProps) {
+  const { toast } = useToast();
+  const [copiedIdx, setCopiedIdx] = React.useState<number | null>(null);
+
+  const handleCopyRewrite = async (idx: number, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIdx(idx);
+      toast({
+        variant: "success",
+        title: "Bullet rewrite copied",
+      });
+      window.setTimeout(() => setCopiedIdx(null), 2000);
+    } catch {
+      toast({
+        variant: "error",
+        title: "Copy failed",
+        description: "Clipboard access was blocked by the browser.",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -108,16 +149,52 @@ export function AtsAnalysisPanel({
         </CardHeader>
 
         <CardContent className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-          {/* Score Gauge */}
-          <div className="md:col-span-4 rounded-xl border border-border bg-surface-muted/60 p-5 text-center">
+          {/* Circular Radial Score Gauge */}
+          <div className="md:col-span-4 rounded-xl border border-border bg-surface-muted/60 p-5 flex flex-col items-center text-center">
             <span className="text-xs font-medium uppercase tracking-wider text-ink-subtle">
               Overall ATS Score
             </span>
-            <div className="mt-2 flex items-baseline justify-center gap-1">
-              <span className="text-4xl font-bold font-mono text-ink tabular-nums">
-                {analysis.atsScore}
-              </span>
-              <span className="text-sm font-mono text-ink-subtle">/ 100</span>
+            <div className="relative mt-3 flex h-[76px] w-[76px] items-center justify-center">
+              <svg
+                width="76"
+                height="76"
+                viewBox="0 0 76 76"
+                className="-rotate-90"
+                aria-label="ATS score gauge"
+              >
+                <circle
+                  cx="38"
+                  cy="38"
+                  r="31"
+                  fill="none"
+                  stroke="#E4E4E7"
+                  strokeWidth="6"
+                />
+                <circle
+                  cx="38"
+                  cy="38"
+                  r="31"
+                  fill="none"
+                  stroke={scoreMeta.strokeColor}
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 31}
+                  strokeDashoffset={
+                    2 * Math.PI * 31 -
+                    (Math.max(0, Math.min(100, analysis.atsScore)) / 100) *
+                      (2 * Math.PI * 31)
+                  }
+                  className="transition-all duration-500 ease-out"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-bold font-mono text-ink tabular-nums leading-none">
+                  {analysis.atsScore}
+                </span>
+                <span className="text-[10px] font-mono text-ink-subtle mt-0.5">
+                  / 100
+                </span>
+              </div>
             </div>
             <div className="mt-3">
               <Badge variant={scoreMeta.variant}>{scoreMeta.label}</Badge>
@@ -203,33 +280,56 @@ export function AtsAnalysisPanel({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {analysis.improvements.map((imp, idx) => (
-              <div
-                key={idx}
-                className="rounded-xl border border-amber/25 bg-amber-soft/50 p-4 space-y-2"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-11 gap-2 items-start text-xs">
-                  <div className="md:col-span-5 rounded-lg border border-border bg-surface p-2.5 text-ink-muted">
-                    <span className="block text-[10px] font-mono uppercase text-ink-subtle mb-1">
-                      Original
-                    </span>
-                    {imp.original}
+            {analysis.improvements.map((imp, idx) => {
+              const cleanSuggested = imp.suggested.replace(/\s*\([XYZ]\)/g, "");
+              const isCopied = copiedIdx === idx;
+              return (
+                <div
+                  key={idx}
+                  className="rounded-xl border border-amber/25 bg-amber-soft/50 p-4 space-y-2"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-11 gap-2 items-start text-xs">
+                    <div className="md:col-span-5 rounded-lg border border-border bg-surface p-2.5 text-ink-muted">
+                      <span className="block text-[10px] font-mono uppercase text-ink-subtle mb-1">
+                        Original
+                      </span>
+                      {imp.original}
+                    </div>
+                    <div className="hidden md:flex md:col-span-1 items-center justify-center pt-4 text-amber">
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
+                    <div className="md:col-span-5 rounded-lg border border-primary/25 bg-surface p-2.5 text-ink font-medium">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-[10px] font-mono uppercase text-primary">
+                          Suggested
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void handleCopyRewrite(idx, cleanSuggested)}
+                          className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary-soft transition-colors cursor-pointer"
+                        >
+                          {isCopied ? (
+                            <>
+                              <Check className="h-3 w-3" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3 w-3" />
+                              <span>Copy Rewrite</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      {cleanSuggested}
+                    </div>
                   </div>
-                  <div className="hidden md:flex md:col-span-1 items-center justify-center pt-4 text-amber">
-                    <ArrowRight className="h-4 w-4" />
-                  </div>
-                  <div className="md:col-span-5 rounded-lg border border-primary/25 bg-surface p-2.5 text-ink font-medium">
-                    <span className="block text-[10px] font-mono uppercase text-primary mb-1">
-                      Suggested
-                    </span>
-                    {imp.suggested}
-                  </div>
+                  <p className="text-[11px] text-ink-muted">
+                    <strong className="text-ink">Why:</strong> {imp.reason}
+                  </p>
                 </div>
-                <p className="text-[11px] text-ink-muted">
-                  <strong className="text-ink">Why:</strong> {imp.reason}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}

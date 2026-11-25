@@ -1,6 +1,8 @@
 import * as React from "react";
-import { FileText, Sparkles, Code2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { FileText, Sparkles, Code2, GitCompare } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { Button } from "@/components/ui/button";
 import {
   useResumesQuery,
   useResumeAnalysisQuery,
@@ -75,46 +77,58 @@ export function ResumesPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-ink">
-          Resumes &amp; ATS Intelligence
-        </h2>
-        <p className="mt-1 text-sm text-ink-muted">
-          Upload PDF or DOCX resumes, run deterministic + AI ATS audits, and inspect your parsed career graph.
-        </p>
-      </div>
-
-      {/* Asymmetric Split Workbench */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column (4 cols): Upload & Portfolio */}
-        <div className="lg:col-span-4 space-y-5">
-          <ResumeUploadDropzone onUploaded={(id) => setSelectedId(id)} />
-
-          {isLoadingResumes ? (
-            <div className="space-y-2.5">
-              <Skeleton className="h-24 w-full rounded-xl" />
-              <Skeleton className="h-24 w-full rounded-xl" />
-            </div>
-          ) : (
-            <ResumePortfolioSidebar
-              resumes={resumes}
-              selectedId={selectedResume?.id ?? null}
-              onSelect={(id) => setSelectedId(id)}
-            />
-          )}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-ink">
+            Resumes &amp; ATS Intelligence
+          </h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Upload your resume to get an instant ATS quality audit, section breakdown, and bullet-point rewrites.
+          </p>
         </div>
 
-        {/* Right Column (8 cols): Tabbed Workbench */}
-        <div className="lg:col-span-8">
-          {isLoadingResumes ? (
-            <Skeleton className="h-80 w-full rounded-xl" />
-          ) : !selectedResume ? (
-            <EmptyState
-              icon={<FileText className="h-6 w-6" />}
-              title="No resumes uploaded yet"
-              description="Upload your PDF or DOCX resume on the left to unlock automated ATS scoring, section critiques, and skill extraction."
-            />
-          ) : (
+        {resumes.length > 0 && (
+          <Link to="/matches" className="shrink-0">
+            <Button variant="outline" size="sm">
+              <GitCompare className="h-3.5 w-3.5" />
+              Match with Job Description
+            </Button>
+          </Link>
+        )}
+      </div>
+
+      {/* Full-Width Top Upload & Resume Switcher Bar */}
+      <div className="space-y-4">
+        <ResumeUploadDropzone
+          compact={resumes.length > 0}
+          onUploaded={(id) => setSelectedId(id)}
+        />
+
+        {isLoadingResumes ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </div>
+        ) : (
+          <ResumePortfolioSidebar
+            resumes={resumes}
+            selectedId={selectedResume?.id ?? null}
+            onSelect={(id) => setSelectedId(id)}
+          />
+        )}
+      </div>
+
+      {/* Full-Width Tabbed Workbench */}
+      <div>
+        {isLoadingResumes ? (
+          <Skeleton className="h-80 w-full rounded-xl" />
+        ) : !selectedResume ? (
+          <EmptyState
+            icon={<FileText className="h-6 w-6" />}
+            title="No resumes uploaded yet"
+            description="Upload your PDF or DOCX resume above to unlock automated ATS scoring, section critiques, and skill extraction."
+          />
+        ) : (
             <div className="space-y-4">
               {/* Tab Bar */}
               <div
@@ -173,7 +187,6 @@ export function ResumesPage() {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }
