@@ -63,6 +63,11 @@ export const envSchema = z
     GROQ_API_KEY: z.string().optional(),
     GROQ_MODEL: z.string().min(1).default("openai/gpt-oss-20b"),
     AI_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
+    JUDGE0_API_URL: z
+      .string()
+      .url("JUDGE0_API_URL must be a valid URL")
+      .default("https://ce.judge0.com"),
+    JUDGE0_API_KEY: z.string().optional(),
   })
   .transform((data) => {
     // If LOG_LEVEL is not explicitly provided, choose based on NODE_ENV

@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import type { Prisma } from "@prisma/client";
 import {
   questionRepository,
   QuestionRepository,
@@ -7,11 +9,16 @@ import {
 import { prisma } from "../../core/database/index.js";
 import { aiGateway, AIGateway } from "../../core/ai/ai.gateway.js";
 import { PromptRegistry } from "../../core/ai/prompt.registry.js";
-import { deterministicQuestionFallback } from "./question.fallback.js";
+import {
+  deterministicQuestionFallback,
+  deterministicDsaQuestionFallback,
+} from "./question.fallback.js";
 import {
   QuestionSetAIResponseSchema,
+  DsaQuestionSetAIResponseSchema,
   type GenerateQuestionSetInput,
   type QuestionSetAIResponse,
+  type DsaQuestionSetAIResponse,
   type QuestionCategory,
   type QuestionDifficulty,
 } from "./question.schemas.js";
@@ -42,6 +49,10 @@ export class QuestionService {
     // 0. Quota check (Free tier: max 5 sets/month, max 15 questions/set)
     await usageService.assertWithinQuota(userId, "questionSetsMonthly");
     await usageService.assertMaxQuestionsPerSet(userId, input.count);
+
+    if (input.generationMode === "DSA_ALGORITHMS") {
+      return this.generateDsaQuestionSet(userId, input);
+    }
 
     let resumeText: string | undefined;
     let jdTitle: string | undefined;
@@ -242,6 +253,165 @@ export class QuestionService {
       count: created.questions.length,
       topicFocus: created.topicFocus,
       difficulty: created.difficulty,
+    });
+
+    return created;
+  }
+
+  /**
+   * Generates a DSA & Algorithm Pattern question set and persists linked CodingProblem records.
+   */
+  private async generateDsaQuestionSet(
+    userId: string,
+    input: GenerateQuestionSetInput
+  ): Promise<QuestionSetWithQuestions> {
+    const dsaPattern = input.dsaPattern || "ALL_PATTERNS";
+    const preferredLanguage = input.preferredLanguage || "java";
+
+    const prompt = PromptRegistry.buildDsaQuestionGenPrompt({
+      dsaPattern,
+      preferredLanguage,
+      difficulty: input.difficulty,
+      count: input.count,
+      topicFocus: input.topicFocus,
+      title: input.title,
+    });
+
+    let aiResponse: DsaQuestionSetAIResponse;
+    let providerUsed = "FALLBACK";
+
+    try {
+      const result = await this.ai.completeStructured<DsaQuestionSetAIResponse>(
+        prompt,
+        DsaQuestionSetAIResponseSchema,
+        {
+          taskType: "QGEN",
+          userId,
+          rawInputText: `${dsaPattern} ${input.topicFocus}`,
+          fallbackFn: () =>
+            deterministicDsaQuestionFallback({
+              dsaPattern,
+              difficulty: input.difficulty,
+              count: input.count,
+              title: input.title,
+            }),
+        }
+      );
+      aiResponse = result.data;
+      providerUsed = result.providerUsed;
+    } catch (err) {
+      logger.warn(
+        { err, userId, dsaPattern },
+        "AI DSA question generation failed; applying deterministic offline fallback"
+      );
+      aiResponse = deterministicDsaQuestionFallback({
+        dsaPattern,
+        difficulty: input.difficulty,
+        count: input.count,
+        title: input.title,
+      });
+      providerUsed = "FALLBACK";
+    }
+
+    const problemsToSave = aiResponse.problems.slice(0, input.count);
+    if (problemsToSave.length < input.count) {
+      const remaining = input.count - problemsToSave.length;
+      const supplemental = deterministicDsaQuestionFallback({
+        dsaPattern,
+        difficulty: input.difficulty,
+        count: remaining,
+      });
+      problemsToSave.push(...supplemental.problems.slice(0, remaining));
+    }
+
+    const linkedQuestions: Array<{
+      category: QuestionCategory;
+      difficulty: QuestionDifficulty;
+      targetedSkill: string;
+      questionText: string;
+      interviewerIntent: string;
+      keyEvaluationPoints: string[];
+      codingProblemId: string;
+    }> = [];
+
+    for (const p of problemsToSave) {
+      const baseSlug = p.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "")
+        .slice(0, 120);
+      const slug = `${baseSlug || "dsa-problem"}-${randomUUID().slice(0, 8)}`;
+
+      const codingProblem = await prisma.codingProblem.create({
+        data: {
+          userId,
+          title: p.title,
+          slug,
+          difficulty: p.difficulty,
+          pattern: p.pattern,
+          statement: p.statement,
+          constraints: p.constraints as unknown as Prisma.InputJsonValue,
+          examples: p.examples as unknown as Prisma.InputJsonValue,
+          starterCode: p.starterCode as unknown as Prisma.InputJsonValue,
+          driverCode: (p.driverCode ?? null) as unknown as Prisma.InputJsonValue,
+          sampleTestCases: p.sampleTestCases.map((tc, idx) => ({
+            id: `sample-${idx + 1}`,
+            stdin: tc.stdin,
+            expectedOutput: tc.expectedOutput,
+            isSample: true,
+          })) as unknown as Prisma.InputJsonValue,
+          hiddenTestCases: p.hiddenTestCases.map((tc, idx) => ({
+            id: `hidden-${idx + 1}`,
+            stdin: tc.stdin,
+            expectedOutput: tc.expectedOutput,
+            isSample: false,
+          })) as unknown as Prisma.InputJsonValue,
+          hints: p.hints as unknown as Prisma.InputJsonValue,
+        },
+      });
+
+      linkedQuestions.push({
+        category: "CODING",
+        difficulty: p.difficulty as QuestionDifficulty,
+        targetedSkill: p.targetedSkill || p.pattern,
+        questionText: `${p.title}: ${p.statement}`,
+        interviewerIntent:
+          p.interviewerIntent ||
+          `Evaluates algorithmic problem-solving and edge-case handling for ${p.pattern}.`,
+        keyEvaluationPoints:
+          p.keyEvaluationPoints && p.keyEvaluationPoints.length > 0
+            ? p.keyEvaluationPoints
+            : [
+                "Optimal time and space complexity",
+                "Accurate stdin/stdout handling and edge cases",
+              ],
+        codingProblemId: codingProblem.id,
+      });
+    }
+
+    const titleToUse =
+      input.title ||
+      aiResponse.title ||
+      `DSA ${dsaPattern} (${input.difficulty}) Practice Set`;
+
+    const created = await this.repo.createQuestionSetWithQuestions({
+      userId,
+      resumeId: input.resumeId,
+      jdId: input.jdId,
+      matchId: input.matchId,
+      title: titleToUse,
+      topicFocus: dsaPattern === "ALL_PATTERNS" ? input.topicFocus : dsaPattern,
+      difficulty: input.difficulty,
+      providerUsed,
+      questions: linkedQuestions,
+    });
+
+    await activityService.logActivity(userId, "QUESTIONS_GENERATED", {
+      questionSetId: created.id,
+      count: created.questions.length,
+      topicFocus: created.topicFocus,
+      difficulty: created.difficulty,
+      generationMode: "DSA_ALGORITHMS",
     });
 
     return created;

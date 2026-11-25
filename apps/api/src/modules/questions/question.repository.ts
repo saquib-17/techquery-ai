@@ -30,6 +30,7 @@ export class QuestionRepository {
       questionText: string;
       interviewerIntent: string;
       keyEvaluationPoints: string[];
+      codingProblemId?: string | null;
     }>;
   }): Promise<QuestionSetWithQuestions> {
     return prisma.questionSet.create({
@@ -51,6 +52,7 @@ export class QuestionRepository {
             questionText: q.questionText,
             interviewerIntent: q.interviewerIntent,
             keyEvaluationPoints: q.keyEvaluationPoints as unknown as Prisma.InputJsonValue,
+            codingProblemId: q.codingProblemId || null,
           })),
         },
       },

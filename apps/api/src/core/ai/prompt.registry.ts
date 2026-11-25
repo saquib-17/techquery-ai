@@ -300,6 +300,75 @@ CRITICAL RULES:
   }
 
   /**
+   * Builds prompt for DSA & Algorithm Pattern Question Generation (QGEN in DSA_ALGORITHMS mode).
+   */
+  public static buildDsaQuestionGenPrompt(input: {
+    dsaPattern: string;
+    preferredLanguage: string;
+    difficulty: string;
+    count: number;
+    topicFocus?: string;
+    title?: string;
+  }): string {
+    return `You are a Principal Algorithms Interviewer designing executable Data Structures & Algorithms problems for a live coding arena.
+
+GENERATION PARAMETERS:
+- DSA Pattern Focus: ${input.dsaPattern}
+- Preferred Language Context: ${input.preferredLanguage} (must still provide starterCode for ALL 4 languages: java, python, cpp, javascript)
+- Target Difficulty: ${input.difficulty} (EASY, MEDIUM, HARD)
+- Total Problems Required: Generate exactly ${input.count} distinct problems.
+- Optional Topic Focus: ${input.topicFocus || "Core Algorithms"}
+
+Return a valid JSON object matching EXACTLY this JSON schema:
+{
+  "title": "string - professional title for this DSA practice set",
+  "problems": [
+    {
+      "title": "string - concise problem title",
+      "difficulty": "EASY | MEDIUM | HARD",
+      "pattern": "ARRAYS_TWO_POINTERS | SLIDING_WINDOW | BINARY_SEARCH | TREES_GRAPHS | DYNAMIC_PROGRAMMING | STACK_HEAP",
+      "statement": "string - clear, unambiguous problem statement describing inputs, outputs, and edge cases",
+      "constraints": ["string - e.g. '1 <= n <= 10^5'"],
+      "examples": [
+        { "input": "string", "output": "string", "explanation": "string" }
+      ],
+      "hints": ["string - concise algorithmic hint"],
+      "starterCode": {
+        "java": "string - LeetCode-style 'class Solution { public <RetType> <method>(...) { ... } }' (NO Scanner or main)",
+        "python": "string - LeetCode-style 'class Solution:\\n  def <method>(self, ...):'",
+        "cpp": "string - LeetCode-style 'class Solution { public: ... };'",
+        "javascript": "string - LeetCode-style 'var <method> = function(...) { ... };'"
+      },
+      "driverCode": {
+        "java": "string - harness with '{{USER_CODE}}' placeholder, 'public class Main' reading stdin, calling new Solution().<method>(...), printing stdout",
+        "python": "string - harness with '{{USER_CODE}}' placeholder reading sys.stdin, calling Solution().<method>(...), printing stdout",
+        "cpp": "string - harness with '{{USER_CODE}}' placeholder reading std::cin, calling Solution().<method>(...), printing stdout",
+        "javascript": "string - harness with '{{USER_CODE}}' placeholder reading fs.readFileSync(0, 'utf8'), calling <method>(...), printing stdout"
+      },
+      "sampleTestCases": [
+        { "stdin": "string - distinct sample 1 stdin", "expectedOutput": "string - exact stdout" },
+        { "stdin": "string - distinct sample 2 stdin", "expectedOutput": "string - exact stdout" }
+      ],
+      "hiddenTestCases": [
+        { "stdin": "string - distinct edge case 1 stdin", "expectedOutput": "string - exact stdout" },
+        { "stdin": "string - distinct edge case 2 stdin", "expectedOutput": "string - exact stdout" },
+        { "stdin": "string - distinct edge case 3 stdin", "expectedOutput": "string - exact stdout" }
+      ],
+      "targetedSkill": "string - e.g. 'Sliding Window'",
+      "interviewerIntent": "string - what algorithmic skill this evaluates",
+      "keyEvaluationPoints": ["string - checkpoint 1", "string - checkpoint 2"]
+    }
+  ]
+}
+
+CRITICAL RULES:
+1. Return ONLY the raw JSON object. No markdown fences or conversational prose.
+2. Provide exactly ${input.count} problems in "problems".
+3. Each problem MUST have at least 2 "sampleTestCases" and at least 3 "hiddenTestCases", all 5 with STRICTLY DISTINCT stdin inputs (never duplicate test cases).
+4. Every "starterCode" entry MUST use a LeetCode-style Solution signature (no main/Scanner), and every "driverCode" entry MUST include "{{USER_CODE}}" and parse stdin to invoke Solution.`;
+  }
+
+  /**
    * Builds prompt for AI Model Answer Generation (AGEN).
    */
   public static buildAnswerGenPrompt(input: {
@@ -350,14 +419,15 @@ ${resumeSection}
 ${jdSection}
 
 ANSWER FORMATTING REQUIREMENTS:
-- Style: ${input.style} (${input.style === "CONCISE" ? "Direct, punchy, bulleted executive summary" : input.style === "DETAILED" ? "In-depth technical breakdown with comprehensive architectural nuances" : "Polished, spoken conversational response suitable for a real interview dialogue"}).
+- Style: ${input.style} (${input.style === "CONCISE" ? "Keep every section crisp and scannable: 2–3 short bullet points per STAR field (max 15 words per bullet) and a 1-paragraph explanation under 90 words." : input.style === "DETAILED" ? "Deep engineering walkthrough: comprehensive bullet points covering architecture, edge cases, complexity, and security." : "Balanced spoken-interview structure: 3–4 clear bullet points per STAR field with concrete metrics and architectural tradeoffs."}).
+- Never wrap an entire field value in **...**; use clean '- ' newline-separated bullet points for multi-part sections.
 ${
   isBehavioral
     ? `- Category: ${input.category}. Structure the "detailedExplanation" explicitly into 4 distinct STAR sections:
-      **Situation**: Set the context, project scope, team dynamics, and problem.
-      **Task**: Clarify candidate's specific ownership and objective.
-      **Action**: Step-by-step engineering decisions, leadership, and technical solutions candidate executed.
-      **Result**: Quantifiable business impact, performance metrics, and post-delivery learnings.
+      Situation: Set the context, project scope, team dynamics, and problem.
+      Task: Clarify candidate's specific ownership and objective.
+      Action: Step-by-step engineering decisions, leadership, and technical solutions candidate executed (use '- ' newline-separated bullets).
+      Result: Quantifiable business impact, performance metrics, and post-delivery learnings.
       - "codeSnippet", "timeComplexity", and "spaceComplexity" MUST be set to null.`
     : `- Category: ${input.category}. Structure the "detailedExplanation" with deep technical principles, architectural trade-offs, and practical execution insights.
       - "codeSnippet" should contain clean, idiomatic code, SQL query, or architectural pseudocode demonstrating the solution.
@@ -380,8 +450,9 @@ Return a valid JSON object matching EXACTLY this JSON schema:
 
 CRITICAL RULES:
 1. Return ONLY the raw JSON object. Do not include markdown code fences, comments, or preamble.
-2. For BEHAVIORAL or PROJECT_DEFENSE questions, codeSnippet, timeComplexity, and spaceComplexity must strictly be null.
-3. Align directly with the candidate's actual projects or target role if provided.
-4. Ensure detailedExplanation is substantive, thorough, and ready for immediate interview preparation.`;
+2. Never wrap an entire field value in **...**; use clean '- ' newline-separated bullet points for multi-part sections.
+3. For BEHAVIORAL or PROJECT_DEFENSE questions, codeSnippet, timeComplexity, and spaceComplexity must strictly be null.
+4. Align directly with the candidate's actual projects or target role if provided.
+5. Ensure detailedExplanation is substantive, appropriately sized for ${input.style}, and ready for immediate interview preparation.`;
   }
 }

@@ -17,6 +17,9 @@ import { answerRoutes } from "./modules/answers/answer.routes.js";
 import { collectionRoutes } from "./modules/collections/collection.routes.js";
 import { usageRoutes } from "./modules/usage/usage.routes.js";
 import { dashboardRoutes } from "./modules/dashboard/dashboard.routes.js";
+import { codingRoutes } from "./modules/coding/coding.routes.js";
+import { assessmentRoutes } from "./modules/assessments/assessment.routes.js";
+import { dsaSheetRoutes } from "./modules/dsa-sheet/dsaSheet.routes.js";
 
 /**
  * Express Application Factory.
@@ -99,6 +102,9 @@ export const createApp = (customRouter?: Router): Application => {
   app.use("/api/v1/collections", collectionRoutes);
   app.use("/api/v1/usage", usageRoutes);
   app.use("/api/v1/dashboard", dashboardRoutes);
+  app.use("/api/v1/coding", codingRoutes);
+  app.use("/api/v1/assessments", assessmentRoutes);
+  app.use("/api/v1/dsa-sheet", dsaSheetRoutes);
 
   // Optional custom router for testing or extensions
   if (customRouter) {

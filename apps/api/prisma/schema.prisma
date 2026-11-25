@@ -50,6 +50,38 @@ enum QuestionDifficulty {
   HARD
 }
 
+enum ProblemDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ExecutionVerdict {
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT_EXCEEDED
+  COMPILATION_ERROR
+  RUNTIME_ERROR
+}
+
+enum SessionMode {
+  UNTIMED
+  TIMED
+}
+
+enum AssessmentStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum DsaSheetStatus {
+  UNSOLVED
+  SOLVED
+  REVISION
+}
+
 model User {
   id           String         @id @default(uuid())
   email        String         @unique
@@ -71,6 +103,10 @@ model User {
   questionSets            QuestionSet[]
   collections             SavedCollection[]
   activities              UserActivity[]
+  codingProblems          CodingProblem[]
+  assessmentSessions      AssessmentSession[]
+  codingSubmissions       CodingSubmission[]
+  dsaSheetProgress        UserDsaSheetProgress[]
 
   @@map("users")
 }
@@ -267,15 +303,18 @@ model Question {
   targetedSkill       String             @map("targeted_skill") @db.VarChar(100)
   interviewerIntent   String             @map("interviewer_intent") @db.Text
   keyEvaluationPoints Json               @default("[]") @map("key_evaluation_points")
+  codingProblemId     String?            @map("coding_problem_id")
   createdAt           DateTime           @default(now()) @map("created_at")
 
   questionSet     QuestionSet      @relation(fields: [questionSetId], references: [id], onDelete: Cascade)
+  codingProblem   CodingProblem?   @relation(fields: [codingProblemId], references: [id], onDelete: SetNull)
   answer          Answer?
   collectionItems CollectionItem[]
 
   @@index([questionSetId])
   @@index([targetedSkill])
   @@index([category])
+  @@index([codingProblemId])
   @@map("questions")
 }
 
@@ -341,4 +380,112 @@ model UserActivity {
   @@index([userId, activityDate(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
   @@map("user_activities")
+}
+
+model CodingProblem {
+  id              String            @id @default(uuid())
+  userId          String?           @map("user_id")
+  title           String            @db.VarChar(200)
+  slug            String            @unique @db.VarChar(220)
+  difficulty      ProblemDifficulty
+  pattern         String            @db.VarChar(60)
+  statement       String            @db.Text
+  constraints     Json              @default("[]")
+  examples        Json              @default("[]")
+  starterCode     Json              @map("starter_code")
+  driverCode      Json?             @map("driver_code")
+  sampleTestCases Json              @default("[]") @map("sample_test_cases")
+  hiddenTestCases Json              @default("[]") @map("hidden_test_cases")
+  hints           Json              @default("[]")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  user               User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  questions          Question[]
+  assessmentProblems AssessmentSessionProblem[]
+  submissions        CodingSubmission[]
+
+  @@index([userId])
+  @@index([difficulty, pattern])
+  @@map("coding_problems")
+}
+
+model AssessmentSession {
+  id               String           @id @default(uuid())
+  userId           String           @map("user_id")
+  title            String           @db.VarChar(200)
+  mode             SessionMode      @default(TIMED)
+  difficultyPreset String           @default("EASY_TO_MEDIUM") @map("difficulty_preset") @db.VarChar(40)
+  status           AssessmentStatus @default(IN_PROGRESS)
+  durationMinutes  Int?             @map("duration_minutes")
+  startedAt        DateTime         @default(now()) @map("started_at")
+  expiresAt        DateTime?        @map("expires_at")
+  completedAt      DateTime?        @map("completed_at")
+  totalScore       Int              @default(0) @map("total_score")
+  draftsJson       Json             @default("{}") @map("drafts_json")
+
+  user        User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problems    AssessmentSessionProblem[]
+  submissions CodingSubmission[]
+
+  @@index([userId, status])
+  @@index([userId, startedAt])
+  @@map("assessment_sessions")
+}
+
+model AssessmentSessionProblem {
+  id           String  @id @default(uuid())
+  sessionId    String  @map("session_id")
+  problemId    String  @map("problem_id")
+  orderIndex   Int     @map("order_index")
+  maxPoints    Int     @default(100) @map("max_points")
+  earnedPoints Int     @default(0) @map("earned_points")
+  solved       Boolean @default(false)
+
+  session AssessmentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  problem CodingProblem     @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, orderIndex])
+  @@index([sessionId])
+  @@index([problemId])
+  @@map("assessment_session_problems")
+}
+
+model CodingSubmission {
+  id                  String           @id @default(uuid())
+  userId              String           @map("user_id")
+  problemId           String           @map("problem_id")
+  assessmentSessionId String?          @map("assessment_session_id")
+  language            String           @db.VarChar(30)
+  code                String           @db.Text
+  verdict             ExecutionVerdict
+  passedCount         Int              @map("passed_count")
+  totalCount          Int              @map("total_count")
+  runtimeMs           Int              @map("runtime_ms")
+  memoryKb            Int              @map("memory_kb")
+  createdAt           DateTime         @default(now()) @map("created_at")
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem           CodingProblem      @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  assessmentSession AssessmentSession? @relation(fields: [assessmentSessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([problemId])
+  @@index([assessmentSessionId])
+  @@map("coding_submissions")
+}
+
+model UserDsaSheetProgress {
+  id          String         @id @default(uuid())
+  userId      String         @map("user_id")
+  problemSlug String         @map("problem_slug") @db.VarChar(180)
+  status      DsaSheetStatus @default(UNSOLVED)
+  notes       String?        @db.Text
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemSlug])
+  @@index([userId, status])
+  @@map("user_dsa_sheet_progress")
 }
