@@ -10,15 +10,15 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary:
-    "bg-primary text-white hover:bg-primary-hover focus-visible:ring-primary/40 border border-transparent shadow-xs",
+    "bg-primary text-white hover:bg-primary-hover focus-visible:ring-primary/40 border border-emerald-400/20 shadow-[0_0_18px_rgba(16,185,129,0.28)]",
   secondary:
-    "bg-surface-muted text-ink border border-border hover:bg-border/50 focus-visible:ring-primary/30",
+    "bg-surface-muted text-ink border border-border hover:bg-border/60 focus-visible:ring-primary/30",
   outline:
-    "bg-surface text-ink border border-border hover:border-border-strong hover:bg-surface-muted/60 focus-visible:ring-primary/30",
+    "bg-surface text-ink border border-border hover:border-border-strong hover:bg-surface-muted/80 focus-visible:ring-primary/30",
   ghost:
     "bg-transparent text-ink-muted hover:text-ink hover:bg-surface-muted border border-transparent",
   danger:
-    "bg-danger text-white hover:bg-red-700 focus-visible:ring-danger/40 border border-transparent",
+    "bg-danger text-white hover:bg-red-600 focus-visible:ring-danger/40 border border-red-400/20",
 };
 
 const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {

@@ -6,11 +6,16 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantClasses: Record<NonNullable<BadgeProps["variant"]>, string> = {
-  emerald: "bg-primary-soft text-primary border-primary/20",
-  amber: "bg-amber-soft text-amber border-amber/25",
-  neutral: "bg-surface-muted text-ink-muted border-border",
-  danger: "bg-danger-soft text-danger border-danger/20",
-  mono: "bg-surface-muted text-ink border-border font-mono",
+  emerald:
+    "bg-[#10B981]/12 text-[#34D399] border-[#10B981]/30 shadow-[0_0_10px_rgba(16,185,129,0.12)]",
+  amber:
+    "bg-[#F59E0B]/12 text-[#FBBF24] border-[#F59E0B]/30",
+  neutral:
+    "bg-surface-muted text-ink-muted border-border",
+  danger:
+    "bg-[#EF4444]/12 text-[#F87171] border-[#EF4444]/30",
+  mono:
+    "bg-surface-muted text-[#E4E4E7] border-border font-mono",
 };
 
 export function Badge({ className, variant = "neutral", ...props }: BadgeProps) {

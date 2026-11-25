@@ -12,10 +12,32 @@ import { useResumesQuery } from "@/features/resumes/useResumes";
 import { useJobDescriptionsQuery } from "@/features/job-descriptions/useJobDescriptions";
 import { useMatchesQuery } from "@/features/matching/useMatches";
 import type {
+  DsaPattern,
+  QuestionGenerationMode,
+  SupportedCodeLanguage,
+} from "@techquery/shared";
+import type {
   QuestionCategory,
   QuestionDifficulty,
 } from "@/features/questions/questions.api";
 import { useGenerateQuestionSetMutation } from "@/features/questions/useQuestions";
+
+const DSA_PATTERNS: Array<{ value: DsaPattern; label: string }> = [
+  { value: "ALL_PATTERNS", label: "All Patterns" },
+  { value: "ARRAYS_TWO_POINTERS", label: "Arrays & Two Pointers" },
+  { value: "SLIDING_WINDOW", label: "Sliding Window" },
+  { value: "BINARY_SEARCH", label: "Binary Search" },
+  { value: "TREES_GRAPHS", label: "Trees & Graphs" },
+  { value: "DYNAMIC_PROGRAMMING", label: "Dynamic Programming" },
+  { value: "STACK_HEAP", label: "Stack & Heap" },
+];
+
+const CODE_LANGUAGES: Array<{ value: SupportedCodeLanguage; label: string }> = [
+  { value: "java", label: "Java" },
+  { value: "python", label: "Python" },
+  { value: "cpp", label: "C++" },
+  { value: "javascript", label: "JavaScript" },
+];
 
 const ALL_CATEGORIES: Array<{ value: QuestionCategory; label: string }> = [
   { value: "THEORETICAL", label: "Theoretical" },
@@ -50,6 +72,11 @@ export function QuestionGeneratorDialog({
   const matchesQuery = useMatchesQuery();
   const generateMutation = useGenerateQuestionSetMutation();
 
+  const [generationMode, setGenerationMode] =
+    React.useState<QuestionGenerationMode>("ROLE_AND_JD");
+  const [dsaPattern, setDsaPattern] = React.useState<DsaPattern>("ALL_PATTERNS");
+  const [preferredLanguage, setPreferredLanguage] =
+    React.useState<SupportedCodeLanguage>("java");
   const [topicFocus, setTopicFocus] = React.useState(
     "Full-Stack & Core Software Engineering",
   );
@@ -99,12 +126,16 @@ export function QuestionGeneratorDialog({
     setValidationError(null);
     setApiError(null);
 
-    const trimmedFocus = topicFocus.trim();
-    if (trimmedFocus.length < 3) {
+    const trimmedFocus =
+      generationMode === "DSA_ALGORITHMS"
+        ? DSA_PATTERNS.find((p) => p.value === dsaPattern)?.label ||
+          "DSA & Algorithms"
+        : topicFocus.trim();
+    if (generationMode === "ROLE_AND_JD" && trimmedFocus.length < 3) {
       setValidationError("Topic focus must be at least 3 characters.");
       return;
     }
-    if (categories.length === 0) {
+    if (generationMode === "ROLE_AND_JD" && categories.length === 0) {
       setValidationError("Select at least one question category.");
       return;
     }
@@ -117,11 +148,17 @@ export function QuestionGeneratorDialog({
       const created = await generateMutation.mutateAsync({
         topicFocus: trimmedFocus,
         difficulty,
-        categories,
+        categories:
+          generationMode === "DSA_ALGORITHMS" ? ["CODING"] : categories,
         count,
-        resumeId: resumeId || undefined,
-        jdId: jdId || undefined,
-        matchId: matchId || undefined,
+        generationMode,
+        ...(generationMode === "DSA_ALGORITHMS"
+          ? { dsaPattern, preferredLanguage }
+          : {
+              resumeId: resumeId || undefined,
+              jdId: jdId || undefined,
+              matchId: matchId || undefined,
+            }),
       });
 
       toast({
@@ -155,6 +192,37 @@ export function QuestionGeneratorDialog({
       className="max-w-2xl"
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        {/* Generation Mode Toggle */}
+        <div className="space-y-1.5">
+          <Label>Generation Mode</Label>
+          <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-[#242429] bg-[#0B0B0D] p-1">
+            <button
+              type="button"
+              onClick={() => setGenerationMode("ROLE_AND_JD")}
+              className={cn(
+                "rounded-md py-2 text-xs font-medium transition-colors cursor-pointer",
+                generationMode === "ROLE_AND_JD"
+                  ? "bg-[#151518] text-white border border-[#2A2A32]"
+                  : "text-zinc-400 hover:text-zinc-200",
+              )}
+            >
+              Role &amp; Resume Mix
+            </button>
+            <button
+              type="button"
+              onClick={() => setGenerationMode("DSA_ALGORITHMS")}
+              className={cn(
+                "rounded-md py-2 text-xs font-medium transition-colors cursor-pointer",
+                generationMode === "DSA_ALGORITHMS"
+                  ? "bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/40"
+                  : "text-zinc-400 hover:text-zinc-200",
+              )}
+            >
+              DSA &amp; Algorithms
+            </button>
+          </div>
+        </div>
+
         {(apiError || validationError) && (
           <div
             role="alert"
@@ -189,16 +257,53 @@ export function QuestionGeneratorDialog({
           </div>
         )}
 
-        <div className="space-y-1.5">
-          <Label htmlFor="qs-topic-focus">Topic Focus *</Label>
-          <Input
-            id="qs-topic-focus"
-            value={topicFocus}
-            onChange={(e) => setTopicFocus(e.target.value)}
-            placeholder="e.g., Distributed Systems & PostgreSQL Performance"
-            maxLength={100}
-          />
-        </div>
+        {generationMode === "DSA_ALGORITHMS" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-xl border border-[#10B981]/25 bg-[#10B981]/5 p-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="qs-dsa-pattern">DSA Pattern</Label>
+              <select
+                id="qs-dsa-pattern"
+                value={dsaPattern}
+                onChange={(e) => setDsaPattern(e.target.value as DsaPattern)}
+                className="flex h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-xs text-ink focus:border-primary focus:outline-none"
+              >
+                {DSA_PATTERNS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="qs-dsa-language">Preferred Language</Label>
+              <select
+                id="qs-dsa-language"
+                value={preferredLanguage}
+                onChange={(e) =>
+                  setPreferredLanguage(e.target.value as SupportedCodeLanguage)
+                }
+                className="flex h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-xs text-ink focus:border-primary focus:outline-none"
+              >
+                {CODE_LANGUAGES.map((l) => (
+                  <option key={l.value} value={l.value}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <Label htmlFor="qs-topic-focus">Topic Focus *</Label>
+            <Input
+              id="qs-topic-focus"
+              value={topicFocus}
+              onChange={(e) => setTopicFocus(e.target.value)}
+              placeholder="e.g., Distributed Systems & PostgreSQL Performance"
+              maxLength={100}
+            />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -256,89 +361,93 @@ export function QuestionGeneratorDialog({
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label>Question Categories *</Label>
-          <div className="flex flex-wrap gap-2">
-            {ALL_CATEGORIES.map((cat) => {
-              const active = categories.includes(cat.value);
-              return (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => toggleCategory(cat.value)}
-                  className={cn(
-                    "rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer",
-                    active
-                      ? "border-primary bg-primary-soft text-primary"
-                      : "border-border bg-surface text-ink-muted hover:border-border-strong hover:text-ink",
-                  )}
+        {generationMode === "ROLE_AND_JD" && (
+          <>
+            <div className="space-y-1.5">
+              <Label>Question Categories *</Label>
+              <div className="flex flex-wrap gap-2">
+                {ALL_CATEGORIES.map((cat) => {
+                  const active = categories.includes(cat.value);
+                  return (
+                    <button
+                      key={cat.value}
+                      type="button"
+                      onClick={() => toggleCategory(cat.value)}
+                      className={cn(
+                        "rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer",
+                        active
+                          ? "border-primary bg-primary-soft text-primary"
+                          : "border-border bg-surface text-ink-muted hover:border-border-strong hover:text-ink",
+                      )}
+                    >
+                      {cat.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Optional Grounding Context */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl border border-border bg-canvas p-3.5">
+              <div className="space-y-1">
+                <Label htmlFor="qs-resume-select" className="text-xs">
+                  Resume (Optional)
+                </Label>
+                <select
+                  id="qs-resume-select"
+                  value={resumeId}
+                  onChange={(e) => setResumeId(e.target.value)}
+                  className="flex h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-xs text-ink focus:border-primary focus:outline-none"
                 >
-                  {cat.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                  <option value="">None</option>
+                  {resumes.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.originalFileName}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-        {/* Optional Grounding Context */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl border border-border bg-canvas p-3.5">
-          <div className="space-y-1">
-            <Label htmlFor="qs-resume-select" className="text-xs">
-              Resume (Optional)
-            </Label>
-            <select
-              id="qs-resume-select"
-              value={resumeId}
-              onChange={(e) => setResumeId(e.target.value)}
-              className="flex h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-xs text-ink focus:border-primary focus:outline-none"
-            >
-              <option value="">None</option>
-              {resumes.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.originalFileName}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div className="space-y-1">
+                <Label htmlFor="qs-jd-select" className="text-xs">
+                  Target JD (Optional)
+                </Label>
+                <select
+                  id="qs-jd-select"
+                  value={jdId}
+                  onChange={(e) => setJdId(e.target.value)}
+                  className="flex h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-xs text-ink focus:border-primary focus:outline-none"
+                >
+                  <option value="">None</option>
+                  {jds.map((jd) => (
+                    <option key={jd.id} value={jd.id}>
+                      {jd.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="qs-jd-select" className="text-xs">
-              Target JD (Optional)
-            </Label>
-            <select
-              id="qs-jd-select"
-              value={jdId}
-              onChange={(e) => setJdId(e.target.value)}
-              className="flex h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-xs text-ink focus:border-primary focus:outline-none"
-            >
-              <option value="">None</option>
-              {jds.map((jd) => (
-                <option key={jd.id} value={jd.id}>
-                  {jd.title}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="qs-match-select" className="text-xs">
-              Skill-Gap Match (Optional)
-            </Label>
-            <select
-              id="qs-match-select"
-              value={matchId}
-              onChange={(e) => setMatchId(e.target.value)}
-              className="flex h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-xs text-ink focus:border-primary focus:outline-none"
-            >
-              <option value="">None</option>
-              {matches.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.jobDescription?.title ?? "Match"} ({m.matchScore}%)
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+              <div className="space-y-1">
+                <Label htmlFor="qs-match-select" className="text-xs">
+                  Skill-Gap Match (Optional)
+                </Label>
+                <select
+                  id="qs-match-select"
+                  value={matchId}
+                  onChange={(e) => setMatchId(e.target.value)}
+                  className="flex h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-xs text-ink focus:border-primary focus:outline-none"
+                >
+                  <option value="">None</option>
+                  {matches.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.jobDescription?.title ?? "Match"} ({m.matchScore}%)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="flex justify-end gap-2 border-t border-border pt-4">
           <Button type="button" variant="outline" onClick={onClose}>

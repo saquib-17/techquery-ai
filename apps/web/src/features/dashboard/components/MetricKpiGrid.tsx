@@ -21,7 +21,7 @@ export function MetricKpiGrid({ metrics }: MetricKpiGridProps) {
   const ringStrokeDashoffset =
     ringCircumference - (ringPct / 100) * ringCircumference;
   const ringColor =
-    avgScore !== null && avgScore >= 75 ? "#0F766E" : "#D97706";
+    avgScore !== null && avgScore >= 75 ? "#10B981" : "#F59E0B";
 
   const cards = [
     {
@@ -67,7 +67,15 @@ export function MetricKpiGrid({ metrics }: MetricKpiGridProps) {
       {cards.map((item) => {
         const Icon = item.icon;
         return (
-          <Card key={item.label} interactive>
+          <Card
+            key={item.label}
+            interactive
+            className={
+              item.hasRing
+                ? "border-[#10B981]/35 bg-[radial-gradient(circle_at_35%_50%,rgba(16,185,129,0.16),#151518_72%)] shadow-[0_0_26px_rgba(16,185,129,0.14)]"
+                : undefined
+            }
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-medium text-ink-muted">{item.label}</span>
@@ -90,7 +98,7 @@ export function MetricKpiGrid({ metrics }: MetricKpiGridProps) {
                         cy="22"
                         r={ringRadius}
                         fill="none"
-                        stroke="#E4E4E7"
+                        stroke="#242429"
                         strokeWidth="4"
                       />
                       <circle
@@ -103,6 +111,7 @@ export function MetricKpiGrid({ metrics }: MetricKpiGridProps) {
                         strokeLinecap="round"
                         strokeDasharray={ringCircumference}
                         strokeDashoffset={ringStrokeDashoffset}
+                        style={{ filter: `drop-shadow(0 0 5px ${ringColor})` }}
                         className="transition-all duration-500 ease-out"
                       />
                     </svg>

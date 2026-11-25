@@ -92,17 +92,17 @@ export function JdDetailPanel({ jd }: JdDetailPanelProps) {
             <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-subtle">
               Must-Have Skills ({parsed.mustHaveSkills.length})
             </h4>
-            <ul className="space-y-1.5">
+            <div className="flex flex-wrap gap-2">
               {parsed.mustHaveSkills.map((skill) => (
-                <li
+                <span
                   key={skill}
-                  className="flex items-start gap-2 rounded-lg border border-border bg-canvas px-3 py-2 text-[13.5px] leading-snug text-ink"
+                  className="inline-flex items-start gap-1.5 rounded-lg border border-[#10B981]/35 bg-[#10B981]/12 px-3 py-1.5 text-[13px] font-medium text-[#34D399] leading-snug shadow-[0_0_10px_rgba(16,185,129,0.1)]"
                 >
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#10B981]" />
                   <span>{skill}</span>
-                </li>
+                </span>
               ))}
-            </ul>
+            </div>
           </div>
 
           {/* Nice-to-Have Skills */}
@@ -113,17 +113,17 @@ export function JdDetailPanel({ jd }: JdDetailPanelProps) {
             {parsed.niceToHaveSkills.length === 0 ? (
               <p className="text-xs text-ink-subtle">None specified</p>
             ) : (
-              <ul className="space-y-1.5">
+              <div className="flex flex-wrap gap-2">
                 {parsed.niceToHaveSkills.map((skill) => (
-                  <li
+                  <span
                     key={skill}
-                    className="flex items-start gap-2 rounded-lg border border-border bg-canvas px-3 py-2 text-[13.5px] leading-snug text-ink-muted"
+                    className="inline-flex items-start gap-1.5 rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/10 px-3 py-1.5 text-[13px] font-medium text-[#FBBF24] leading-snug"
                   >
-                    <PlusCircle className="h-4 w-4 shrink-0 text-ink-subtle mt-0.5" />
+                    <PlusCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#F59E0B]" />
                     <span>{skill}</span>
-                  </li>
+                  </span>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
         </CardContent>

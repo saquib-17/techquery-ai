@@ -52,11 +52,11 @@ export function Drawer({
             exit={{ x: "100%" }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             className={cn(
-              "relative z-10 flex h-full w-full max-w-xl flex-col border-l border-border bg-surface shadow-2xl",
+              "relative z-10 flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-[#242429] bg-surface shadow-2xl",
               className
             )}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#242429] bg-[#0F0F11]/95 backdrop-blur-sm px-6 py-4">
               <div>
                 {title && (
                   <h2 id="drawer-title" className="text-base font-semibold text-ink">

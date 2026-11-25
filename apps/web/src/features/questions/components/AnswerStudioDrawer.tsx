@@ -16,6 +16,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { ApiClientError } from "@/lib/api";
 import { cn } from "@/lib/cn";
+import {
+  highlightCodeLine,
+  inferCodeFilename,
+} from "@/features/questions/utils/highlightCode";
+import { FormattedAnswerText } from "@/features/questions/utils/formatStructuredText";
 import type {
   AnswerStyle,
   ModelAnswer,
@@ -51,6 +56,34 @@ function parseStarSections(text: string): StarSection[] | null {
     match = regex.exec(text);
   }
   return matches.length >= 2 ? matches : null;
+}
+
+function formatExplanationParagraphs(text: string): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+
+  if (/\n/.test(trimmed)) {
+    return trimmed
+      .split(/\n+/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+  }
+
+  if (trimmed.length <= 350) {
+    return [trimmed];
+  }
+
+  const sentences = trimmed.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) ?? [trimmed];
+  const paragraphs: string[] = [];
+  for (let i = 0; i < sentences.length; i += 2) {
+    paragraphs.push(
+      sentences
+        .slice(i, i + 2)
+        .map((s) => s.trim())
+        .join(" "),
+    );
+  }
+  return paragraphs;
 }
 
 export interface AnswerStudioDrawerProps {
@@ -273,9 +306,9 @@ export function AnswerStudioDrawer({
                   <Sparkles className="h-3.5 w-3.5" />
                   Short Summary
                 </div>
-                <p className="text-sm leading-relaxed text-ink">
-                  {activeAnswer.shortSummary}
-                </p>
+                <div className="text-sm leading-relaxed text-ink">
+                  <FormattedAnswerText text={activeAnswer.shortSummary} />
+                </div>
               </div>
 
               {/* Complexity Badges */}
@@ -313,61 +346,94 @@ export function AnswerStudioDrawer({
                         <span className="inline-block rounded bg-primary-soft px-2 py-0.5 font-mono text-[11px] font-semibold uppercase text-primary">
                           {section.label}
                         </span>
-                        <p className="mt-1.5 text-sm leading-relaxed text-ink">
-                          {section.content}
-                        </p>
+                        <div className="mt-2 text-sm leading-relaxed text-[#E4E4E7]">
+                          <FormattedAnswerText text={section.content} />
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-2.5 rounded-xl border border-border bg-surface p-4 text-sm leading-relaxed text-ink">
-                    {activeAnswer.detailedExplanation
-                      .split(/\n{2,}/)
-                      .map((para, idx) => (
-                        <p key={idx} className="whitespace-pre-line">
-                          {para}
-                        </p>
-                      ))}
+                  <div className="space-y-3 rounded-xl border border-border bg-surface p-4 text-sm leading-relaxed text-[#E4E4E7]">
+                    {formatExplanationParagraphs(
+                      activeAnswer.detailedExplanation,
+                    ).map((para, idx) => (
+                      <FormattedAnswerText key={idx} text={para} />
+                    ))}
                   </div>
                 )}
               </div>
 
-              {/* Code Snippet */}
-              {activeAnswer.codeSnippet && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+              {/* Code Snippet — VS Code IDE Window */}
+              {activeAnswer.codeSnippet && (() => {
+                const filename = inferCodeFilename(
+                  activeAnswer.codeSnippet,
+                  question.targetedSkill,
+                );
+                const codeLines = activeAnswer.codeSnippet.split("\n");
+                return (
+                  <div className="space-y-2">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-subtle">
                       Reference Implementation
                     </h3>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCopyCode}
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="h-3.5 w-3.5 text-primary" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5" />
-                          Copy Code
-                        </>
-                      )}
-                    </Button>
+                    <div className="rounded-xl border border-[#242429] bg-[#0B0B0E] overflow-hidden shadow-lg">
+                      {/* IDE Title Bar */}
+                      <div className="bg-[#151518] border-b border-[#242429] px-4 py-2.5 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex items-center gap-1.5 shrink-0" aria-hidden="true">
+                            <span className="h-2.5 w-2.5 rounded-full bg-[#EF4444]/80" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-[#F59E0B]/80" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-[#10B981]/80" />
+                          </div>
+                          <span className="rounded-md border border-[#242429] bg-[#0B0B0E] px-2.5 py-0.5 font-mono text-xs text-[#E4E4E7] truncate">
+                            {filename}
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCopyCode}
+                          className="h-7 px-2.5 text-xs shrink-0"
+                        >
+                          {copied ? (
+                            <>
+                              <Check className="h-3.5 w-3.5 text-primary" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3.5 w-3.5" />
+                              Copy Code
+                            </>
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* IDE Code Body */}
+                      <div className="overflow-x-auto py-3.5 font-mono text-[13px] leading-6 [font-variant-ligatures:none]">
+                        {codeLines.map((line, lineIdx) => (
+                          <div
+                            key={lineIdx}
+                            className="flex hover:bg-[#151518]/60 transition-colors"
+                          >
+                            <span className="w-11 shrink-0 select-none pr-4 text-right text-[#52525B] border-r border-[#242429]/70">
+                              {lineIdx + 1}
+                            </span>
+                            <span className="pl-4 pr-5 whitespace-pre">
+                              {highlightCodeLine(line)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-[#18181B] p-4 font-mono text-xs leading-relaxed text-[#F4F4F5]">
-                    <code>{activeAnswer.codeSnippet}</code>
-                  </pre>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Common Mistakes to Avoid */}
               {Array.isArray(activeAnswer.commonMistakes) &&
                 activeAnswer.commonMistakes.length > 0 && (
-                  <div className="rounded-xl border border-amber/30 bg-[#FFFBEB] p-4 space-y-2">
+                  <div className="rounded-xl border border-amber/30 bg-amber-soft p-4 space-y-2">
                     <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber">
                       <AlertTriangle className="h-3.5 w-3.5" />
                       Common Mistakes to Avoid
@@ -379,7 +445,7 @@ export function AnswerStudioDrawer({
                           className="flex items-start gap-2 text-xs leading-relaxed text-ink"
                         >
                           <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber" />
-                          <span>{mistake}</span>
+                          <FormattedAnswerText text={mistake} className="space-y-1" />
                         </li>
                       ))}
                     </ul>

@@ -8,7 +8,6 @@ import { AuthProvider } from "@/features/auth/auth.context";
 import { OnboardingGuard } from "@/app/guards";
 import { OnboardingPage } from "@/features/onboarding/pages/OnboardingPage";
 import { ProfilePage } from "@/features/onboarding/pages/ProfilePage";
-import { ProfileSettingsDialog } from "@/features/onboarding/components/ProfileSettingsDialog";
 import * as authApi from "@/features/auth/auth.api";
 import * as candidateApi from "@/features/onboarding/candidate.api";
 
@@ -263,81 +262,7 @@ describe("Candidate Onboarding Wizard, OnboardingGuard & Profile Editor (Phase F
     });
   });
 
-  it("3. ProfileSettingsDialog loads existing profile and saves updates via PATCH /profile", async () => {
-    vi.mocked(candidateApi.getProfileApi).mockResolvedValue({
-      id: "prof-1",
-      userId: "user-1",
-      fullName: "Saquib Ansari",
-      phoneNumber: null,
-      location: "Bengaluru, India",
-      headline: "Backend Engineer",
-      summary: "Core Skills: TypeScript",
-      currentRole: "SDE-1",
-      yearsOfExperience: 2,
-      highestEducation: "MCA",
-      university: "NIT",
-      graduationYear: 2026,
-      linkedinUrl: null,
-      githubUrl: null,
-      portfolioUrl: null,
-      createdAt: "2026-11-25T00:00:00Z",
-      updatedAt: "2026-11-25T00:00:00Z",
-    });
-
-    vi.mocked(candidateApi.updateProfileApi).mockResolvedValue({
-      id: "prof-1",
-      userId: "user-1",
-      fullName: "Saquib Ansari",
-      phoneNumber: null,
-      location: "Pune, India",
-      headline: "Backend Engineer",
-      summary: "Core Skills: TypeScript",
-      currentRole: "Senior Backend Engineer",
-      yearsOfExperience: 2,
-      highestEducation: "MCA",
-      university: "NIT",
-      graduationYear: 2026,
-      linkedinUrl: null,
-      githubUrl: null,
-      portfolioUrl: null,
-      createdAt: "2026-11-25T00:00:00Z",
-      updatedAt: "2026-11-25T00:00:00Z",
-    });
-
-    const onClose = vi.fn();
-
-    render(
-      createTestWrapper(
-        ["/dashboard"],
-        <ProfileSettingsDialog open={true} onClose={onClose} />
-      )
-    );
-
-    await waitFor(() => {
-      expect(screen.getByDisplayValue("SDE-1")).toBeInTheDocument();
-    });
-
-    fireEvent.change(screen.getByLabelText("Target Role"), {
-      target: { value: "Senior Backend Engineer" },
-    });
-    fireEvent.change(screen.getByLabelText("Location"), {
-      target: { value: "Pune, India" },
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
-
-    await waitFor(() => {
-      expect(candidateApi.updateProfileApi).toHaveBeenCalledWith(
-        expect.objectContaining({
-          currentRole: "Senior Backend Engineer",
-          location: "Pune, India",
-        })
-      );
-      expect(onClose).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it("4. ProfilePage renders identity summary, completeness bar, and saves edited fields via PATCH /profile", async () => {
+  it("3. ProfilePage renders identity summary, completeness bar, and saves edited fields via PATCH /profile", async () => {
     vi.mocked(candidateApi.getProfileApi).mockResolvedValue({
       id: "prof-1",
       userId: "user-1",

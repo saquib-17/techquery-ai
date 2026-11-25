@@ -39,15 +39,19 @@ function buildLast30Days(matrix: Array<{ date: string; count: number }>) {
 
 function getHeatStyle(count: number): React.CSSProperties {
   if (count === 0) {
-    return { backgroundColor: "#F3F2EE", borderColor: "#E4E4E7" };
+    return { backgroundColor: "#1B1B20", borderColor: "#242429" };
   }
   if (count === 1) {
-    return { backgroundColor: "#CCFBF1", borderColor: "#99F6E4" };
+    return { backgroundColor: "#064E3B", borderColor: "#065F46" };
   }
   if (count <= 3) {
-    return { backgroundColor: "#5EEAD4", borderColor: "#2DD4BF" };
+    return { backgroundColor: "#059669", borderColor: "#10B981" };
   }
-  return { backgroundColor: "#0F766E", borderColor: "#115E59" };
+  return {
+    backgroundColor: "#10B981",
+    borderColor: "#34D399",
+    boxShadow: "0 0 8px rgba(16, 185, 129, 0.45)",
+  };
 }
 
 export function StreakMatrix({ streak }: StreakMatrixProps) {

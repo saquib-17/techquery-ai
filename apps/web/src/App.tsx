@@ -14,6 +14,7 @@ import { ResumesPage } from "@/features/resumes/pages/ResumesPage";
 import { JobDescriptionsPage } from "@/features/job-descriptions/pages/JobDescriptionsPage";
 import { MatchesPage } from "@/features/matching/pages/MatchesPage";
 import { QuestionsPage } from "@/features/questions/pages/QuestionsPage";
+import { CodingArenaPage } from "@/features/coding/pages/CodingArenaPage";
 import { LibraryPage } from "@/features/library/pages/LibraryPage";
 import { UsagePage } from "@/features/usage/pages/UsagePage";
 
@@ -56,6 +57,7 @@ export function App() {
                   <Route path="/job-descriptions" element={<JobDescriptionsPage />} />
                   <Route path="/matches" element={<MatchesPage />} />
                   <Route path="/questions" element={<QuestionsPage />} />
+                  <Route path="/practice" element={<CodingArenaPage />} />
                   <Route path="/library" element={<LibraryPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/usage" element={<UsagePage />} />

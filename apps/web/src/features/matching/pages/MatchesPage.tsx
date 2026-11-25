@@ -118,13 +118,13 @@ export function MatchesPage() {
       {/* Page Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-teal-700">
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
             Skill Gap Studio
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink">
             Resume &amp; JD Match Studio
           </h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-ink-muted">
             Compare your resume against any saved job description to surface
             matched strengths, missing skills, and tailored prep priorities.
           </p>
@@ -179,7 +179,7 @@ export function MatchesPage() {
               {/* Compact Horizontal Saved Evaluations Strip */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between px-0.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-subtle">
                     Saved Evaluations ({matches.length})
                   </span>
                 </div>
@@ -198,8 +198,8 @@ export function MatchesPage() {
                         className={cn(
                           "group inline-flex items-center gap-2 rounded-xl border px-3 py-2 transition-colors",
                           isSelected
-                            ? "border-teal-700 bg-teal-50/60"
-                            : "border-zinc-200 bg-white hover:border-zinc-300",
+                            ? "border-primary bg-primary-soft shadow-[0_0_16px_rgba(16,185,129,0.12)]"
+                            : "border-border bg-surface hover:border-border-strong",
                         )}
                       >
                         <button
@@ -207,10 +207,10 @@ export function MatchesPage() {
                           onClick={() => setSelectedMatchId(item.id)}
                           className="inline-flex items-center gap-2 text-left cursor-pointer"
                         >
-                          <span className="text-xs font-semibold text-zinc-900">
+                          <span className="text-xs font-semibold text-ink">
                             {item.jobDescription?.title ?? "Target Role"}
                           </span>
-                          <span className="hidden sm:inline font-mono text-[11px] text-zinc-500">
+                          <span className="hidden sm:inline font-mono text-[11px] text-ink-muted">
                             • {item.resume?.originalFileName ?? "Resume"}
                           </span>
                           <Badge variant={scoreVariant} className="font-mono text-[11px]">
@@ -223,7 +223,7 @@ export function MatchesPage() {
                             item.jobDescription?.title ?? "Target Role"
                           }`}
                           onClick={() => setMatchToDelete(item)}
-                          className="rounded p-1 text-zinc-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
+                          className="rounded p-1 text-ink-subtle hover:bg-danger-soft hover:text-danger transition-colors cursor-pointer"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -252,9 +252,9 @@ export function MatchesPage() {
         title="Delete Compatibility Report?"
         description="This removes the saved match report from your workspace."
       >
-        <p className="text-sm text-zinc-600">
+        <p className="text-sm text-ink-muted">
           Are you sure you want to delete the match report for{" "}
-          <span className="font-medium text-zinc-900">
+          <span className="font-medium text-ink">
             {matchToDelete?.jobDescription?.title ?? "this job description"}
           </span>
           ? Your resume and job description will remain saved.

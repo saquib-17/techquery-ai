@@ -334,7 +334,7 @@ export function ProfilePage() {
           <Card className="border-border bg-surface">
             <CardContent className="p-6 space-y-5">
               <div className="flex items-start gap-3.5">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[#0F766E]/20 bg-[#F0FDFA] font-mono text-lg font-bold text-[#0F766E]">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary-soft font-mono text-lg font-bold text-primary shadow-[0_0_16px_rgba(16,185,129,0.18)]">
                   {initials}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -373,13 +373,13 @@ export function ProfilePage() {
                     <span className="font-medium text-ink">
                       Profile Completeness
                     </span>
-                    <span className="font-mono font-semibold text-[#0F766E] tabular-nums">
+                    <span className="font-mono font-semibold text-primary tabular-nums">
                       {completeness.pct}%
                     </span>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-surface-muted">
                     <div
-                      className="h-full rounded-full bg-[#0F766E] transition-all"
+                      className="h-full rounded-full bg-primary transition-all shadow-[0_0_8px_rgba(16,185,129,0.45)]"
                       style={{ width: `${completeness.pct}%` }}
                     />
                   </div>

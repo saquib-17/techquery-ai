@@ -50,7 +50,7 @@ export function MatchEvaluatorBar({
     Boolean(selectedResumeId) && Boolean(selectedJdId) && !isEvaluating;
 
   return (
-    <Card className="border-zinc-200 bg-white">
+    <Card className="border-border bg-surface">
       <CardContent className="p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
           <div className="flex-1 space-y-1.5">
@@ -60,7 +60,7 @@ export function MatchEvaluatorBar({
               value={selectedResumeId}
               onChange={(e) => setSelectedResumeId(e.target.value)}
               disabled={isEvaluating || resumes.length === 0}
-              className="flex h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/15 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-10 w-full rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {resumes.length === 0 ? (
                 <option value="">No resumes uploaded</option>
@@ -75,7 +75,7 @@ export function MatchEvaluatorBar({
             </select>
           </div>
 
-          <div className="hidden items-center justify-center pb-2 text-zinc-400 lg:flex">
+          <div className="hidden items-center justify-center pb-2 text-ink-subtle lg:flex">
             <GitCompare className="h-4 w-4" />
           </div>
 
@@ -86,7 +86,7 @@ export function MatchEvaluatorBar({
               value={selectedJdId}
               onChange={(e) => setSelectedJdId(e.target.value)}
               disabled={isEvaluating || jobDescriptions.length === 0}
-              className="flex h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/15 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-10 w-full rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {jobDescriptions.length === 0 ? (
                 <option value="">No job descriptions saved</option>

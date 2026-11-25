@@ -7,6 +7,7 @@ import {
   Briefcase,
   GitCompare,
   Sparkles,
+  Code2,
   Bookmark,
   Gauge,
   UserCircle,
@@ -48,6 +49,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Practice",
     items: [
       { label: "Question Studio", to: "/questions", icon: Sparkles },
+      { label: "Coding Arena", to: "/practice", icon: Code2 },
       { label: "Saved Library", to: "/library", icon: Bookmark },
     ],
   },
@@ -66,6 +68,7 @@ const ROUTE_TITLES: Record<string, string> = {
   "/job-descriptions": "Job Descriptions",
   "/matches": "Match Studio",
   "/questions": "Question Studio",
+  "/practice": "Coding Arena",
   "/library": "Saved Library",
   "/profile": "Candidate Profile",
   "/usage": "Quotas & Plan",
@@ -126,11 +129,11 @@ export function AppLayout({
   };
 
   const renderSidebarContent = (isMobile: boolean) => (
-    <div className="flex h-full flex-col bg-surface-muted/70">
+    <div className="flex h-full flex-col bg-[#0B0B0D]">
       {/* Brand Header */}
-      <div className="flex h-14 items-center justify-between border-b border-border px-4">
+      <div className="flex h-14 items-center justify-between border-b border-[#242429] px-4">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white shadow-xs">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/35 shadow-[0_0_12px_rgba(16,185,129,0.25)]">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -143,10 +146,10 @@ export function AppLayout({
             </svg>
           </div>
           <div className="leading-tight">
-            <span className="block text-sm font-bold tracking-tight text-ink">
+            <span className="block text-sm font-bold tracking-tight text-white">
               TechQuery AI
             </span>
-            <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-subtle">
+            <span className="block text-[10px] font-mono uppercase tracking-wider text-[#10B981]">
               INTERVIEW STUDIO
             </span>
           </div>
@@ -181,8 +184,8 @@ export function AppLayout({
                         cn(
                           "group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-150",
                           isActive
-                            ? "bg-primary-soft text-primary"
-                            : "text-ink-muted hover:bg-surface hover:text-ink"
+                            ? "bg-primary-soft text-primary border border-primary/25 shadow-[0_0_16px_rgba(16,185,129,0.14)]"
+                            : "text-[#E4E4E7]/75 border border-transparent hover:bg-[#151518] hover:text-white"
                         )
                       }
                     >
@@ -191,15 +194,15 @@ export function AppLayout({
                           {isActive && (
                             <span
                               aria-hidden="true"
-                              className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary"
+                              className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-[#10B981] shadow-[0_0_8px_#10B981]"
                             />
                           )}
                           <Icon
                             className={cn(
                               "h-4 w-4 shrink-0",
                               isActive
-                                ? "text-primary"
-                                : "text-ink-subtle group-hover:text-ink"
+                                ? "text-[#10B981]"
+                                : "text-ink-subtle group-hover:text-white"
                             )}
                           />
                           <span>{item.label}</span>
@@ -286,7 +289,7 @@ export function AppLayout({
       {/* Main Content Shell */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Sticky Top Header (56px) */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-surface/90 backdrop-blur-sm px-4 sm:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#242429] bg-[#0F0F11]/85 backdrop-blur-md px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"

@@ -1,3 +1,8 @@
+import type {
+  DsaPattern,
+  QuestionGenerationMode,
+  SupportedCodeLanguage,
+} from "@techquery/shared";
 import { api } from "@/lib/api";
 
 export type QuestionCategory =
@@ -36,6 +41,7 @@ export interface QuestionItem {
   questionText: string;
   interviewerIntent: string;
   keyEvaluationPoints: string[];
+  codingProblemId?: string | null;
   createdAt: string;
   updatedAt?: string;
   answer?: ModelAnswer | null;
@@ -69,6 +75,9 @@ export interface GenerateQuestionSetPayload {
   difficulty: QuestionDifficulty;
   categories: QuestionCategory[];
   count: number;
+  generationMode?: QuestionGenerationMode;
+  dsaPattern?: DsaPattern;
+  preferredLanguage?: SupportedCodeLanguage;
 }
 
 interface ApiEnvelope<T> {

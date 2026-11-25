@@ -33,7 +33,7 @@ function getScoreBadge(score: number): {
       label: "ATS Strong",
       variant: "emerald",
       barClass: "bg-primary",
-      strokeColor: "#0F766E",
+      strokeColor: "#10B981",
     };
   }
   if (score >= 50) {
@@ -41,14 +41,14 @@ function getScoreBadge(score: number): {
       label: "Needs Polish",
       variant: "amber",
       barClass: "bg-amber",
-      strokeColor: "#D97706",
+      strokeColor: "#F59E0B",
     };
   }
   return {
     label: "High Risk",
     variant: "danger",
     barClass: "bg-danger",
-    strokeColor: "#DC2626",
+    strokeColor: "#EF4444",
   };
 }
 
@@ -167,7 +167,7 @@ export function AtsAnalysisPanel({
                   cy="38"
                   r="31"
                   fill="none"
-                  stroke="#E4E4E7"
+                  stroke="#242429"
                   strokeWidth="6"
                 />
                 <circle
@@ -184,6 +184,7 @@ export function AtsAnalysisPanel({
                     (Math.max(0, Math.min(100, analysis.atsScore)) / 100) *
                       (2 * Math.PI * 31)
                   }
+                  style={{ filter: `drop-shadow(0 0 6px ${scoreMeta.strokeColor})` }}
                   className="transition-all duration-500 ease-out"
                 />
               </svg>

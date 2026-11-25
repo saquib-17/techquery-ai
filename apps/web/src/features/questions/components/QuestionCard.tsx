@@ -1,9 +1,11 @@
 import * as React from "react";
+import { Link } from "react-router-dom";
 import {
   Bookmark,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Code2,
   ListChecks,
   Sparkles,
   Target,
@@ -145,6 +147,19 @@ export function QuestionCard({
             <Bookmark className="h-3.5 w-3.5" />
             Save
           </Button>
+          {question.codingProblemId && (
+            <Link to={`/practice?problemId=${question.codingProblemId}`}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="border-[#10B981]/50 text-[#10B981] hover:bg-[#10B981]/10"
+              >
+                <Code2 className="h-3.5 w-3.5" />
+                Solve in Coding Arena
+              </Button>
+            </Link>
+          )}
           <Button
             type="button"
             size="sm"

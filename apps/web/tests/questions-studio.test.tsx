@@ -284,7 +284,8 @@ describe("Question & Model Answer Studio (Phase F7)", () => {
       });
       expect(screen.getByText("Time: O(1)")).toBeInTheDocument();
       expect(screen.getByText("Space: O(1)")).toBeInTheDocument();
-      expect(screen.getByText(/class TokenBucket/i)).toBeInTheDocument();
+      expect(screen.getByText("solution.ts")).toBeInTheDocument();
+      expect(screen.getByText(/TokenBucket/i)).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole("button", { name: /Copy Code/i }));
