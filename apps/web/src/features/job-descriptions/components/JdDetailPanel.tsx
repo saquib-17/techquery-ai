@@ -1,0 +1,163 @@
+import { Link } from "react-router-dom";
+import {
+  Building2,
+  GitCompare,
+  Sparkles,
+  CheckCircle2,
+  Layers,
+  ListChecks,
+} from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { JobDescriptionItem } from "@/features/job-descriptions/jd.api";
+
+export interface JdDetailPanelProps {
+  jd: JobDescriptionItem;
+}
+
+function formatExperienceRange(min: number, max: number | null): string {
+  if (max !== null && max > min) {
+    return `${min}–${max} yrs`;
+  }
+  return `${min}+ yrs`;
+}
+
+export function JdDetailPanel({ jd }: JdDetailPanelProps) {
+  const parsed = jd.structuredJson;
+  const techBuckets = [
+    { label: "Languages", items: parsed.techStackCategories.languages },
+    { label: "Frameworks", items: parsed.techStackCategories.frameworks },
+    { label: "Databases", items: parsed.techStackCategories.databases },
+    { label: "Cloud & DevOps", items: parsed.techStackCategories.cloudAndDevops },
+    { label: "Tools & Other", items: parsed.techStackCategories.toolsAndOther },
+  ].filter((b) => b.items.length > 0);
+
+  return (
+    <div className="space-y-5">
+      {/* Header Summary Card */}
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="emerald">{parsed.seniority}</Badge>
+                <Badge variant="mono">
+                  {formatExperienceRange(
+                    parsed.experienceYears.min,
+                    parsed.experienceYears.max
+                  )}
+                </Badge>
+              </div>
+              <CardTitle className="mt-2.5 text-xl">{parsed.roleTitle}</CardTitle>
+              {jd.company && (
+                <CardDescription className="mt-1 flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5 text-ink-subtle" />
+                  <span>{jd.company}</span>
+                </CardDescription>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Link to={`/matches?jdId=${jd.id}`}>
+                <Button size="sm">
+                  <GitCompare className="h-3.5 w-3.5" />
+                  Run Resume Match
+                </Button>
+              </Link>
+              <Link to={`/questions?jdId=${jd.id}`}>
+                <Button size="sm" variant="outline">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Generate Questions
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-border pt-5">
+          {/* Must-Have Skills */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-subtle">
+              Must-Have Skills ({parsed.mustHaveSkills.length})
+            </h4>
+            <div className="flex flex-wrap gap-1.5">
+              {parsed.mustHaveSkills.map((skill) => (
+                <Badge key={skill} variant="emerald">
+                  <CheckCircle2 className="h-3 w-3" />
+                  {skill}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Nice-to-Have Skills */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-subtle">
+              Nice-to-Have Skills ({parsed.niceToHaveSkills.length})
+            </h4>
+            {parsed.niceToHaveSkills.length === 0 ? (
+              <p className="text-xs text-ink-subtle">None specified</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {parsed.niceToHaveSkills.map((skill) => (
+                  <Badge key={skill} variant="neutral">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Categorized Tech Stack */}
+      {techBuckets.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Layers className="h-4 w-4 text-primary" />
+              Categorized Tech Stack
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {techBuckets.map((bucket) => (
+              <div key={bucket.label} className="space-y-1.5">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-ink-subtle">
+                  {bucket.label}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {bucket.items.map((item) => (
+                    <Badge key={item} variant="mono">
+                      {item}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Responsibilities */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <ListChecks className="h-4 w-4 text-primary" />
+            Key Responsibilities
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2">
+            {parsed.responsibilities.map((resp, idx) => (
+              <li key={idx} className="flex items-start gap-2.5 text-sm text-ink-muted">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span>{resp}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

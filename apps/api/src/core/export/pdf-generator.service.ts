@@ -37,6 +37,12 @@ export class PdfGeneratorService {
           size: "A4",
           margin: 40,
           bufferPages: true,
+          info: {
+            Title: input.title,
+            Author: "TECHQUERY AI",
+            Subject: input.subtitle || "Interview Preparation Export",
+            Creator: "TechQuery AI Platform",
+          },
         });
 
         const buffers: Buffer[] = [];
@@ -74,6 +80,12 @@ export class PdfGeneratorService {
       size: "A4",
       margin: 40,
       bufferPages: true,
+      info: {
+        Title: input.title,
+        Author: "TECHQUERY AI",
+        Subject: input.subtitle || "Interview Preparation Export",
+        Creator: "TechQuery AI Platform",
+      },
     });
 
     doc.pipe(res);

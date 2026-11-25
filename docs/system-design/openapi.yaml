@@ -1,15 +1,33 @@
 openapi: 3.1.0
 info:
   title: TechQuery AI REST API
-  description: API specification for TechQuery AI - Unified AI Career & Technical Interview Preparation Platform.
+  description: API specification for TechQuery AI - Unified AI Career & Technical Interview Preparation Platform (V1 Backend Release).
   version: 1.0.0
 servers:
-  - url: http://localhost:5000/api/v1
+  - url: http://localhost:4000/api/v1
     description: Local Development & Placement Demo Server (Mode A)
   - url: https://techquery-backend.onrender.com/api/v1
     description: Cloud Showcase Server (Mode B)
 
 paths:
+  /health:
+    get:
+      summary: Service liveness check
+      tags: [Health]
+      responses:
+        '200':
+          description: Service is alive
+
+  /health/ready:
+    get:
+      summary: Database readiness probe
+      tags: [Health]
+      responses:
+        '200':
+          description: Database connected and ready
+        '503':
+          description: Database unreachable
+
   /auth/register:
     post:
       summary: Register a new candidate account
@@ -32,9 +50,48 @@ paths:
         '409':
           $ref: '#/components/responses/ConflictError'
 
+  /auth/verify-email:
+    post:
+      summary: Verify candidate email using verification token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Email verified successfully
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/resend-verification:
+    post:
+      summary: Resend email verification link (anti-enumeration & rate-limited)
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Generic confirmation message
+
   /auth/login:
     post:
-      summary: Login user and receive tokens
+      summary: Login user and receive access token + HttpOnly refresh cookie
       tags: [Authentication]
       requestBody:
         required: true
@@ -54,42 +111,81 @@ paths:
 
   /auth/refresh:
     post:
-      summary: Refresh short-lived access token via HttpOnly cookie
+      summary: Refresh short-lived access token via HttpOnly cookie with family rotation
       tags: [Authentication]
       responses:
         '200':
           description: Token refreshed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      accessToken:
-                        type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
-  /auth/me:
-    get:
-      summary: Get current authenticated user profile
+  /auth/logout:
+    post:
+      summary: Revoke current refresh token session and clear cookie
+      tags: [Authentication]
+      responses:
+        '200':
+          description: Logged out successfully
+
+  /auth/logout-all:
+    post:
+      summary: Revoke all active refresh token sessions for authenticated user
       tags: [Authentication]
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: Authenticated user details
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
+          description: All sessions revoked
 
-  /resumes/upload:
+  /profile:
+    get:
+      summary: Get authenticated candidate profile
+      tags: [Candidate Profile]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Candidate profile details
+        '404':
+          $ref: '#/components/responses/NotFoundError'
     post:
-      summary: Upload and parse candidate resume (PDF/DOCX)
+      summary: Create candidate profile
+      tags: [Candidate Profile]
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Profile created
+    patch:
+      summary: Update candidate profile
+      tags: [Candidate Profile]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile updated
+
+  /onboarding:
+    get:
+      summary: Get candidate onboarding progress state
+      tags: [Onboarding]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Onboarding state
+    patch:
+      summary: Update onboarding step or mark onboarding complete
+      tags: [Onboarding]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Onboarding state updated
+
+  /resumes:
+    post:
+      summary: Upload and extract text from candidate resume (PDF/DOCX, quota enforced)
       tags: [Resume Intelligence]
       security:
         - BearerAuth: []
@@ -105,12 +201,10 @@ paths:
                   type: string
                   format: binary
       responses:
-        '202':
-          description: Resume upload accepted for async extraction
-        '422':
-          description: Malformed or scanned image PDF
-
-  /resumes:
+        '201':
+          description: Resume uploaded and extracted
+        '429':
+          $ref: '#/components/responses/QuotaExceededError'
     get:
       summary: List all resumes for current user
       tags: [Resume Intelligence]
@@ -120,6 +214,64 @@ paths:
         '200':
           description: Array of resumes
 
+  /resumes/{id}:
+    get:
+      summary: Get single resume metadata (BOLA/IDOR protected)
+      tags: [Resume Intelligence]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Resume metadata
+    delete:
+      summary: Delete resume and physical file
+      tags: [Resume Intelligence]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Resume deleted
+
+  /resumes/{id}/download:
+    get:
+      summary: Download original resume file
+      tags: [Resume Intelligence]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Binary file stream
+
+  /resumes/{id}/primary:
+    patch:
+      summary: Set resume as primary atomically
+      tags: [Resume Intelligence]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Primary resume updated
+
+  /resumes/{id}/analyze:
+    post:
+      summary: Run AI Resume Intelligence & ATS Scoring (with offline fallback)
+      tags: [Resume Intelligence]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Structured parsed resume data and ATS score
+
   /resumes/{id}/analysis:
     get:
       summary: Get ATS audit and improvement suggestions
@@ -127,21 +279,26 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+        - $ref: '#/components/parameters/UuidIdParam'
       responses:
         '200':
           description: ATS analysis report
-        '404':
-          $ref: '#/components/responses/NotFoundError'
 
-  /jd/analyze:
+  /resumes/{id}/parsed:
+    get:
+      summary: Get structured parsed resume JSON
+      tags: [Resume Intelligence]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Parsed resume data
+
+  /job-descriptions:
     post:
-      summary: Analyze and decompose job description
+      summary: Submit and decompose job description (quota enforced)
       tags: [Job Description Intelligence]
       security:
         - BearerAuth: []
@@ -155,18 +312,47 @@ paths:
               properties:
                 title:
                   type: string
-                  example: Backend Engineer
                 company:
                   type: string
-                  example: Razorpay
                 rawText:
                   type: string
-                  example: Looking for an engineer with Node.js and PostgreSQL experience...
       responses:
         '201':
           description: Structured JD created
+        '429':
+          $ref: '#/components/responses/QuotaExceededError'
+    get:
+      summary: List all saved job descriptions for current user
+      tags: [Job Description Intelligence]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of job descriptions
 
-  /match/analyze:
+  /job-descriptions/{id}:
+    get:
+      summary: Get structured job description by ID
+      tags: [Job Description Intelligence]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Job description details
+    delete:
+      summary: Delete job description
+      tags: [Job Description Intelligence]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Job description deleted
+
+  /matches:
     post:
       summary: Run deterministic + AI hybrid resume-to-JD match
       tags: [Resume-JD Matching]
@@ -187,78 +373,258 @@ paths:
                   type: string
                   format: uuid
       responses:
+        '201':
+          description: Gap analysis scorecard created/updated
+    get:
+      summary: List all match evaluations for current user
+      tags: [Resume-JD Matching]
+      security:
+        - BearerAuth: []
+      responses:
         '200':
-          description: Gap analysis scorecard
+          description: Match history list
+
+  /matches/{id}:
+    get:
+      summary: Get match report by ID
+      tags: [Resume-JD Matching]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Match report details
+    delete:
+      summary: Delete match report
+      tags: [Resume-JD Matching]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Match report deleted
 
   /questions/generate:
     post:
-      summary: Synthesize personalized interview questions
+      summary: Synthesize personalized interview question set (quota enforced)
       tags: [Question Studio]
       security:
         - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [difficulty, count]
-              properties:
-                resumeId:
-                  type: string
-                  format: uuid
-                jdId:
-                  type: string
-                  format: uuid
-                topicFocus:
-                  type: string
-                  example: System Design & Databases
-                difficulty:
-                  type: string
-                  enum: [EASY, MEDIUM, HARD]
-                count:
-                  type: integer
-                  minimum: 10
-                  maximum: 20
-                  example: 15
+      responses:
+        '201':
+          description: Generated question set
+        '429':
+          $ref: '#/components/responses/QuotaExceededError'
+
+  /question-sets:
+    get:
+      summary: List all question sets for current user
+      tags: [Question Studio]
+      security:
+        - BearerAuth: []
       responses:
         '200':
-          description: Generated question set
+          description: List of question sets
+
+  /question-sets/{id}:
+    get:
+      summary: Get question set with questions and answers
+      tags: [Question Studio]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Question set details
+    delete:
+      summary: Delete question set
+      tags: [Question Studio]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Question set deleted
+
+  /question-sets/{id}/export/pdf:
+    get:
+      summary: Stream formatted Question Set PDF via PDFKit
+      tags: [Question Studio]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Streaming application/pdf binary
 
   /answers/generate:
     post:
-      summary: Fetch or generate model answer with complexity analysis
+      summary: Fetch cached or generate tailored model answer (STAR/Code/Big-O, quota enforced)
       tags: [Model Answers]
       security:
         - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [questionId]
-              properties:
-                questionId:
-                  type: string
-                  format: uuid
+      responses:
+        '200':
+          description: Cached or regenerated model answer
+        '201':
+          description: Newly generated model answer
+        '429':
+          $ref: '#/components/responses/QuotaExceededError'
+
+  /answers/{questionId}:
+    get:
+      summary: Get model answer for a question
+      tags: [Model Answers]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Model answer details
+    delete:
+      summary: Delete model answer for a question
+      tags: [Model Answers]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Model answer deleted
+
+  /collections:
+    post:
+      summary: Create a new saved question collection
+      tags: [Saved Collections]
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Collection created
+    get:
+      summary: List all saved collections for current user
+      tags: [Saved Collections]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of saved collections
+
+  /collections/{id}:
+    get:
+      summary: Get saved collection with populated questions & answers
+      tags: [Saved Collections]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Collection details
+    patch:
+      summary: Update collection name or description
+      tags: [Saved Collections]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Collection updated
+    delete:
+      summary: Delete saved collection
+      tags: [Saved Collections]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Collection deleted
+
+  /collections/{id}/items:
+    post:
+      summary: Bookmark a question into a saved collection (cross-ownership verified)
+      tags: [Saved Collections]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '201':
+          description: Question bookmarked
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /collections/{id}/items/{questionId}:
+    delete:
+      summary: Remove a bookmarked question from a collection
+      tags: [Saved Collections]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Question removed from collection
+
+  /collections/{id}/export/pdf:
+    get:
+      summary: Stream formatted Saved Collection PDF via PDFKit
+      tags: [Saved Collections]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UuidIdParam'
+      responses:
+        '200':
+          description: Streaming application/pdf binary
 
   /dashboard/summary:
     get:
-      summary: Get authentic dashboard metrics & preparation streak
+      summary: Get candidate portfolio KPIs, preparation streak, activity feed, and quota snapshot
       tags: [Dashboard]
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: Preparation KPIs and activity matrix
+          description: Dashboard summary payload
+
+  /usage/quotas:
+    get:
+      summary: Get live Free vs. Pro tier quota consumption
+      tags: [Usage & Tiers]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Live quota breakdown
 
   /usage/tier:
     patch:
-      summary: Simulated Pro tier toggle for placement demonstration
+      summary: Simulated 1-click ₹0 Free/Pro tier toggle for placement demonstration
       tags: [Usage & Tiers]
       security:
         - BearerAuth: []
@@ -275,7 +641,7 @@ paths:
                   enum: [FREE, PRO]
       responses:
         '200':
-          description: Tier updated
+          description: Tier updated and quotas refreshed
 
 components:
   securitySchemes:
@@ -283,6 +649,15 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  parameters:
+    UuidIdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
 
   schemas:
     RegisterRequest:
@@ -413,3 +788,22 @@ components:
                   code:
                     type: string
                     example: CONFLICT
+
+    QuotaExceededError:
+      description: Plan quota limit reached
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: QUOTA_EXCEEDED
+                  message:
+                    type: string
