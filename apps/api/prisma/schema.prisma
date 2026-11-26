@@ -82,6 +82,12 @@ enum DsaSheetStatus {
   REVISION
 }
 
+enum CsTopicStatus {
+  UNSTUDIED
+  LEARNED
+  REVISION
+}
+
 model User {
   id           String         @id @default(uuid())
   email        String         @unique
@@ -107,6 +113,8 @@ model User {
   assessmentSessions      AssessmentSession[]
   codingSubmissions       CodingSubmission[]
   dsaSheetProgress        UserDsaSheetProgress[]
+  csProgress              UserCsProgress[]
+  learningRoadmaps        LearningRoadmap[]
 
   @@map("users")
 }
@@ -488,4 +496,37 @@ model UserDsaSheetProgress {
   @@unique([userId, problemSlug])
   @@index([userId, status])
   @@map("user_dsa_sheet_progress")
+}
+
+model UserCsProgress {
+  id        String        @id @default(uuid())
+  userId    String        @map("user_id")
+  topicSlug String        @map("topic_slug") @db.VarChar(180)
+  status    CsTopicStatus @default(UNSTUDIED)
+  notes     String?       @db.Text
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicSlug])
+  @@index([userId, status])
+  @@map("user_cs_progress")
+}
+
+model LearningRoadmap {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  title         String   @db.VarChar(180)
+  targetRole    String   @map("target_role") @db.VarChar(120)
+  durationWeeks Int      @map("duration_weeks")
+  dailyHours    Float    @map("daily_hours")
+  currentLevel  String   @map("current_level") @db.VarChar(20)
+  phases        Json
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("learning_roadmaps")
 }
