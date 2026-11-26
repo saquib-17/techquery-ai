@@ -44,6 +44,8 @@ const SOURCE_SHEETS: SheetSourceTag[] = [
   "Blind 75",
   "Grind 169",
   "Apna College",
+  "Top Interview 150",
+  "Love Babbar 450",
 ];
 
 const COMPANIES = [
@@ -238,7 +240,7 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
   if (sheetQuery.isLoading) {
     return (
       <div className="rounded-xl border border-[#242429] bg-[#151518] p-8 text-center text-sm text-zinc-400">
-        Loading 300-Problem Master DSA Pattern Sheet...
+        Loading 400-Problem Master DSA Pattern Sheet...
       </div>
     );
   }
@@ -263,7 +265,7 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
               </div>
               <p className="text-xs text-zinc-400 mt-0.5">
                 Synthesized across Blind 75, NeetCode 150, Grind 169, Striver
-                SDE, Striver A2Z &amp; Apna College across all 22 core patterns.
+                SDE, Striver A2Z, Apna College, Love Babbar 450 &amp; Top Interview 150 across all 22 core patterns.
               </p>
             </div>
 

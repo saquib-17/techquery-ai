@@ -358,10 +358,10 @@ describe("Coding Arena, Refresh-Safe OA & Question Studio DSA Mode", () => {
     renderWithProviders(<CodingArenaPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Master DSA Sheet \(300\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Master DSA Sheet \(400\)/i)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Master DSA Sheet \(300\)/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Master DSA Sheet \(400\)/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Two Sum")).toBeInTheDocument();
@@ -502,9 +502,9 @@ describe("Coding Arena, Refresh-Safe OA & Question Studio DSA Mode", () => {
     renderWithProviders(<CodingArenaPage />);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Master DSA Sheet \(300\)/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Master DSA Sheet \(400\)/i })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole("button", { name: /Master DSA Sheet \(300\)/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Master DSA Sheet \(400\)/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /AI Guide/i })).toBeInTheDocument();

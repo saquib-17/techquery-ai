@@ -14,6 +14,8 @@ export const SheetSourceTagSchema = z.enum([
   "Striver A2Z",
   "Grind 169",
   "Apna College",
+  "Top Interview 150",
+  "Love Babbar 450",
 ]);
 export type SheetSourceTag = z.infer<typeof SheetSourceTagSchema>;
 
@@ -228,6 +230,10 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Find the Duplicate Number", "find-the-duplicate-number", "Floyd's Cycle on Array", "MEDIUM", ["Amazon", "Microsoft", "Meta"], ["NeetCode 150", "Striver SDE", "Apna College"], "Treat nums[i] as next pointer and detect cycle entry."],
     ["Spiral Matrix II", "spiral-matrix-ii", "Layer-by-Layer Fill", "MEDIUM", ["Amazon", "Apple"], ["Apna College"], "Fill 1..n^2 walking top, right, bottom, left bounds inward."],
     ["First Missing Positive", "first-missing-positive", "Cyclic Index Placement", "HARD", ["Amazon", "Google", "Meta"], ["Striver A2Z", "Grind 169"], "Place each value v in [1..n] at index v - 1, then scan for mismatch."],
+    ["Game of Life", "game-of-life", "In-Place Bit Encoding", "MEDIUM", ["Meta", "Google", "Amazon"], ["Top Interview 150"], "Use bit 1 for next state and bit 0 for current state before right-shifting."],
+    ["Maximum Sum Circular Subarray", "maximum-sum-circular-subarray", "Max(Kadane, Total - MinSubarray)", "MEDIUM", ["Amazon", "Google", "Microsoft"], ["Top Interview 150"], "Circular max is either standard Kadane or totalSum - minSubarraySum."],
+    ["Diagonal Traverse", "diagonal-traverse", "r + c Diagonal Parity", "MEDIUM", ["Meta", "Amazon", "Google"], ["Top Interview 150"], "Group or walk diagonals flipping direction when (r + c) is even vs odd."],
+    ["Maximum Points You Can Obtain from Cards", "maximum-points-you-can-obtain-from-cards", "Complement Min-Window", "MEDIUM", ["Google", "Amazon", "Flipkart"], ["Striver A2Z"], "Minimize the contiguous (n - k) unpicked middle window sum."],
   ]),
 
   // ── 2. Prefix Sum & Difference Array (10) ─────────────────────────────────
@@ -246,6 +252,10 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Count of Smaller Numbers After Self", "count-of-smaller-numbers-after-self", "Merge Sort / BIT Inversion", "HARD", ["Google", "Amazon"], ["Apna College"], "Count right-half elements jumped during merge sort or query Fenwick Tree."],
     ["Count of Range Sum", "count-of-range-sum", "Prefix Merge-Sort Count", "HARD", ["Google", "Meta"], ["Apna College"], "Count prefix[j] - prefix[i] in [lower, upper] during merge sort."],
     ["Create Sorted Array through Instructions", "create-sorted-array-through-instructions", "Fenwick Tree Order Stats", "HARD", ["Google", "Amazon"], ["Apna College"], "Query strictly smaller and strictly larger counts in BIT before insert."],
+    ["Continuous Subarray Sum", "continuous-subarray-sum", "Modulo Prefix Earliest Index", "MEDIUM", ["Meta", "Amazon", "Google"], ["Top Interview 150"], "If prefixSum % k repeats at distance >= 2, a multiple-of-k subarray exists."],
+    ["Product of the Last K Numbers", "product-of-the-last-k-numbers", "Resetting Prefix Product", "MEDIUM", ["Google", "Meta"], ["Top Interview 150"], "Reset prefix array to [1] whenever 0 is added; divide pref[n-1]/pref[n-1-k]."],
+    ["Shifting Letters II", "shifting-letters-ii", "Modulo Difference Array", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z"], "Accumulate +1/-1 shifts in difference array, then sweep mod 26."],
+    ["XOR Queries of a Subarray", "xor-queries-of-a-subarray", "Prefix XOR Range Query", "MEDIUM", ["Amazon", "Adobe"], ["Striver A2Z"], "xor(L..R) = prefixXor[R + 1] ^ prefixXor[L]."],
   ]),
 
   // ── 3. Hashing & Frequency Maps (10) ──────────────────────────────────────
@@ -263,6 +273,11 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["First Unique Character in a String", "first-unique-character-in-a-string", "26-Char Frequency Scan", "EASY", ["Amazon", "Microsoft", "Bloomberg"], ["Apna College"], "Count character frequencies then return first index with count == 1."],
     ["Brick Wall", "brick-wall", "Edge Position Frequency", "MEDIUM", ["Meta", "Google"], ["Apna College"], "Maximize prefix brick edge frequency; answer is rows - maxEdges."],
     ["Design HashMap", "design-hashmap", "Separate Chaining Buckets", "EASY", ["Amazon", "Microsoft", "LinkedIn"], ["Striver A2Z", "Apna College"], "Use fixed bucket array with linked lists keyed by key % capacity."],
+    ["Word Pattern", "word-pattern", "Bijective Pattern-Word Map", "EASY", ["Meta", "Amazon", "Dropbox"], ["Top Interview 150"], "Check 1-to-1 bijection between pattern chars and space-split words."],
+    ["Insert Delete GetRandom O(1)", "insert-delete-getrandom-o1", "Array + Index Map Swap-Pop", "MEDIUM", ["Meta", "Amazon", "Bloomberg"], ["Top Interview 150", "Grind 169"], "Swap target with last array element on remove so pop_back is O(1)."],
+    ["Minimum Area Rectangle", "minimum-area-rectangle", "Diagonal Pair Point Set", "MEDIUM", ["Google", "Meta"], ["Grind 169"], "Iterate point pairs as diagonals and check if the other 2 corners exist in Set."],
+    ["Bulls and Cows", "bulls-and-cows", "Digit Frequency Balance", "MEDIUM", ["Google", "Amazon"], ["Top Interview 150"], "Count exact matches as bulls; track unmatched digit counts for cows."],
+    ["Max Points on a Line", "max-points-on-a-line", "Normalized Slope Map", "HARD", ["Google", "LinkedIn", "Apple"], ["Top Interview 150"], "Reduce (dy, dx) by gcd(dy, dx) per anchor point and count max collinear."],
   ]),
 
   // ── 4. Strings & Pattern Matching (11) ────────────────────────────────────
@@ -281,6 +296,10 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Wildcard Matching", "wildcard-matching", "2D DP / Greedy Star Backtrack", "HARD", ["Google", "Meta", "Amazon"], ["Striver A2Z", "Apna College"], "Match '?' with any single char and '*' with empty or prefix extension."],
     ["Regular Expression Matching", "regular-expression-matching", "2D Regex State DP", "HARD", ["Google", "Meta", "Uber"], ["NeetCode 150", "Apna College"], "Handle 'x*' as zero occurrences (dp[i][j-2]) or >= 1 match."],
     ["Shortest Palindrome", "shortest-palindrome", "KMP on s + '#' + rev(s)", "HARD", ["Google", "Microsoft"], ["Striver A2Z"], "Longest palindromic prefix equals LPS of s + '#' + reverse(s)."],
+    ["Compare Version Numbers", "compare-version-numbers", "Split Revision Integer Compare", "MEDIUM", ["Amazon", "Microsoft", "Apple"], ["Striver SDE", "Top Interview 150"], "Parse dot-separated segments as ints treating missing segments as 0."],
+    ["Zigzag Conversion", "zigzag-conversion", "Row-Bounce String Builders", "MEDIUM", ["Amazon", "Paytm", "Adobe"], ["Top Interview 150"], "Append chars to current row and flip direction at row 0 and numRows - 1."],
+    ["Integer to Roman", "integer-to-roman", "Greedy Value-Symbol Table", "MEDIUM", ["Amazon", "Meta", "Oracle"], ["Top Interview 150"], "Greedily subtract largest numeral from [1000, 900, 500, 400, ..., 1]."],
+    ["Longest Happy Prefix", "longest-happy-prefix", "KMP LPS Final Value", "HARD", ["Google", "Amazon"], ["Striver A2Z", "Love Babbar 450"], "Compute KMP prefix table; answer is s.slice(0, lps[n - 1])."],
   ]),
 
   // ── 5. Two Pointers (11) ──────────────────────────────────────────────────
@@ -299,6 +318,10 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Sort Array By Parity", "sort-array-by-parity", "Even/Odd Partition", "EASY", ["Meta", "Microsoft"], ["Apna College"], "Swap even elements to front and odd elements to back in one pass."],
     ["Next Greater Element III", "next-greater-element-iii", "Digit Next Permutation", "MEDIUM", ["Amazon", "Google"], ["Apna College"], "Apply next permutation on digit string and check 32-bit INT_MAX."],
     ["Trapping Rain Water", "trapping-rain-water", "Two-Pointer Max Walls", "HARD", ["Amazon", "Google", "Meta"], ["NeetCode 150", "Striver SDE", "Striver A2Z", "Grind 169"], "Track leftMax and rightMax; water at smaller side is maxWall - height."],
+    ["Sort Array By Parity II", "sort-array-by-parity-ii", "Even/Odd Index Pointers", "EASY", ["Amazon", "Microsoft"], ["Love Babbar 450"], "Advance even pointer by 2 and odd pointer by 2, swapping mismatches."],
+    ["Backspace String Compare", "backspace-string-compare", "Reverse Skip-Counter Pointers", "EASY", ["Google", "Meta", "Amazon"], ["Grind 169"], "Scan backward counting '#' skips to compare effective chars in O(1) space."],
+    ["Remove Duplicates from Sorted Array II", "remove-duplicates-from-sorted-array-ii", "At-Most-2 Write Pointer", "MEDIUM", ["Meta", "Amazon"], ["Top Interview 150"], "Write nums[i] only if writeIdx < 2 or nums[i] != nums[writeIdx - 2]."],
+    ["Boats to Save People", "boats-to-save-people", "Sort + Heavy/Light Pair", "MEDIUM", ["Amazon", "Google", "Flipkart"], ["Top Interview 150"], "Pair lightest with heaviest if sum <= limit; otherwise heaviest goes alone."],
   ]),
 
   // ── 6. Sliding Window (11) ────────────────────────────────────────────────
@@ -316,6 +339,11 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Sliding Window Median", "sliding-window-median", "Two Heaps + Lazy Delete", "HARD", ["Google", "Meta", "Amazon"], ["Grind 169"], "Maintain balanced max/min heaps with a lazy-deletion frequency map."],
     ["Subarrays with K Different Integers", "subarrays-with-k-different-integers", "AtMost(K) - AtMost(K-1)", "HARD", ["Google", "Amazon"], ["Striver A2Z"], "Exact(K) subarrays = AtMostDistinct(K) - AtMostDistinct(K - 1)."],
     ["Minimum Window Substring", "minimum-window-substring", "Need/Have Counter Window", "HARD", ["Meta", "Amazon", "Google"], ["Blind 75", "NeetCode 150", "Striver A2Z", "Grind 169"], "Expand until all required chars satisfied, then contract left for min length."],
+    ["Binary Subarrays With Sum", "binary-subarrays-with-sum", "AtMost(goal) - AtMost(goal-1)", "MEDIUM", ["Amazon", "Google"], ["Striver A2Z"], "Count subarrays with sum <= goal minus subarrays with sum <= goal - 1."],
+    ["Longest Subarray of 1's After Deleting One Element", "longest-subarray-of-1s-after-deleting-one-element", "At-Most-1-Zero Window", "MEDIUM", ["Meta", "Amazon"], ["Top Interview 150"], "Maintain window with <= 1 zero and return max (right - left)."],
+    ["Grumpy Bookstore Owner", "grumpy-bookstore-owner", "Fixed Bonus Window", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z"], "Add fixed-k window of grumpy==1 customers onto baseline satisfied sum."],
+    ["Maximum Erasure Value", "maximum-erasure-value", "Unique Element Sum Window", "MEDIUM", ["Amazon", "Microsoft"], ["Striver A2Z"], "Shrink left while nums[right] is in set, tracking max window sum."],
+    ["Substring with Concatenation of All Words", "substring-with-concatenation-of-all-words", "Word-Stride Sliding Window", "HARD", ["Amazon", "Google", "Meta"], ["Top Interview 150"], "Run word-length-strided windows from each offset 0..wordLen-1."],
   ]),
 
   // ── 7. Stack & Monotonic Stack (11) ───────────────────────────────────────
@@ -335,6 +363,11 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Maximal Rectangle", "maximal-rectangle", "Histogram Stack per Row", "HARD", ["Google", "Amazon", "Meta"], ["Striver A2Z", "Apna College"], "Accumulate consecutive '1' heights per row and run histogram stack."],
     ["Basic Calculator", "basic-calculator", "Sign + Paren Stack", "HARD", ["Meta", "Google", "Uber"], ["Grind 169"], "Push running result and sign onto stack when entering '('."],
     ["Largest Rectangle in Histogram", "largest-rectangle-in-histogram", "Monotonic Increasing Stack", "HARD", ["Amazon", "Google", "Meta"], ["NeetCode 150", "Striver SDE", "Striver A2Z", "Grind 169"], "Pop bar when shorter bar arrives; width = right - leftSmaller - 1."],
+    ["Sum of Subarray Ranges", "sum-of-subarray-ranges", "Max Contribution - Min Contribution", "MEDIUM", ["Amazon", "Google"], ["Striver A2Z"], "Compute sum of subarray maximums minus sum of subarray minimums."],
+    ["132 Pattern", "132-pattern", "Reverse Monotonic Stack + Mid", "MEDIUM", ["Amazon", "Google"], ["Striver A2Z"], "Scan right-to-left keeping max '2' popped when a larger '3' arrives."],
+    ["Basic Calculator II", "basic-calculator-ii", "Precedence Operator Stack", "MEDIUM", ["Meta", "Amazon", "Microsoft"], ["Top Interview 150", "Grind 169"], "Evaluate * and / immediately with stack top; push +num / -num for + and -."],
+    ["Decode String", "decode-string", "Count & String Stacks", "MEDIUM", ["Google", "Amazon", "Meta"], ["Grind 169"], "Push (prevStr, repeatCount) on '[' and repeat current string on ']'."],
+    ["Simplify Path", "simplify-path", "Canonical Directory Stack", "MEDIUM", ["Meta", "Amazon", "Microsoft"], ["Top Interview 150"], "Split by '/', skip '.' and '', pop on '..', and join with '/'."],
   ]),
 
   // ── 8. Queue & Monotonic Deque (10) ───────────────────────────────────────
@@ -351,6 +384,10 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Constrained Subsequence Sum", "constrained-subsequence-sum", "DP + Monotonic Deque", "HARD", ["Google", "Amazon"], ["Striver A2Z"], "Use a k-window max deque to pick best previous dp[j] in O(1)."],
     ["Jump Game VI", "jump-game-vi", "K-Window Max DP Deque", "MEDIUM", ["Google", "Amazon"], ["Apna College"], "Maintain decreasing dp[j] indices in deque within [i-k..i-1]."],
     ["Longest Continuous Subarray With Absolute Diff Less Than or Equal to Limit", "longest-continuous-subarray-with-absolute-diff-less-than-or-equal-to-limit", "Min & Max Deques Window", "MEDIUM", ["Google", "Uber"], ["Apna College"], "Track window max and min deques; shrink left when max - min > limit."],
+    ["Moving Average from Data Stream", "moving-average-from-data-stream", "Fixed-Window Queue", "EASY", ["Google", "Meta", "Amazon"], ["Top Interview 150"], "Maintain running sum and queue of size <= windowSize."],
+    ["Flatten Nested List Iterator", "flatten-nested-list-iterator", "Lazy Stack / Queue Flattener", "MEDIUM", ["Meta", "Google", "LinkedIn"], ["Top Interview 150"], "Unpack nested lists from back onto stack until top is an integer."],
+    ["Task Scheduler II", "task-scheduler-ii", "Last-Day Map + Day Jump", "MEDIUM", ["Meta", "Google"], ["Striver A2Z"], "Advance day = max(day + 1, lastDone[task] + space + 1)."],
+    ["Max Value of Equation", "max-value-of-equation", "Monotonic Deque (y - x)", "HARD", ["Google", "Amazon"], ["Striver A2Z"], "Pop front where x_i - x_j > k; maximize (y_i + x_i) + (y_j - x_j)."],
   ]),
 
   // ── 9. Binary Search (12) ─────────────────────────────────────────────────
@@ -370,6 +407,11 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Magnetic Force Between Two Balls", "magnetic-force-between-two-balls", "Max-Min Distance on Answer", "MEDIUM", ["Amazon", "Flipkart"], ["Striver A2Z", "Apna College"], "Binary search minimum spacing d and greedily place m balls."],
     ["Split Array Largest Sum", "split-array-largest-sum", "Min-Max Partition Search", "HARD", ["Google", "Meta", "Amazon"], ["Striver A2Z"], "Binary search max subarray sum limit and count required subarrays."],
     ["Median of Two Sorted Arrays", "median-of-two-sorted-arrays", "Partition Index Bisection", "HARD", ["Google", "Amazon", "Meta"], ["NeetCode 150", "Striver SDE", "Striver A2Z", "Grind 169"], "Binary search cut i in smaller array so leftMax <= rightMin."],
+    ["Sqrt(x)", "sqrtx", "Integer Root Binary Search", "EASY", ["Meta", "Amazon", "Microsoft"], ["Top Interview 150", "Striver A2Z"], "Binary search largest integer m with m * m <= x using 64-bit product."],
+    ["Minimum Number of Days to Make m Bouquets", "minimum-number-of-days-to-make-m-bouquets", "Answer-Space Day Bisection", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z"], "Binary search minimum day d and greedily count m adjacent k-flower bouquets."],
+    ["Search a 2D Matrix II", "search-a-2d-matrix-ii", "Top-Right Staircase Search", "MEDIUM", ["Amazon", "Google", "Meta"], ["Striver A2Z", "Apna College"], "Start at top-right corner; move left if > target or down if < target in O(m + n)."],
+    ["Find K Closest Elements", "find-k-closest-elements", "Window Left-Bound Binary Search", "MEDIUM", ["Meta", "Amazon", "Google"], ["NeetCode 150", "Grind 169"], "Binary search left bound mid comparing x - arr[mid] vs arr[mid + k] - x."],
+    ["Find K-th Smallest Pair Distance", "find-k-th-smallest-pair-distance", "Sort + Distance-Space Bisection", "HARD", ["Google", "Meta"], ["Striver A2Z", "Love Babbar 450"], "Sort array and binary search distance d counting pairs with diff <= d via two pointers."],
   ]),
 
   // ── 10. Linked List (11) ──────────────────────────────────────────────────
@@ -389,6 +431,10 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Sort List", "sort-list", "Bottom-Up / Top-Down Merge", "MEDIUM", ["Meta", "Amazon", "Microsoft"], ["Striver A2Z", "Apna College"], "Split list with slow/fast pointers and merge sorted halves."],
     ["Reverse Nodes in k-Group", "reverse-nodes-in-k-group", "K-Block In-Place Reversal", "HARD", ["Amazon", "Microsoft", "Meta"], ["NeetCode 150", "Striver SDE", "Striver A2Z", "Grind 169"], "Verify k nodes exist ahead, reverse k links, and connect prevGroupTail."],
     ["Merge k Sorted Lists", "merge-k-sorted-lists", "Min-Heap / Divide & Conquer", "HARD", ["Meta", "Amazon", "Google"], ["Blind 75", "NeetCode 150", "Striver A2Z", "Grind 169"], "Maintain a min-heap of k list heads or merge pairs bottom-up."],
+    ["Odd Even Linked List", "odd-even-linked-list", "Dual Chain Weaving", "MEDIUM", ["Amazon", "Meta", "Microsoft"], ["Striver A2Z", "Grind 169"], "Link odd nodes and even nodes separately, then attach oddTail -> evenHead."],
+    ["Rotate List", "rotate-list", "Circular Tail-to-Head Link", "MEDIUM", ["Amazon", "Microsoft"], ["Striver SDE", "Top Interview 150"], "Connect tail to head, then break at (len - k % len) steps."],
+    ["Swapping Nodes in a Linked List", "swapping-nodes-in-a-linked-list", "Kth-From-Start & End Swap", "MEDIUM", ["Amazon", "Google"], ["Love Babbar 450"], "Locate kth node from front, advance fast to end for kth from back, swap vals."],
+    ["LFU Cache", "lfu-cache", "Freq-Bucketed DLL + Map", "HARD", ["Amazon", "Google", "Meta"], ["Striver SDE", "Striver A2Z"], "Map freq -> DoublyLinkedList of keys and track minFreq for O(1) eviction."],
   ]),
 
   // ── 11. Binary Trees (12) ─────────────────────────────────────────────────
@@ -410,6 +456,10 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Flatten Binary Tree to Linked List", "flatten-binary-tree-to-linked-list", "Morris / Reverse Preorder", "MEDIUM", ["Meta", "Amazon", "Microsoft"], ["Striver SDE", "Striver A2Z", "Apna College"], "Connect rightmost node of left subtree to curr.right and move left to right."],
     ["Binary Tree Maximum Path Sum", "binary-tree-maximum-path-sum", "Max Gain + Split Update", "HARD", ["Meta", "Amazon", "Google"], ["Blind 75", "NeetCode 150", "Striver SDE", "Striver A2Z", "Grind 169"], "Clamp negative gains to 0; update global max with val + left + right."],
     ["Serialize and Deserialize Binary Tree", "serialize-and-deserialize-binary-tree", "Preorder with Null Markers", "HARD", ["Meta", "Amazon", "Google"], ["Blind 75", "NeetCode 150", "Striver A2Z", "Grind 169"], "Emit 'N' for null nodes in preorder so a queue reconstructs uniquely."],
+    ["Count Complete Tree Nodes", "count-complete-tree-nodes", "Left/Right Height Bisection", "EASY", ["Google", "Amazon"], ["Striver A2Z", "Top Interview 150"], "If leftHeight == rightHeight, return (1 << h) - 1 in O(log^2 n)."],
+    ["Binary Tree Zigzag Level Order Traversal", "binary-tree-zigzag-level-order-traversal", "Alternating Deque / Reverse BFS", "MEDIUM", ["Amazon", "Meta", "Microsoft"], ["Striver SDE", "Striver A2Z", "Top Interview 150"], "Toggle left-to-right flag each BFS level and index from back when reversed."],
+    ["Path Sum III", "path-sum-iii", "Prefix Sum DFS on Tree", "MEDIUM", ["Meta", "Amazon", "Google"], ["Grind 169"], "Track running root-to-node prefix sum frequencies in HashMap during DFS."],
+    ["Construct Binary Tree from Inorder and Postorder Traversal", "construct-binary-tree-from-inorder-and-postorder-traversal", "Postorder End Root + Inorder Split", "MEDIUM", ["Amazon", "Microsoft"], ["Striver A2Z", "Top Interview 150"], "Last postorder element is root; build right subtree before left subtree."],
   ]),
 
   // ── 12. Binary Search Trees (10) ──────────────────────────────────────────
@@ -427,6 +477,10 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Two Sum IV - Input is a BST", "two-sum-iv-input-is-a-bst", "BST Iterator Two-Pointer", "EASY", ["Amazon", "Google"], ["Striver SDE", "Striver A2Z"], "Pair forward and backward BST iterators for O(h) space two-sum."],
     ["Inorder Successor in BST", "inorder-successor-in-bst", "BST Candidate Tracking", "MEDIUM", ["Meta", "Microsoft", "Google"], ["Striver A2Z", "Apna College"], "Whenever root.val > p.val, record root as candidate and step left."],
     ["Maximum Sum BST in Binary Tree", "maximum-sum-bst-in-binary-tree", "Bottom-Up (isBST, min, max, sum)", "HARD", ["Amazon", "Google"], ["Striver SDE", "Apna College"], "Return (minVal, maxVal, sum) tuple from post-order DFS."],
+    ["Minimum Absolute Difference in BST", "minimum-absolute-difference-in-bst", "Inorder Predecessor Diff", "EASY", ["Google", "Amazon"], ["Top Interview 150"], "Track prev node in sorted inorder traversal and minimize curr.val - prev.val."],
+    ["Balance a Binary Search Tree", "balance-a-binary-search-tree", "Inorder Array + Midpoint Build", "MEDIUM", ["Meta", "Amazon"], ["Love Babbar 450"], "Collect sorted values via inorder DFS, then build height-balanced BST."],
+    ["Trim a Binary Search Tree", "trim-a-binary-search-tree", "Range-Pruned BST Recursion", "MEDIUM", ["Amazon", "Microsoft"], ["Love Babbar 450"], "If val < low return trim(right); if val > high return trim(left)."],
+    ["All Elements in Two Binary Search Trees", "all-elements-in-two-binary-search-trees", "Dual Iterative Inorder Merge", "MEDIUM", ["Meta", "Amazon"], ["Striver A2Z"], "Merge two BST inorder stacks on the fly in O(n + m) time."],
   ]),
 
   // ── 13. Tries (10) ────────────────────────────────────────────────────────
@@ -443,6 +497,10 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Longest Word in Dictionary", "longest-word-in-dictionary", "All-Prefixes Trie BFS", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z", "Apna College"], "Only traverse Trie children whose isEnd == true."],
     ["Stream of Characters", "stream-of-characters", "Reversed Suffix Trie", "HARD", ["Google", "Meta"], ["Apna College"], "Insert reversed words into Trie and walk recent query suffix backward."],
     ["Concatenated Words", "concatenated-words", "Trie / Word-Break DP", "HARD", ["Amazon", "Meta"], ["Grind 169"], "Check if each word can be formed by >= 2 shorter words in the set."],
+    ["Implement Magic Dictionary", "implement-magic-dictionary", "Single-Mismatch Trie DFS", "MEDIUM", ["Google", "Amazon"], ["Love Babbar 450"], "Walk Trie allowing exactly one character mismatch before reaching end."],
+    ["Short Encoding of Words", "short-encoding-of-words", "Reversed Suffix Trie Leaves", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z"], "Insert reversed words into Trie; sum (depth + 1) for every leaf node."],
+    ["Camelcase Matching", "camelcase-matching", "Uppercase-Sensitive Subsequence", "MEDIUM", ["Google", "Meta"], ["Top Interview 150"], "Match pattern as subsequence while rejecting unmatched uppercase letters."],
+    ["Palindrome Pairs", "palindrome-pairs", "Reversed-Word Trie + Palindrome Suffix", "HARD", ["Airbnb", "Google", "Meta"], ["Grind 169"], "Split each word at k; if left is palindrome, look up reversed right."],
   ]),
 
   // ── 14. Heap / Priority Queue (10) ────────────────────────────────────────
@@ -460,6 +518,11 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Kth Smallest Element in a Sorted Matrix", "kth-smallest-element-in-a-sorted-matrix", "Min-Heap / Value Bisection", "MEDIUM", ["Meta", "Amazon", "Google"], ["Apna College"], "Push first column into min-heap or binary search count <= mid."],
     ["Smallest Range Covering Elements from K Lists", "smallest-range-covering-elements-from-k-lists", "K-Pointer Min-Heap + Max", "HARD", ["Google", "Amazon"], ["Grind 169", "Apna College"], "Track currentMax while popping min element from K-list heap."],
     ["Find Median from Data Stream", "find-median-from-data-stream", "Balanced Min/Max Heaps", "HARD", ["Amazon", "Google", "Meta"], ["Blind 75", "NeetCode 150", "Striver SDE", "Striver A2Z", "Grind 169"], "Keep lower half in max-heap and upper half in min-heap within size diff 1."],
+    ["Relative Ranks", "relative-ranks", "Sorted Index / Max-Heap Rank", "EASY", ["Google", "Amazon"], ["Love Babbar 450"], "Sort (score, idx) descending and assign medals to top 3."],
+    ["Furthest Building You Can Reach", "furthest-building-you-can-reach", "Min-Heap of Ladder Climbs", "MEDIUM", ["Google", "Microsoft", "Amazon"], ["Striver A2Z"], "Use ladders for largest diffs; swap smallest diff to bricks when ladders full."],
+    ["Single-Threaded CPU", "single-threaded-cpu", "Sort Enqueue + Min-Heap(Time, Idx)", "MEDIUM", ["Google", "Meta"], ["NeetCode 150"], "Push all tasks with enqueueTime <= curTime into (procTime, idx) min-heap."],
+    ["Process Tasks Using Servers", "process-tasks-using-servers", "Free & Busy Min-Heaps", "MEDIUM", ["Google", "Amazon"], ["NeetCode 150"], "Keep (weight, idx) free heap and (freeTime, weight, idx) busy heap."],
+    ["Meeting Rooms III", "meeting-rooms-iii", "Unused & Busy Room Heaps", "HARD", ["Google", "Uber", "Meta"], ["Grind 169"], "Assign lowest-index free room or delay meeting to earliest finishing room."],
   ]),
 
   // ── 15. Recursion & Backtracking (11) ─────────────────────────────────────
@@ -478,6 +541,11 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Unique Paths III", "unique-paths-iii", "Hamiltonian Grid Backtrack", "HARD", ["Google", "Amazon"], ["Apna College"], "Count total walkable squares and require remaining == 0 at end cell."],
     ["N-Queens", "n-queens", "Col & Diagonal Bitsets", "HARD", ["Amazon", "Google", "Meta"], ["NeetCode 150", "Striver SDE", "Striver A2Z", "Grind 169"], "Track occupied cols, (r-c) diag1, and (r+c) diag2 in O(1)."],
     ["Sudoku Solver", "sudoku-solver", "Constraint Backtracking", "HARD", ["Amazon", "Google", "Uber"], ["Striver SDE", "Striver A2Z", "Grind 169"], "Try digits 1..9 in empty cells checking row, col, and 3x3 box."],
+    ["Binary Watch", "binary-watch", "Bit-Count Enumeration", "EASY", ["Google", "Apple"], ["Love Babbar 450"], "Enumerate (h, m) and keep pairs where popcount(h) + popcount(m) == turnedOn."],
+    ["Restore IP Addresses", "restore-ip-addresses", "4-Segment Backtrack (0..255)", "MEDIUM", ["Amazon", "Meta", "Microsoft"], ["Striver A2Z", "Love Babbar 450"], "Split string into 4 parts of length 1..3 without leading zeros <= 255."],
+    ["Partition to K Equal Sum Subsets", "partition-to-k-equal-sum-subsets", "Bucket Backtrack + Prune", "MEDIUM", ["LinkedIn", "Amazon", "Google"], ["NeetCode 150", "Love Babbar 450"], "Sort descending and assign each number to one of k target/k buckets."],
+    ["Expression Add Operators", "expression-add-operators", "DFS with Prev Operand for '*'", "HARD", ["Meta", "Google"], ["Striver A2Z"], "Track prevTerm so '*' undoes +prevTerm and applies prevTerm * cur."],
+    ["Word Break II", "word-break-ii", "Memoized Sentence Backtrack", "HARD", ["Meta", "Amazon", "Google"], ["Striver A2Z", "Love Babbar 450"], "Memoize all valid sentence suffixes from each start index."],
   ]),
 
   // ── 16. Graphs (BFS / DFS / Connected Components) (11) ────────────────────
@@ -496,6 +564,11 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Word Ladder", "word-ladder", "Shortest Unweighted BFS", "HARD", ["Amazon", "Meta", "Google"], ["NeetCode 150", "Striver A2Z", "Grind 169"], "Try 26 char substitutions per position and remove visited words from set."],
     ["Word Ladder II", "word-ladder-ii", "BFS Level DAG + Backtrack", "HARD", ["Amazon", "Meta"], ["Striver A2Z", "Apna College"], "Build shortest-distance predecessor DAG via BFS, then DFS paths."],
     ["Making A Large Island", "making-a-large-island", "Component ID + Bridge Sum", "HARD", ["Meta", "Google", "Uber"], ["Striver A2Z"], "Label each island with an ID & area, then test flipping each '0' cell."],
+    ["Find if Path Exists in Graph", "find-if-path-exists-in-graph", "Basic Graph BFS/DFS/DSU", "EASY", ["Google", "Amazon"], ["Striver A2Z"], "Run BFS/DFS or Union-Find from source and check if destination is reached."],
+    ["Number of Enclaves", "number-of-enclaves", "Boundary Flood-Fill Sink", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z"], "Sink all '1's connected to matrix borders, then count remaining '1's."],
+    ["Open the Lock", "open-the-lock", "4-Wheel State-Space BFS", "MEDIUM", ["Google", "Amazon", "Meta"], ["NeetCode 150"], "Treat 4-digit states as graph nodes with 8 +/-1 transitions avoiding deadends."],
+    ["Minimum Genetic Mutation", "minimum-genetic-mutation", "8-Char Gene BFS", "MEDIUM", ["Google", "Twitter"], ["Top Interview 150"], "Try A/C/G/T mutations at each of 8 positions in shortest-path BFS."],
+    ["Keys and Rooms", "keys-and-rooms", "Reachability DFS/BFS", "MEDIUM", ["Amazon", "Google"], ["Striver A2Z"], "Start at room 0, visit unlocked rooms, and check visited.size == n."],
   ]),
 
   // ── 17. Topological Sort, Shortest Path & DSU (11) ────────────────────────
@@ -514,6 +587,10 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Most Stones Removed with Same Row or Column", "most-stones-removed-with-same-row-or-column", "Row/Col Bipartite DSU", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z", "Apna College"], "Union stone's row and ~(col); answer = stones.length - components."],
     ["Alien Dictionary", "alien-dictionary", "Char Precedence Topo Sort", "HARD", ["Meta", "Google", "Airbnb"], ["Blind 75", "NeetCode 150", "Striver A2Z", "Grind 169"], "Compare adjacent words for first differing char edge, then run Kahn's."],
     ["Swim in Rising Water", "swim-in-rising-water", "Minimax Dijkstra / DSU", "HARD", ["Google", "Meta"], ["NeetCode 150", "Striver A2Z"], "Pop lowest-elevation cell from min-heap tracking max elevation seen."],
+    ["Number of Ways to Arrive at Destination", "number-of-ways-to-arrive-at-destination", "Dijkstra + Shortest Path DP", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z"], "On shorter dist reset ways[v] = ways[u]; on equal dist add ways[v] += ways[u]."],
+    ["Satisfiability of Equality Equations", "satisfiability-of-equality-equations", "Two-Pass Union-Find", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z"], "Union all '==' pairs first, then check every '!=' pair has different roots."],
+    ["Critical Connections in a Network", "critical-connections-in-a-network", "Tarjan's Bridges (tin/low)", "HARD", ["Amazon", "Meta", "Google"], ["Striver A2Z", "Love Babbar 450"], "Edge (u, v) is a bridge iff low[v] > tin[u] during DFS."],
+    ["Reconstruct Itinerary", "reconstruct-itinerary", "Hierholzer's Eulerian Path", "HARD", ["Meta", "Google", "Uber"], ["NeetCode 150"], "Sort outgoing edges lexically and post-order append nodes in DFS."],
   ]),
 
   // ── 18. 1-D Dynamic Programming (11) ──────────────────────────────────────
@@ -532,6 +609,11 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Combination Sum IV", "combination-sum-iv", "Order-Matters Coin Permutations", "MEDIUM", ["Google", "Meta"], ["Blind 75", "Apna College"], "Loop target outer and nums inner so different orderings count separately."],
     ["Maximum Length of Pair Chain", "maximum-length-of-pair-chain", "Pair Sort + LIS / Greedy", "MEDIUM", ["Amazon", "Google"], ["Apna College"], "Sort pairs by end value and greedily pick non-overlapping chains."],
     ["Perfect Squares", "perfect-squares", "Lagrange / Min Square DP", "MEDIUM", ["Google", "Microsoft", "Meta"], ["Grind 169", "Apna College"], "dp[i] = min(dp[i], dp[i - s*s] + 1) for all squares s*s <= i."],
+    ["Integer Break", "integer-break", "Product Split DP / Math", "MEDIUM", ["Amazon", "Google"], ["NeetCode 150"], "dp[i] = max over j of max(j, dp[j]) * max(i - j, dp[i - j])."],
+    ["Number of Longest Increasing Subsequence", "number-of-longest-increasing-subsequence", "LIS Length + Count Arrays", "MEDIUM", ["Google", "Amazon", "Meta"], ["Striver A2Z"], "Track both len[i] and cnt[i]; add cnt[j] whenever len[j] + 1 == len[i]."],
+    ["Delete and Earn", "delete-and-earn", "Bucketed House Robber DP", "MEDIUM", ["Amazon", "Goldman Sachs"], ["Striver A2Z"], "Aggregate points per value into points[v], then run House Robber DP."],
+    ["Minimum Cost For Tickets", "minimum-cost-for-tickets", "1/7/30-Day Travel DP", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z"], "At travel day d, take min(dp[d-1]+c0, dp[d-7]+c1, dp[d-30]+c2)."],
+    ["Russian Doll Envelopes", "russian-doll-envelopes", "Sort (w asc, h desc) + LIS", "HARD", ["Google", "Microsoft"], ["Striver A2Z", "Love Babbar 450"], "Sort width ascending, height descending to prevent equal-width nesting, then LIS on h."],
   ]),
 
   // ── 19. 2-D & Subsequence Dynamic Programming (11) ────────────────────────
@@ -549,6 +631,12 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Burst Balloons", "burst-balloons", "Interval DP (Last Burst)", "HARD", ["Google", "Amazon"], ["NeetCode 150", "Striver A2Z"], "Choose k as the LAST balloon to burst in (left, right) so boundaries stay intact."],
     ["Minimum Cost to Cut a Stick", "minimum-cost-to-cut-a-stick", "Sorted-Cuts Interval DP", "HARD", ["Google", "Amazon"], ["Striver A2Z"], "Pad cuts with 0 and n; dp[i][j] tries each split k between i and j."],
     ["Maximal Square", "maximal-square", "2D Min-Neighbor Square DP", "MEDIUM", ["Amazon", "Google", "Meta"], ["Grind 169", "Apna College"], "dp[r][c] = 1 + min(top, left, topLeft) when matrix[r][c] == '1'."],
+    ["Unique Paths II", "unique-paths-ii", "Obstacle Grid Path DP", "MEDIUM", ["Amazon", "Google", "Meta"], ["Top Interview 150", "Striver A2Z"], "Zero out dp[r][c] on obstacle cells; otherwise sum top and left cells."],
+    ["Triangle", "triangle", "Bottom-Up Min Path DP", "MEDIUM", ["Amazon", "Google"], ["Top Interview 150", "Striver A2Z"], "Collapse triangle from bottom row up: dp[c] = row[c] + min(dp[c], dp[c+1])."],
+    ["Longest Palindromic Subsequence", "longest-palindromic-subsequence", "LCS(s, rev(s)) / Range DP", "MEDIUM", ["Amazon", "Google", "Meta"], ["Striver A2Z", "Love Babbar 450"], "Compute LCS of s with its reverse, or expand range dp[i][j] on endpoints."],
+    ["Minimum Insertion Steps to Make a String Palindrome", "minimum-insertion-steps-to-make-a-string-palindrome", "Length Minus LPS", "HARD", ["Amazon", "Google"], ["Striver A2Z"], "Minimum insertions equals n - LPS(s), leaving longest palindromic subsequence intact."],
+    ["Shortest Common Supersequence", "shortest-common-supersequence", "LCS Backtrack Reconstruction", "HARD", ["Google", "Amazon"], ["Striver A2Z"], "Build 2D LCS table then walk backwards emitting common chars once and both mismatches."],
+    ["Best Time to Buy and Sell Stock III", "best-time-to-buy-and-sell-stock-iii", "At-Most-2-Tx State DP", "HARD", ["Amazon", "Google", "Microsoft"], ["Top Interview 150", "Striver A2Z"], "Track buy1, sell1, buy2, sell2 states across prices in O(n) time and O(1) space."],
   ]),
 
   // ── 20. Greedy Algorithms (10) ────────────────────────────────────────────
@@ -566,6 +654,10 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Bag of Tokens", "bag-of-tokens", "Sort + Two-Pointer Greedy", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z"], "Play smallest token face-up for score, largest token face-down for power."],
     ["Two City Scheduling", "two-city-scheduling", "Cost-Delta Greedy Sort", "MEDIUM", ["Amazon", "Bloomberg"], ["Grind 169"], "Sort by (costA - costB) ascending; send first n to A and rest to B."],
     ["Queue Reconstruction by Height", "queue-reconstruction-by-height", "Tallest-First k-Insert", "MEDIUM", ["Google", "Amazon"], ["Apna College"], "Sort by height desc, k asc; insert each person at index k."],
+    ["Maximum Units on a Truck", "maximum-units-on-a-truck", "Fractional Box-Unit Greedy", "EASY", ["Amazon", "Flipkart"], ["Striver A2Z"], "Sort box types by unitsPerBox descending and greedily load until truckSize is full."],
+    ["Minimum Add to Make Parentheses Valid", "minimum-add-to-make-parentheses-valid", "Open/Unmatched Balance", "MEDIUM", ["Meta", "Amazon"], ["Striver A2Z"], "Track unmatched ')' when open == 0 plus remaining unclosed '(' at the end."],
+    ["Broken Calculator", "broken-calculator", "Reverse Target Greedy", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z"], "Work backwards from target to startValue: halve if even, else increment."],
+    ["Patching Array", "patching-array", "Reachable Prefix Doubling", "HARD", ["Google", "Amazon"], ["Love Babbar 450"], "Track covered range [1, miss); if nums[i] > miss, patch with miss and double miss."],
   ]),
 
   // ── 21. Intervals (10) ────────────────────────────────────────────────────
@@ -581,6 +673,12 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["My Calendar I", "my-calendar-i", "Balanced BST / Sorted Check", "MEDIUM", ["Google", "Amazon"], ["Grind 169"], "Two intervals [s1,e1) and [s2,e2) overlap iff max(s1,s2) < min(e1,e2)."],
     ["Minimum Interval to Include Each Query", "minimum-interval-to-include-each-query", "Offline Sort + Min-Heap", "HARD", ["Google", "Meta"], ["NeetCode 150"], "Sort queries & intervals; push intervals starting <= q, pop ending < q."],
     ["My Calendar II", "my-calendar-ii", "Overlap + Double-Booked List", "MEDIUM", ["Google", "Uber"], ["Apna College"], "Track double-booked overlaps separately and reject any triple overlap."],
+    ["Determine if Two Events Have Conflict", "determine-if-two-events-have-conflict", "String Interval Overlap", "EASY", ["Amazon", "Google"], ["Striver A2Z"], "Two HH:MM intervals overlap iff event1[0] <= event2[1] && event2[0] <= event1[1]."],
+    ["Divide Intervals Into Minimum Number of Groups", "divide-intervals-into-minimum-number-of-groups", "Max Concurrent Sweep Line", "MEDIUM", ["Amazon", "Meta"], ["NeetCode 150"], "Minimum groups equals maximum simultaneous overlapping intervals via min-heap or sweep."],
+    ["Remove Covered Intervals", "remove-covered-intervals", "Sort (start asc, end desc)", "MEDIUM", ["Amazon", "Google"], ["Striver A2Z"], "Sort by start asc, end desc; an interval is covered iff curr.end <= maxEnd."],
+    ["Data Stream as Disjoint Intervals", "data-stream-as-disjoint-intervals", "TreeMap / Ordered Interval Merge", "HARD", ["Google", "Meta"], ["Striver A2Z"], "Maintain disjoint intervals by start key and merge left/right neighbors on addNum."],
+    ["Maximum Number of Events That Can Be Attended", "maximum-number-of-events-that-can-be-attended", "Day-by-Day Earliest-End Min-Heap", "MEDIUM", ["Amazon", "Google", "Meta"], ["Striver A2Z"], "Sort events by start day; each day push starting events to min-heap and attend earliest-ending."],
+    ["Video Stitching", "video-stitching", "Greedy Farthest-End Interval Cover", "MEDIUM", ["Google", "Amazon"], ["Striver A2Z"], "Sort clips by start; greedily extend reachable end to max(end) among clips starting <= currEnd."],
   ]),
 
   // ── 22. Bit Manipulation & Math (11) ──────────────────────────────────────
@@ -597,10 +695,27 @@ const RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> = [
     ["Plus One", "plus-one", "Trailing-9 Carry Scan", "EASY", ["Google", "Meta"], ["NeetCode 150"], "Increment first non-9 from right; if all 9s, prepend 1."],
     ["Single Number III", "single-number-iii", "Lowest Set Bit Partition", "MEDIUM", ["Amazon", "Google"], ["Striver A2Z"], "Use diff = xorAll & -xorAll to split numbers into two groups."],
     ["Power of Two", "power-of-two", "n > 0 && (n & (n - 1)) == 0", "EASY", ["Google", "Amazon"], ["Striver A2Z", "Apna College"], "Powers of two have exactly one set bit in binary."],
+    ["Excel Sheet Column Number", "excel-sheet-column-number", "Base-26 Positional Accumulation", "EASY", ["Microsoft", "Amazon", "Meta"], ["Top Interview 150"], "Accumulate ans = ans * 26 + (ch - 'A' + 1) left to right."],
+    ["Single Number II", "single-number-ii", "Bit-Count Modulo 3", "MEDIUM", ["Amazon", "Google"], ["Top Interview 150", "Striver A2Z"], "Count set bits at each of 32 positions mod 3, or use ones/twos bitmask states."],
+    ["Bitwise AND of Numbers Range", "bitwise-and-of-numbers-range", "Common Binary Prefix Shift", "MEDIUM", ["Amazon", "Meta"], ["Top Interview 150", "Striver A2Z"], "Right-shift both m and n until equal to find their common binary prefix, then shift back."],
+    ["Count Primes", "count-primes", "Sieve of Eratosthenes", "MEDIUM", ["Amazon", "Microsoft", "Google"], ["Striver A2Z", "Love Babbar 450"], "Mark multiples of each prime p starting from p * p up to n - 1."],
   ]),
 ];
 
-export const DSA_SHEET_PROBLEMS: DsaSheetProblemItem[] = RAW_ITEMS.map(
+const DIFFICULTY_RANK: Record<DsaSheetProblemItem["difficulty"], number> = {
+  EASY: 0,
+  MEDIUM: 1,
+  HARD: 2,
+};
+
+const SORTED_RAW_ITEMS: Array<Omit<DsaSheetProblemItem, "order">> =
+  DSA_SHEET_CATEGORIES.flatMap((cat) =>
+    RAW_ITEMS.filter((item) => item.category === cat).sort(
+      (a, b) => DIFFICULTY_RANK[a.difficulty] - DIFFICULTY_RANK[b.difficulty]
+    )
+  );
+
+export const DSA_SHEET_PROBLEMS: DsaSheetProblemItem[] = SORTED_RAW_ITEMS.map(
   (item, idx) => ({
     order: idx + 1,
     ...item,

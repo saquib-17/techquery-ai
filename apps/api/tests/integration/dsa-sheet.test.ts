@@ -33,17 +33,28 @@ describe("Master DSA Pattern Sheet API & Dataset Tests (V2.2)", () => {
     });
   });
 
-  it("validates 300 unique problems across all 22 categories and all 6 source sheets", () => {
-    expect(DSA_SHEET_PROBLEMS).toHaveLength(300);
+  it("validates 400 unique problems across all 22 categories and all 8 source sheets, sorted Easy -> Medium -> Hard", () => {
+    expect(DSA_SHEET_PROBLEMS).toHaveLength(400);
 
     const slugs = new Set(DSA_SHEET_PROBLEMS.map((p) => p.slug));
     const titles = new Set(DSA_SHEET_PROBLEMS.map((p) => p.title));
-    expect(slugs.size).toBe(300);
-    expect(titles.size).toBe(300);
+    expect(slugs.size).toBe(400);
+    expect(titles.size).toBe(400);
 
+    const mediumCount = DSA_SHEET_PROBLEMS.filter(
+      (p) => p.difficulty === "MEDIUM"
+    ).length;
+    expect(mediumCount).toBeGreaterThanOrEqual(220);
+
+    const diffRank = { EASY: 0, MEDIUM: 1, HARD: 2 } as const;
     for (const cat of DSA_SHEET_CATEGORIES) {
-      const count = DSA_SHEET_PROBLEMS.filter((p) => p.category === cat).length;
-      expect(count).toBeGreaterThanOrEqual(8);
+      const catItems = DSA_SHEET_PROBLEMS.filter((p) => p.category === cat);
+      expect(catItems.length).toBeGreaterThanOrEqual(16);
+      for (let i = 1; i < catItems.length; i++) {
+        expect(diffRank[catItems[i].difficulty]).toBeGreaterThanOrEqual(
+          diffRank[catItems[i - 1].difficulty]
+        );
+      }
     }
 
     const expectedSources: SheetSourceTag[] = [
@@ -53,6 +64,8 @@ describe("Master DSA Pattern Sheet API & Dataset Tests (V2.2)", () => {
       "Striver A2Z",
       "Grind 169",
       "Apna College",
+      "Top Interview 150",
+      "Love Babbar 450",
     ];
     for (const src of expectedSources) {
       const count = DSA_SHEET_PROBLEMS.filter((p) =>

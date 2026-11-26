@@ -98,7 +98,7 @@ export function CodingArenaPage() {
             )}
           >
             <BookOpen className="h-3.5 w-3.5" />
-            Master DSA Sheet (300)
+            Master DSA Sheet (400)
           </button>
         </div>
       )}
