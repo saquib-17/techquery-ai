@@ -120,7 +120,10 @@ export class AIGateway {
 
     // 3. Deterministic Heuristic Fallback
     if (context.fallbackFn) {
-      logger.info({ taskType: context.taskType }, "Executing deterministic fallback engine");
+      logger.warn(
+        { taskType: context.taskType, attemptedProvider: provider.id },
+        "Executing deterministic fallback engine"
+      );
       const fallbackData = context.fallbackFn(context.rawInputText || "");
       return {
         success: true,

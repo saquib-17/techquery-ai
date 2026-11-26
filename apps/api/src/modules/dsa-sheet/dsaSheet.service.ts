@@ -12,6 +12,7 @@ import {
 } from "@techquery/shared";
 import { prisma } from "../../core/database/index.js";
 import { aiGateway, AIGateway } from "../../core/ai/ai.gateway.js";
+import { logger } from "../../core/logger/index.js";
 import { NotFoundError } from "../../core/errors/AppError.js";
 
 const ComplexityPairSchema = z.object({
@@ -260,7 +261,11 @@ CRITICAL: Format bruteForceCode and optimalCode with proper 4-space indentation 
         bruteForceCode: normalizeCode(result.data.bruteForceCode),
         optimalCode: normalizeCode(result.data.optimalCode),
       };
-    } catch {
+    } catch (err) {
+      logger.warn(
+        { err, problemSlug, language },
+        "DSA walkthrough AI call threw; using deterministic fallback"
+      );
       dto = { problemSlug, language, ...fallback() };
     }
 

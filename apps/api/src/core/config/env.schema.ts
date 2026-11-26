@@ -61,7 +61,7 @@ export const envSchema = z
     OLLAMA_BASE_URL: z.string().url().default("http://localhost:11434"),
     AI_LOCAL_MODEL: z.string().min(1).default("llama3.2:3b"),
     GROQ_API_KEY: z.string().optional(),
-    GROQ_MODEL: z.string().min(1).default("openai/gpt-oss-20b"),
+    GROQ_MODEL: z.string().min(1).default("openai/gpt-oss-120b"),
     AI_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
     JUDGE0_API_URL: z
       .string()

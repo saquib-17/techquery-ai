@@ -32,36 +32,75 @@ export class GroqDriver implements AIGatewayProvider {
 
       messages.push({ role: "user", content: prompt });
 
-      const payload: Record<string, unknown> = {
-        model: config.GROQ_MODEL,
-        messages,
-        temperature: options?.temperature ?? 0.1,
-        max_tokens: options?.maxTokens ?? 4096,
-        ...(options?.jsonMode !== false ? { response_format: { type: "json_object" } } : {}),
-      };
+      const candidateModels = Array.from(
+        new Set([config.GROQ_MODEL, "openai/gpt-oss-120b", "openai/gpt-oss-20b"])
+      );
 
-      const response = await fetch(this.endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${config.GROQ_API_KEY}`,
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
+      let response: Response | null = null;
+      let lastErrorText = "";
 
-      if (response.status === 429) {
-        throw new ServiceUnavailableError(
-          "Groq Cloud free-tier rate limit exceeded. Please try again shortly.",
-          "AI_RATE_LIMIT"
+      for (let i = 0; i < candidateModels.length; i++) {
+        const model = candidateModels[i]!;
+        const payload: Record<string, unknown> = {
+          model,
+          messages,
+          temperature: options?.temperature ?? 0.1,
+          max_tokens: options?.maxTokens ?? 4096,
+          ...(options?.jsonMode !== false ? { response_format: { type: "json_object" } } : {}),
+        };
+
+        response = await fetch(this.endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${config.GROQ_API_KEY}`,
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+
+        if (response.ok) {
+          if (i > 0) {
+            logger.warn(
+              { primaryModel: config.GROQ_MODEL, fallbackModel: model },
+              "Primary Groq model failed; succeeded using fallback Groq model"
+            );
+          }
+          break;
+        }
+
+        lastErrorText = await response.text().catch(() => "");
+        const canRetryWithFallback =
+          (response.status === 400 ||
+            response.status === 404 ||
+            response.status === 429) &&
+          i < candidateModels.length - 1;
+        if (!canRetryWithFallback) {
+          if (response.status === 429) {
+            throw new ServiceUnavailableError(
+              "Groq Cloud free-tier rate limit exceeded. Please try again shortly.",
+              "AI_RATE_LIMIT"
+            );
+          }
+          logger.error(
+            { status: response.status, model, errorText: lastErrorText },
+            "Groq generation failed"
+          );
+          throw new ServiceUnavailableError(
+            `Groq Cloud generation returned status ${response.status}`,
+            "AI_PROVIDER_ERROR"
+          );
+        }
+
+        logger.warn(
+          { status: response.status, failedModel: model, nextModel: candidateModels[i + 1] },
+          "Groq model unavailable; retrying with fallback model"
         );
       }
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "");
-        logger.error({ status: response.status, errorText }, "Groq generation failed");
+      if (!response || !response.ok) {
         throw new ServiceUnavailableError(
-          `Groq Cloud generation returned status ${response.status}`,
+          "Groq Cloud generation failed across all configured models.",
           "AI_PROVIDER_ERROR"
         );
       }
