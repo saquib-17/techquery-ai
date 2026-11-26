@@ -13,5 +13,7 @@ router.get("/:id", assessmentController.getById);
 router.put("/:id/draft", assessmentController.saveDraft);
 router.post("/:id/finish", assessmentController.finish);
 router.post("/:id/cancel", assessmentController.cancel);
+router.delete("/:sessionId", assessmentController.deleteSession);
+router.delete("/", assessmentController.clearHistory);
 
 export const assessmentRoutes = router;

@@ -8,6 +8,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 import { CodingArenaPage } from "./pages/CodingArenaPage";
 import { buildDraftStorageKey } from "./components/ActiveCodingWorkspace";
+import { CodeSyntaxBlock } from "@/components/ui/CodeSyntaxBlock";
 import { QuestionCard } from "@/features/questions/components/QuestionCard";
 import { QuestionGeneratorDialog } from "@/features/questions/components/QuestionGeneratorDialog";
 import * as questionsApi from "@/features/questions/questions.api";
@@ -371,5 +372,171 @@ describe("Coding Arena, Refresh-Safe OA & Question Studio DSA Mode", () => {
     });
 
     expect(screen.queryByText("Two Sum")).not.toBeInTheDocument();
+  });
+
+  it("deletes a single session and clears history from Recent Sessions", async () => {
+    const pastSession: AssessmentSessionDto = {
+      ...SAMPLE_SESSION,
+      id: "33333333-3333-4333-8333-333333333333",
+      title: "Completed OA · Arrays",
+      status: "COMPLETED",
+      remainingSeconds: 0,
+    };
+
+    vi.mocked(api.get).mockImplementation(async (url: string) => {
+      if (url === "/assessments/active") {
+        return { data: { success: true, data: { session: null } } };
+      }
+      if (url.startsWith("/coding/problems")) {
+        return { data: { success: true, data: { problems: [SAMPLE_PROBLEM] } } };
+      }
+      if (url === "/assessments/history") {
+        return { data: { success: true, data: { sessions: [pastSession] } } };
+      }
+      return { data: { success: true, data: {} } };
+    });
+    vi.mocked(api.delete).mockResolvedValue({
+      data: { success: true, data: { deleted: true, id: pastSession.id } },
+    });
+
+    renderWithProviders(<CodingArenaPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Completed OA · Arrays")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete session" }));
+
+    await waitFor(() => {
+      expect(api.delete).toHaveBeenCalledWith(`/assessments/${pastSession.id}`);
+    });
+    expect(screen.queryByText("Session Scorecard")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Clear History/i }));
+    await waitFor(() => {
+      expect(api.delete).toHaveBeenCalledWith("/assessments");
+    });
+  });
+
+  it("opens AI Guide drawer and toggles collapsible Brute Force and Optimal code blocks", async () => {
+    vi.mocked(api.get).mockImplementation(async (url: string) => {
+      if (url === "/assessments/active") {
+        return { data: { success: true, data: { session: null } } };
+      }
+      if (url.startsWith("/coding/problems")) {
+        return { data: { success: true, data: { problems: [SAMPLE_PROBLEM] } } };
+      }
+      if (url === "/assessments/history") {
+        return { data: { success: true, data: { sessions: [] } } };
+      }
+      if (url === "/dsa-sheet") {
+        return {
+          data: {
+            success: true,
+            data: {
+              summary: {
+                total: 1,
+                solved: 0,
+                revision: 0,
+                unsolved: 1,
+                byDifficulty: {
+                  EASY: { total: 1, solved: 0 },
+                  MEDIUM: { total: 0, solved: 0 },
+                  HARD: { total: 0, solved: 0 },
+                },
+                byCategory: [
+                  {
+                    category: "1. Arrays & Matrix",
+                    total: 1,
+                    solved: 0,
+                    revision: 0,
+                  },
+                ],
+              },
+              problems: [
+                {
+                  order: 1,
+                  title: "Two Sum",
+                  slug: "two-sum",
+                  leetcodeUrl: "https://leetcode.com/problems/two-sum/",
+                  category: "1. Arrays & Matrix",
+                  subPattern: "Hash Lookup",
+                  difficulty: "EASY",
+                  companies: ["Amazon"],
+                  sourceSheets: ["Blind 75"],
+                  patternClue: "Use a HashMap.",
+                  arenaSlug: "two-sum",
+                  status: "UNSOLVED",
+                  notes: "",
+                  updatedAt: null,
+                },
+              ],
+            },
+          },
+        };
+      }
+      return { data: { success: true, data: {} } };
+    });
+
+    vi.mocked(api.post).mockResolvedValue({
+      data: {
+        success: true,
+        data: {
+          walkthrough: {
+            problemSlug: "two-sum",
+            language: "java",
+            problemExplanation: "Find two indices that sum to target.",
+            patternRecognition: "HashMap lookup in O(n).",
+            bruteForceApproach: "Check every pair with nested loops.",
+            bruteForceComplexity: { time: "O(n^2)", space: "O(1)" },
+            bruteForceCode: "class Solution { /* brute */ }",
+            optimalApproach: "Store seen values in a HashMap.",
+            optimalComplexity: { time: "O(n)", space: "O(n)" },
+            optimalCode: "class Solution { /* optimal */ }",
+            edgeCases: ["Negative numbers", "Duplicate values"],
+          },
+        },
+      },
+    });
+
+    renderWithProviders(<CodingArenaPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Master DSA Sheet \(300\)/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Master DSA Sheet \(300\)/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /AI Guide/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /AI Guide/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Find two indices that sum to target.")).toBeInTheDocument();
+    });
+
+    // Collapsed by default
+    expect(screen.queryByText(/\/\* brute \*\//)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\/\* optimal \*\//)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /View Brute Force Code/i }));
+    expect(screen.getByText(/\/\* brute \*\//)).toBeInTheDocument();
+    expect(screen.getByText("VS Code Dark+")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /View Optimal Code/i }));
+    expect(screen.getByText(/\/\* optimal \*\//)).toBeInTheDocument();
+  });
+
+  it("formats single-line minified Java code into indented multi-line lines in CodeSyntaxBlock", () => {
+    render(
+      <CodeSyntaxBlock
+        language="java"
+        code="class Solution{public int f(int[] a){for(int i=0;i<a.length;i++){return i;}return 0;}}"
+      />
+    );
+
+    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(screen.getByText("7")).toBeInTheDocument();
   });
 });

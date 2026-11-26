@@ -1,12 +1,19 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { UpdateDsaSheetProgressSchema } from "@techquery/shared";
+import {
+  SupportedCodeLanguageSchema,
+  UpdateDsaSheetProgressSchema,
+} from "@techquery/shared";
 import { UnauthorizedError, ValidationError } from "../../core/errors/AppError.js";
 import { sendSuccess } from "../../core/responses/index.js";
 import { dsaSheetService, DsaSheetService } from "./dsaSheet.service.js";
 
 const ProblemSlugParamSchema = z.object({
   problemSlug: z.string().min(1).max(180),
+});
+
+const WalkthroughBodySchema = z.object({
+  language: SupportedCodeLanguageSchema.default("java"),
 });
 
 export class DsaSheetController {
@@ -75,9 +82,15 @@ export class DsaSheetController {
         throw new ValidationError("Invalid problem slug", paramParsed.error.issues);
       }
 
+      const bodyParsed = WalkthroughBodySchema.safeParse(req.body ?? {});
+      if (!bodyParsed.success) {
+        throw new ValidationError("Invalid language", bodyParsed.error.issues);
+      }
+
       const walkthrough = await this.service.generateWalkthrough(
         userId,
-        paramParsed.data.problemSlug
+        paramParsed.data.problemSlug,
+        bodyParsed.data.language
       );
       sendSuccess(res, { walkthrough }, 200);
     } catch (err) {

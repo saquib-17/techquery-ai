@@ -4,6 +4,7 @@ import type {
   DsaSheetStatus,
   DsaSheetSummary,
   DsaSheetWalkthroughDto,
+  SupportedCodeLanguage,
   UpdateDsaSheetProgressInput,
 } from "@techquery/shared";
 import { api } from "@/lib/api";
@@ -50,11 +51,12 @@ export async function updateDsaSheetProgressApi(
 }
 
 export async function generateDsaWalkthroughApi(
-  problemSlug: string
+  problemSlug: string,
+  language: SupportedCodeLanguage = "java"
 ): Promise<DsaSheetWalkthroughDto> {
   const res = await api.post<
     ApiEnvelope<{ walkthrough: DsaSheetWalkthroughDto }>
-  >(`/dsa-sheet/${problemSlug}/walkthrough`);
+  >(`/dsa-sheet/${problemSlug}/walkthrough`, { language });
   return res.data.data.walkthrough;
 }
 
@@ -152,6 +154,12 @@ export function useUpdateDsaSheetProgressMutation() {
 
 export function useGenerateDsaWalkthroughMutation() {
   return useMutation({
-    mutationFn: (problemSlug: string) => generateDsaWalkthroughApi(problemSlug),
+    mutationFn: ({
+      problemSlug,
+      language = "java",
+    }: {
+      problemSlug: string;
+      language?: SupportedCodeLanguage;
+    }) => generateDsaWalkthroughApi(problemSlug, language),
   });
 }

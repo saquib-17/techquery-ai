@@ -3,9 +3,11 @@ import {
   Clock,
   Code2,
   Flame,
+  Loader2,
   Play,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Trophy,
 } from "lucide-react";
 import type {
@@ -22,7 +24,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import {
   useAssessmentHistoryQuery,
+  useClearAssessmentHistory,
   useCodingProblemsQuery,
+  useDeleteAssessmentSession,
   useGenerateCodingProblemMutation,
   useStartAssessmentMutation,
 } from "../api/codingApi";
@@ -97,6 +101,11 @@ export function PreSessionLobby({
   const historyQuery = useAssessmentHistoryQuery();
   const startMutation = useStartAssessmentMutation();
   const generateProblemMutation = useGenerateCodingProblemMutation();
+  const deleteSessionMutation = useDeleteAssessmentSession();
+  const clearHistoryMutation = useClearAssessmentHistory();
+  const [deletingSessionId, setDeletingSessionId] = React.useState<
+    string | null
+  >(null);
 
   const handleStartSession = async () => {
     try {
@@ -148,6 +157,43 @@ export function PreSessionLobby({
 
   const problems = problemsQuery.data ?? [];
   const history = historyQuery.data ?? [];
+
+  const handleDeleteSession = async (sessionId: string) => {
+    setDeletingSessionId(sessionId);
+    try {
+      await deleteSessionMutation.mutateAsync(sessionId);
+      toast({
+        variant: "info",
+        title: "Session deleted",
+        description: "Removed from your recent sessions.",
+      });
+    } catch {
+      toast({
+        variant: "error",
+        title: "Delete failed",
+        description: "Could not delete session. Please try again.",
+      });
+    } finally {
+      setDeletingSessionId(null);
+    }
+  };
+
+  const handleClearHistory = async () => {
+    try {
+      await clearHistoryMutation.mutateAsync();
+      toast({
+        variant: "info",
+        title: "History cleared",
+        description: "All past sessions have been removed.",
+      });
+    } catch {
+      toast({
+        variant: "error",
+        title: "Clear failed",
+        description: "Could not clear session history.",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -454,38 +500,80 @@ export function PreSessionLobby({
       {/* Recent Session History */}
       {history.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-400" />
-            <h2 className="text-base font-semibold text-white">
-              Recent Sessions
-            </h2>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-amber-400" />
+              <h2 className="text-base font-semibold text-white">
+                Recent Sessions
+              </h2>
+            </div>
+
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={handleClearHistory}
+              isLoading={clearHistoryMutation.isPending}
+              className="text-xs text-zinc-400 hover:text-red-400 hover:bg-red-500/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear History
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {history.slice(0, 6).map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => onViewScorecard(s)}
-                className="flex items-center justify-between rounded-xl border border-[#242429] bg-[#151518] p-3.5 text-left hover:border-zinc-600 transition-colors cursor-pointer"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-white truncate">
-                    {s.title}
+            {history.slice(0, 6).map((s) => {
+              const isDeleting = deletingSessionId === s.id;
+              return (
+                <div
+                  key={s.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onViewScorecard(s)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onViewScorecard(s);
+                    }
+                  }}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[#242429] bg-[#151518] p-3.5 text-left hover:border-zinc-600 transition-colors cursor-pointer"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-white truncate">
+                      {s.title}
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5">
+                      <Flame className="h-3 w-3 text-[#10B981]" />
+                      <span>{s.status}</span>
+                      <span>·</span>
+                      <span>{s.problems.length} problems</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5">
-                    <Flame className="h-3 w-3 text-[#10B981]" />
-                    <span>{s.status}</span>
-                    <span>·</span>
-                    <span>{s.problems.length} problems</span>
-                  </div>
-                </div>
 
-                <div className="font-mono text-sm font-bold text-[#10B981] tabular-nums shrink-0">
-                  {s.totalScore}/{s.maxTotalScore}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-mono text-sm font-bold text-[#10B981] tabular-nums">
+                      {s.totalScore}/{s.maxTotalScore}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Delete session"
+                      disabled={isDeleting}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleDeleteSession(s.id);
+                      }}
+                      className="rounded-lg p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-50 transition-colors cursor-pointer"
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

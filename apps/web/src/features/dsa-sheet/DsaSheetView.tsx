@@ -20,10 +20,12 @@ import {
   type DsaSheetWalkthroughDto,
   type ProblemDifficulty,
   type SheetSourceTag,
+  type SupportedCodeLanguage,
 } from "@techquery/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { CodeSyntaxBlock } from "@/components/ui/CodeSyntaxBlock";
 import { Dialog } from "@/components/ui/dialog";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
@@ -99,6 +101,10 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
     React.useState<DsaSheetProblemWithProgress | null>(null);
   const [walkthroughData, setWalkthroughData] =
     React.useState<DsaSheetWalkthroughDto | null>(null);
+  const [walkthroughLang, setWalkthroughLang] =
+    React.useState<SupportedCodeLanguage>("java");
+  const [showBruteCode, setShowBruteCode] = React.useState(false);
+  const [showOptimalCode, setShowOptimalCode] = React.useState(false);
 
   const summary = sheetQuery.data?.summary;
   const problems = sheetQuery.data?.problems ?? [];
@@ -195,11 +201,18 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
     setNotesTarget(null);
   };
 
-  const handleOpenWalkthrough = async (p: DsaSheetProblemWithProgress) => {
-    setWalkthroughTarget(p);
+  const fetchWalkthrough = async (
+    p: DsaSheetProblemWithProgress,
+    lang: SupportedCodeLanguage
+  ) => {
     setWalkthroughData(null);
+    setShowBruteCode(false);
+    setShowOptimalCode(false);
     try {
-      const res = await walkthroughMutation.mutateAsync(p.slug);
+      const res = await walkthroughMutation.mutateAsync({
+        problemSlug: p.slug,
+        language: lang,
+      });
       setWalkthroughData(res);
     } catch {
       toast({
@@ -207,6 +220,18 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
         title: "AI Walkthrough unavailable",
         description: "Please try again in a moment.",
       });
+    }
+  };
+
+  const handleOpenWalkthrough = async (p: DsaSheetProblemWithProgress) => {
+    setWalkthroughTarget(p);
+    await fetchWalkthrough(p, walkthroughLang);
+  };
+
+  const handleWalkthroughLangChange = async (lang: SupportedCodeLanguage) => {
+    setWalkthroughLang(lang);
+    if (walkthroughTarget) {
+      await fetchWalkthrough(walkthroughTarget, lang);
     }
   };
 
@@ -288,7 +313,7 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
                   onClick={() => setSelectedCategory("ALL")}
                   className="text-xs text-[#10B981] hover:underline cursor-pointer"
                 >
-                  Show All 22 Patterns
+                  Reset Pattern Filter (All 22 Categories)
                 </button>
               )}
             </div>
@@ -412,6 +437,53 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
           >
             Collapse All
           </Button>
+        </div>
+
+        {/* Active Filter Problem Count */}
+        <div className="w-full flex flex-wrap items-center justify-between gap-2 border-t border-[#242429] pt-2.5 text-xs">
+          <span className="font-mono text-zinc-400">
+            {selectedCategory !== "ALL" ||
+            selectedSource !== "ALL" ||
+            selectedDifficulty !== "ALL" ||
+            selectedStatus !== "ALL" ||
+            selectedCompany !== "ALL" ||
+            search.trim().length > 0 ? (
+              <>
+                Showing{" "}
+                <span className="font-semibold text-[#10B981]">
+                  {filteredProblems.length}
+                </span>{" "}
+                of {totalCount} problems
+              </>
+            ) : (
+              <>
+                Showing all{" "}
+                <span className="font-semibold text-white">{totalCount}</span>{" "}
+                problems across 22 categories
+              </>
+            )}
+          </span>
+          {(selectedCategory !== "ALL" ||
+            selectedSource !== "ALL" ||
+            selectedDifficulty !== "ALL" ||
+            selectedStatus !== "ALL" ||
+            selectedCompany !== "ALL" ||
+            search.trim().length > 0) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setSelectedCategory("ALL");
+                setSelectedSource("ALL");
+                setSelectedDifficulty("ALL");
+                setSelectedStatus("ALL");
+                setSelectedCompany("ALL");
+              }}
+              className="text-xs text-zinc-400 hover:text-[#10B981] transition-colors cursor-pointer"
+            >
+              Clear all filters
+            </button>
+          )}
         </div>
       </div>
 
@@ -628,58 +700,160 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
             : undefined
         }
       >
-        {walkthroughMutation.isPending ? (
-          <div className="p-4 text-xs text-zinc-400">
-            Generating structured AI pattern walkthrough...
-          </div>
-        ) : walkthroughData ? (
-          <div className="space-y-4 text-xs leading-relaxed">
-            <div className="flex flex-wrap gap-2 font-mono">
-              <Badge variant="emerald">
-                Time: {walkthroughData.timeComplexity}
-              </Badge>
-              <Badge variant="amber">
-                Space: {walkthroughData.spaceComplexity}
-              </Badge>
-            </div>
-
-            <div className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-3.5 space-y-1">
-              <div className="font-semibold text-[#10B981] uppercase tracking-wider text-[10px]">
-                Pattern Recognition
-              </div>
-              <p className="text-zinc-200">
-                {walkthroughData.patternRecognition}
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-3.5 space-y-1">
-              <div className="font-semibold text-amber-400 uppercase tracking-wider text-[10px]">
-                Brute Force Baseline
-              </div>
-              <p className="text-zinc-300">
-                {walkthroughData.bruteForceApproach}
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-[#10B981]/30 bg-[#10B981]/5 p-3.5 space-y-1">
-              <div className="font-semibold text-[#10B981] uppercase tracking-wider text-[10px]">
-                Optimal Approach
-              </div>
-              <p className="text-zinc-200">{walkthroughData.optimalApproach}</p>
-            </div>
-
-            <div className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-3.5 space-y-1.5">
-              <div className="font-semibold text-zinc-400 uppercase tracking-wider text-[10px]">
-                Critical Edge Cases
-              </div>
-              <ul className="space-y-1 text-zinc-300">
-                {walkthroughData.edgeCases.map((ec, i) => (
-                  <li key={i}>• {ec}</li>
-                ))}
-              </ul>
+        <div className="space-y-4 text-xs leading-relaxed">
+          {/* Language Selector */}
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#242429] bg-[#0B0B0D] p-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 px-1.5">
+              Reference Language
+            </span>
+            <div className="flex items-center gap-1">
+              {(
+                [
+                  { value: "java", label: "Java" },
+                  { value: "python", label: "Python" },
+                  { value: "cpp", label: "C++" },
+                  { value: "javascript", label: "JavaScript" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => void handleWalkthroughLangChange(opt.value)}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 font-mono text-[11px] transition-colors cursor-pointer",
+                    walkthroughLang === opt.value
+                      ? "bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
-        ) : null}
+
+          {walkthroughMutation.isPending ? (
+            <div className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-4 text-xs text-zinc-400">
+              Generating structured AI pattern walkthrough...
+            </div>
+          ) : walkthroughData ? (
+            <>
+              {/* 1. Problem Explanation & Intuition */}
+              <div className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-3.5 space-y-2.5">
+                <div className="font-semibold text-[#10B981] uppercase tracking-wider text-[10px]">
+                  Problem Explanation &amp; Pattern Intuition
+                </div>
+                <p className="text-zinc-200">
+                  {walkthroughData.problemExplanation}
+                </p>
+                <div className="border-t border-[#242429] pt-2 text-zinc-400">
+                  <span className="font-semibold text-zinc-300">
+                    Pattern Intuition:{" "}
+                  </span>
+                  {walkthroughData.patternRecognition}
+                </div>
+              </div>
+
+              {/* 2. Brute Force Approach + Collapsible Code */}
+              <div className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-3.5 space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="font-semibold text-amber-400 uppercase tracking-wider text-[10px]">
+                    Brute Force Approach
+                  </div>
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <Badge variant="amber">
+                      Time: {walkthroughData.bruteForceComplexity.time}
+                    </Badge>
+                    <Badge variant="neutral">
+                      Space: {walkthroughData.bruteForceComplexity.space}
+                    </Badge>
+                  </div>
+                </div>
+                <p className="text-zinc-300">
+                  {walkthroughData.bruteForceApproach}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setShowBruteCode((prev) => !prev)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[#242429] bg-[#151518] px-2.5 py-1.5 font-mono text-[11px] text-zinc-300 hover:border-zinc-600 cursor-pointer"
+                >
+                  <Code2 className="h-3.5 w-3.5 text-amber-400" />
+                  {showBruteCode
+                    ? "Hide Brute Force Code"
+                    : "View Brute Force Code"}
+                  {showBruteCode ? (
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  )}
+                </button>
+
+                {showBruteCode && (
+                  <CodeSyntaxBlock
+                    code={walkthroughData.bruteForceCode}
+                    language={walkthroughLang}
+                  />
+                )}
+              </div>
+
+              {/* 3. Optimal Approach + Collapsible Code */}
+              <div className="rounded-lg border border-[#10B981]/30 bg-[#10B981]/5 p-3.5 space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="font-semibold text-[#10B981] uppercase tracking-wider text-[10px]">
+                    Optimal Approach
+                  </div>
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <Badge variant="emerald">
+                      Time: {walkthroughData.optimalComplexity.time}
+                    </Badge>
+                    <Badge variant="neutral">
+                      Space: {walkthroughData.optimalComplexity.space}
+                    </Badge>
+                  </div>
+                </div>
+                <p className="text-zinc-200">
+                  {walkthroughData.optimalApproach}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setShowOptimalCode((prev) => !prev)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[#10B981]/40 bg-[#151518] px-2.5 py-1.5 font-mono text-[11px] text-[#10B981] hover:bg-[#10B981]/10 cursor-pointer"
+                >
+                  <Code2 className="h-3.5 w-3.5" />
+                  {showOptimalCode
+                    ? "Hide Optimal Code"
+                    : "View Optimal Code"}
+                  {showOptimalCode ? (
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  )}
+                </button>
+
+                {showOptimalCode && (
+                  <CodeSyntaxBlock
+                    code={walkthroughData.optimalCode}
+                    language={walkthroughLang}
+                  />
+                )}
+              </div>
+
+              {/* 4. Edge Cases & Interview Pitfalls */}
+              <div className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-3.5 space-y-1.5">
+                <div className="font-semibold text-zinc-400 uppercase tracking-wider text-[10px]">
+                  Edge Cases &amp; Interview Pitfalls
+                </div>
+                <ul className="space-y-1 text-zinc-300">
+                  {walkthroughData.edgeCases.map((ec, i) => (
+                    <li key={i}>• {ec}</li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          ) : null}
+        </div>
       </Drawer>
     </div>
   );

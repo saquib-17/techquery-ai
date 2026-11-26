@@ -141,6 +141,36 @@ export async function cancelAssessmentApi(
   return res.data.data.session;
 }
 
+export async function deleteAssessmentSessionApi(
+  sessionId: string
+): Promise<{ deleted: true; id: string }> {
+  const res = await api.delete<ApiEnvelope<{ deleted: true; id: string }>>(
+    `/assessments/${sessionId}`
+  );
+  return res.data.data;
+}
+
+export async function clearAssessmentHistoryApi(): Promise<{
+  deletedCount: number;
+}> {
+  const res = await api.delete<ApiEnvelope<{ deletedCount: number }>>(
+    "/assessments"
+  );
+  return res.data.data;
+}
+
+function purgeSessionDraftsFromLocalStorage(sessionId: string): void {
+  const prefix = `tq_coding_draft_${sessionId}_`;
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const k = window.localStorage.key(i);
+    if (k && k.startsWith(prefix)) {
+      keysToRemove.push(k);
+    }
+  }
+  keysToRemove.forEach((k) => window.localStorage.removeItem(k));
+}
+
 export const codingKeys = {
   problems: (filters?: { difficulty?: ProblemDifficulty; pattern?: DsaPattern }) =>
     ["coding", "problems", filters ?? {}] as const,
@@ -237,6 +267,35 @@ export function useCancelAssessmentMutation() {
     mutationFn: cancelAssessmentApi,
     onSuccess: () => {
       queryClient.setQueryData(codingKeys.activeAssessment, null);
+      void queryClient.invalidateQueries({ queryKey: codingKeys.history });
+    },
+  });
+}
+
+export function useDeleteAssessmentSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteAssessmentSessionApi,
+    onSuccess: (_data, sessionId) => {
+      purgeSessionDraftsFromLocalStorage(sessionId);
+      void queryClient.invalidateQueries({ queryKey: codingKeys.history });
+      void queryClient.invalidateQueries({ queryKey: codingKeys.activeAssessment });
+    },
+  });
+}
+
+export function useClearAssessmentHistory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: clearAssessmentHistoryApi,
+    onSuccess: () => {
+      const history = queryClient.getQueryData<AssessmentSessionDto[]>(
+        codingKeys.history
+      );
+      if (history) {
+        history.forEach((s) => purgeSessionDraftsFromLocalStorage(s.id));
+      }
+      queryClient.setQueryData(codingKeys.history, []);
       void queryClient.invalidateQueries({ queryKey: codingKeys.history });
     },
   });

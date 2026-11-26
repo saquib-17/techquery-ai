@@ -7,18 +7,27 @@ import {
   type DsaSheetStatus,
   type DsaSheetSummary,
   type DsaSheetWalkthroughDto,
+  type SupportedCodeLanguage,
   type UpdateDsaSheetProgressInput,
 } from "@techquery/shared";
 import { prisma } from "../../core/database/index.js";
 import { aiGateway, AIGateway } from "../../core/ai/ai.gateway.js";
 import { NotFoundError } from "../../core/errors/AppError.js";
 
+const ComplexityPairSchema = z.object({
+  time: z.string().min(2),
+  space: z.string().min(2),
+});
+
 const WalkthroughAISchema = z.object({
+  problemExplanation: z.string().min(15),
   patternRecognition: z.string().min(10),
   bruteForceApproach: z.string().min(10),
+  bruteForceComplexity: ComplexityPairSchema,
+  bruteForceCode: z.string().min(10),
   optimalApproach: z.string().min(10),
-  timeComplexity: z.string().min(2),
-  spaceComplexity: z.string().min(2),
+  optimalComplexity: ComplexityPairSchema,
+  optimalCode: z.string().min(10),
   edgeCases: z.array(z.string().min(3)).min(1).max(6),
 });
 
@@ -26,7 +35,34 @@ const PROBLEM_BY_SLUG = new Map(
   DSA_SHEET_PROBLEMS.map((p) => [p.slug, p])
 );
 
+const LANGUAGE_LABELS: Record<SupportedCodeLanguage, string> = {
+  java: "Java",
+  python: "Python 3",
+  cpp: "C++17",
+  javascript: "JavaScript",
+};
+
+function buildFallbackCode(
+  title: string,
+  approach: "Brute Force" | "Optimal",
+  clue: string,
+  language: SupportedCodeLanguage
+): string {
+  if (language === "python") {
+    return `class Solution:\n    def solve(self, nums):\n        # ${approach} approach for ${title}\n        # ${clue}\n        pass`;
+  }
+  if (language === "cpp") {
+    return `class Solution {\npublic:\n    void solve() {\n        // ${approach} approach for ${title}\n        // ${clue}\n    }\n};`;
+  }
+  if (language === "javascript") {
+    return `/**\n * ${approach} approach for ${title}\n * ${clue}\n */\nvar solve = function(input) {\n  // Implement ${approach.toLowerCase()} logic\n};`;
+  }
+  return `class Solution {\n  public void solve() {\n    // ${approach} approach for ${title}\n    // ${clue}\n  }\n}`;
+}
+
 export class DsaSheetService {
+  private readonly walkthroughCache = new Map<string, DsaSheetWalkthroughDto>();
+
   constructor(private ai: AIGateway = aiGateway) {}
 
   public async getSheetForUser(userId: string): Promise<{
@@ -136,7 +172,8 @@ export class DsaSheetService {
 
   public async generateWalkthrough(
     userId: string,
-    problemSlug: string
+    problemSlug: string,
+    language: SupportedCodeLanguage = "java"
   ): Promise<DsaSheetWalkthroughDto> {
     const problem = PROBLEM_BY_SLUG.get(problemSlug);
     if (!problem) {
@@ -146,33 +183,65 @@ export class DsaSheetService {
       );
     }
 
-    const prompt = `You are a Principal Algorithms Interviewer. Provide a concise, structured walkthrough for "${problem.title}" (${problem.difficulty}, Pattern: ${problem.category} -> ${problem.subPattern}).
+    const cacheKey = `${problemSlug}:${language}`;
+    const cached = this.walkthroughCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const langLabel = LANGUAGE_LABELS[language];
+    const prompt = `You are a Principal Algorithms Interviewer. Provide a clear, structured walkthrough in ${langLabel} for LeetCode problem "${problem.title}" (${problem.difficulty}, Category: ${problem.category}, Sub-Pattern: ${problem.subPattern}).
 Key Hint: ${problem.patternClue}
 
 Return ONLY raw JSON matching this schema:
 {
+  "problemExplanation": "string - 2-4 clear sentences explaining the problem goal, input/output, and a concrete example in plain English",
   "patternRecognition": "string - 1-2 sentences explaining why this problem maps to ${problem.subPattern}",
-  "bruteForceApproach": "string - 1-2 sentences describing the naive baseline and its bottleneck",
-  "optimalApproach": "string - 2-4 sentences explaining the optimal algorithm step by step",
-  "timeComplexity": "string - e.g. O(n)",
-  "spaceComplexity": "string - e.g. O(n)",
+  "bruteForceApproach": "string - 2-3 sentences describing the naive baseline and its bottleneck",
+  "bruteForceComplexity": { "time": "string - e.g. O(n^2)", "space": "string - e.g. O(1)" },
+  "bruteForceCode": "string - clean, properly indented multi-line LeetCode-style class Solution (or function for JS) in ${langLabel} separated by \\n (NEVER minified on one line)",
+  "optimalApproach": "string - 2-4 sentences explaining the optimal algorithm and key insight",
+  "optimalComplexity": { "time": "string - e.g. O(n)", "space": "string - e.g. O(n)" },
+  "optimalCode": "string - clean, properly indented multi-line LeetCode-style class Solution (or function for JS) in ${langLabel} separated by \\n (NEVER minified on one line)",
   "edgeCases": ["string - edge case 1", "string - edge case 2", "string - edge case 3"]
-}`;
+}
+
+CRITICAL: Format bruteForceCode and optimalCode with proper 4-space indentation and \\n line breaks.`;
 
     const fallback = (): z.infer<typeof WalkthroughAISchema> => ({
-      patternRecognition: `This problem belongs to ${problem.category} (${problem.subPattern}). Recognize the invariant: ${problem.patternClue}`,
+      problemExplanation: `${problem.title} asks you to solve a classic ${problem.difficulty.toLowerCase()} interview problem in ${problem.category}. Given the input constraints, you must compute the exact target output efficiently while handling boundary inputs.`,
+      patternRecognition: `This problem maps to ${problem.subPattern}. Key invariant: ${problem.patternClue}`,
       bruteForceApproach:
-        "A brute-force approach checks all candidate pairs, subarrays, or paths directly, resulting in polynomial or exponential time.",
-      optimalApproach: `Apply ${problem.subPattern} to avoid redundant work: ${problem.patternClue}`,
-      timeComplexity: problem.difficulty === "HARD" ? "O(n log n)" : "O(n)",
-      spaceComplexity: "O(n)",
+        "A brute-force baseline checks all candidate pairs, subarrays, or paths directly via nested loops or exhaustive recursion, which exceeds time limits on large inputs.",
+      bruteForceComplexity: { time: "O(n^2)", space: "O(1)" },
+      bruteForceCode: buildFallbackCode(
+        problem.title,
+        "Brute Force",
+        problem.patternClue,
+        language
+      ),
+      optimalApproach: `Apply ${problem.subPattern} to eliminate redundant work: ${problem.patternClue}`,
+      optimalComplexity: {
+        time: problem.difficulty === "HARD" ? "O(n log n)" : "O(n)",
+        space: "O(n)",
+      },
+      optimalCode: buildFallbackCode(
+        problem.title,
+        "Optimal",
+        problem.patternClue,
+        language
+      ),
       edgeCases: [
-        "Minimum input size (empty or 1 element)",
-        "Duplicate or negative values",
-        "Already sorted / worst-case skewed input",
+        "Minimum input size (empty or single-element input)",
+        "Duplicate, zero, or negative values",
+        "Already sorted or worst-case skewed input",
       ],
     });
 
+    const normalizeCode = (raw: string) =>
+      raw.replace(/\r\n/g, "\n").replace(/\\n/g, "\n").replace(/\\t/g, "    ");
+
+    let dto: DsaSheetWalkthroughDto;
     try {
       const result = await this.ai.completeStructured(
         prompt,
@@ -180,14 +249,27 @@ Return ONLY raw JSON matching this schema:
         {
           taskType: "AGEN",
           userId,
-          rawInputText: `${problem.title} ${problem.subPattern}`,
+          rawInputText: `${problem.title} ${problem.subPattern} ${language}`,
           fallbackFn: fallback,
         }
       );
-      return { problemSlug, ...result.data };
+      dto = {
+        problemSlug,
+        language,
+        ...result.data,
+        bruteForceCode: normalizeCode(result.data.bruteForceCode),
+        optimalCode: normalizeCode(result.data.optimalCode),
+      };
     } catch {
-      return { problemSlug, ...fallback() };
+      dto = { problemSlug, language, ...fallback() };
     }
+
+    if (this.walkthroughCache.size >= 500) {
+      const firstKey = this.walkthroughCache.keys().next().value;
+      if (firstKey) this.walkthroughCache.delete(firstKey);
+    }
+    this.walkthroughCache.set(cacheKey, dto);
+    return dto;
   }
 }
 

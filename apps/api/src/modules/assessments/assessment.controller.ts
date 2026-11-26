@@ -166,6 +166,45 @@ export class AssessmentController {
       next(err);
     }
   };
+
+  public deleteSession = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError("Authentication required");
+
+      const parsed = SessionIdParamSchema.safeParse({
+        id: req.params.sessionId ?? req.params.id,
+      });
+      if (!parsed.success) {
+        throw new ValidationError("Invalid session ID", parsed.error.issues);
+      }
+
+      const result = await this.service.deleteSession(userId, parsed.data.id);
+      sendSuccess(res, result, 200);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  public clearHistory = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError("Authentication required");
+
+      const result = await this.service.clearHistory(userId);
+      sendSuccess(res, result, 200);
+    } catch (err) {
+      next(err);
+    }
+  };
 }
 
 export const assessmentController = new AssessmentController();

@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { ProblemDifficultySchema } from "./coding.js";
+import {
+  ProblemDifficultySchema,
+  type SupportedCodeLanguage,
+} from "./coding.js";
 
 export const DsaSheetStatusSchema = z.enum(["UNSOLVED", "SOLVED", "REVISION"]);
 export type DsaSheetStatus = z.infer<typeof DsaSheetStatusSchema>;
@@ -73,11 +76,15 @@ export interface DsaSheetProblemWithProgress extends DsaSheetProblemItem {
 
 export interface DsaSheetWalkthroughDto {
   problemSlug: string;
+  language: SupportedCodeLanguage;
+  problemExplanation: string;
   patternRecognition: string;
   bruteForceApproach: string;
+  bruteForceComplexity: { time: string; space: string };
+  bruteForceCode: string;
   optimalApproach: string;
-  timeComplexity: string;
-  spaceComplexity: string;
+  optimalComplexity: { time: string; space: string };
+  optimalCode: string;
   edgeCases: string[];
 }
 

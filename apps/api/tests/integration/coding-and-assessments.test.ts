@@ -322,6 +322,31 @@ describe("V2 Coding Arena, DSA Generation & Refresh-Safe Assessment API Integrat
         .set("Authorization", `Bearer ${userToken}`);
       expect(cancelRes.status).toBe(200);
       expect(cancelRes.body.data.session.status).toBe("CANCELLED");
+
+      // Other user cannot delete user1's session (404)
+      const otherDelete = await request(app)
+        .delete(`/api/v1/assessments/${untimed.id}`)
+        .set("Authorization", `Bearer ${otherUserToken}`);
+      expect(otherDelete.status).toBe(404);
+
+      // Owner deletes single session
+      const ownerDelete = await request(app)
+        .delete(`/api/v1/assessments/${untimed.id}`)
+        .set("Authorization", `Bearer ${userToken}`);
+      expect(ownerDelete.status).toBe(200);
+      expect(ownerDelete.body.data.deleted).toBe(true);
+
+      // Clear remaining history (timedId was EXPIRED)
+      const clearRes = await request(app)
+        .delete("/api/v1/assessments")
+        .set("Authorization", `Bearer ${userToken}`);
+      expect(clearRes.status).toBe(200);
+      expect(clearRes.body.data.deletedCount).toBe(1);
+
+      const emptyHistory = await request(app)
+        .get("/api/v1/assessments/history")
+        .set("Authorization", `Bearer ${userToken}`);
+      expect(emptyHistory.body.data.sessions).toHaveLength(0);
     });
     it("audits all 12 curated LeetCode problems for unique slugs, class Solution, driverCode, and 5 distinct test cases", async () => {
       expect(CURATED_CODING_PROBLEMS).toHaveLength(12);

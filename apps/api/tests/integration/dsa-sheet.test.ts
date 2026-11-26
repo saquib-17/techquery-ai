@@ -102,10 +102,19 @@ describe("Master DSA Pattern Sheet API & Dataset Tests (V2.2)", () => {
 
     const wtRes = await request(app)
       .post("/api/v1/dsa-sheet/two-sum/walkthrough")
-      .set("Authorization", `Bearer ${userToken}`);
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ language: "python" });
 
     expect(wtRes.status).toBe(200);
-    expect(wtRes.body.data.walkthrough.problemSlug).toBe("two-sum");
-    expect(wtRes.body.data.walkthrough.optimalApproach).toBeTruthy();
+    const wt = wtRes.body.data.walkthrough;
+    expect(wt.problemSlug).toBe("two-sum");
+    expect(wt.language).toBe("python");
+    expect(wt.problemExplanation).toBeTruthy();
+    expect(wt.bruteForceComplexity.time).toBeTruthy();
+    expect(wt.bruteForceCode).toContain("class Solution");
+    expect(wt.optimalApproach).toBeTruthy();
+    expect(wt.optimalComplexity.time).toBeTruthy();
+    expect(wt.optimalCode).toContain("class Solution");
+    expect(wt.edgeCases.length).toBeGreaterThanOrEqual(1);
   });
 });

@@ -403,6 +403,67 @@ export class AssessmentService {
     return this.syncAndSerializeSession(updated);
   }
 
+  public async deleteSession(
+    userId: string,
+    sessionId: string
+  ): Promise<{ deleted: true; id: string }> {
+    const existing = await prisma.assessmentSession.findFirst({
+      where: { id: sessionId, userId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundError(
+        "Assessment session not found",
+        "ASSESSMENT_NOT_FOUND"
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.codingSubmission.deleteMany({
+        where: { assessmentSessionId: sessionId, userId },
+      });
+      await tx.assessmentSessionProblem.deleteMany({
+        where: { sessionId },
+      });
+      await tx.assessmentSession.delete({
+        where: { id: sessionId },
+      });
+    });
+
+    return { deleted: true, id: sessionId };
+  }
+
+  public async clearHistory(
+    userId: string
+  ): Promise<{ deletedCount: number }> {
+    const staleSessions = await prisma.assessmentSession.findMany({
+      where: {
+        userId,
+        status: { in: ["COMPLETED", "EXPIRED", "CANCELLED"] },
+      },
+      select: { id: true },
+    });
+
+    const ids = staleSessions.map((s) => s.id);
+    if (ids.length === 0) {
+      return { deletedCount: 0 };
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.codingSubmission.deleteMany({
+        where: { assessmentSessionId: { in: ids }, userId },
+      });
+      await tx.assessmentSessionProblem.deleteMany({
+        where: { sessionId: { in: ids } },
+      });
+      return tx.assessmentSession.deleteMany({
+        where: { id: { in: ids }, userId },
+      });
+    });
+
+    return { deletedCount: result.count };
+  }
+
   private resolveDifficultySlots(
     preset: DifficultyPreset,
     count: number,
