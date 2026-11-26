@@ -240,7 +240,7 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
   if (sheetQuery.isLoading) {
     return (
       <div className="rounded-xl border border-[#242429] bg-[#151518] p-8 text-center text-sm text-zinc-400">
-        Loading 400-Problem Master DSA Pattern Sheet...
+        Loading 520-Problem Master DSA Pattern Sheet...
       </div>
     );
   }
