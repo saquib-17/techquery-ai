@@ -1,12 +1,10 @@
 import * as React from "react";
 import {
   Clock,
-  Code2,
   Flame,
   Loader2,
   Play,
   ShieldCheck,
-  Sparkles,
   Trash2,
   Trophy,
 } from "lucide-react";
@@ -18,10 +16,10 @@ import type {
   ProblemDifficulty,
   SessionMode,
 } from "@techquery/shared";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
+import { StandaloneProblemBank } from "./StandaloneProblemBank";
 import {
   useAssessmentHistoryQuery,
   useClearAssessmentHistory,
@@ -91,13 +89,8 @@ export function PreSessionLobby({
   const [durationMinutes, setDurationMinutes] = React.useState<number>(60);
   const [focusPattern, setFocusPattern] =
     React.useState<DsaPattern>("ALL_PATTERNS");
-  const [bankFilter, setBankFilter] = React.useState<ProblemDifficulty | "ALL">(
-    "ALL"
-  );
 
-  const problemsQuery = useCodingProblemsQuery(
-    bankFilter === "ALL" ? undefined : { difficulty: bankFilter }
-  );
+  const problemsQuery = useCodingProblemsQuery();
   const historyQuery = useAssessmentHistoryQuery();
   const startMutation = useStartAssessmentMutation();
   const generateProblemMutation = useGenerateCodingProblemMutation();
@@ -137,7 +130,7 @@ export function PreSessionLobby({
   const handleGenerateProblem = async () => {
     try {
       const created = await generateProblemMutation.mutateAsync({
-        difficulty: bankFilter === "ALL" ? "MEDIUM" : bankFilter,
+        difficulty: "MEDIUM",
         pattern: focusPattern,
       });
       toast({
@@ -201,11 +194,10 @@ export function PreSessionLobby({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white">
-            Coding &amp; OA Arena
+            Coding Practice &amp; Timed Tests
           </h1>
           <p className="text-sm text-zinc-400">
-            Practice stress-free in Untimed mode or run a refresh-safe Timed OA
-            simulation powered by Judge0 CE.
+            Practice at your own pace or take a refresh-safe Timed Coding Test.
           </p>
         </div>
       </div>
@@ -408,94 +400,13 @@ export function PreSessionLobby({
       </Card>
 
       {/* Standalone Problem Bank */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Code2 className="h-4 w-4 text-[#10B981]" />
-            <h2 className="text-base font-semibold text-white">
-              Standalone Problem Bank
-            </h2>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1 rounded-lg border border-[#242429] bg-[#151518] p-1">
-              {(["ALL", "EASY", "MEDIUM", "HARD"] as const).map((level) => (
-                <button
-                  key={level}
-                  type="button"
-                  onClick={() => setBankFilter(level)}
-                  className={cn(
-                    "rounded-md px-2.5 py-1 font-mono text-[11px] cursor-pointer",
-                    bankFilter === level
-                      ? "bg-[#242429] text-white"
-                      : "text-zinc-400 hover:text-zinc-200"
-                  )}
-                >
-                  {level}
-                </button>
-              ))}
-            </div>
-
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={handleGenerateProblem}
-              isLoading={generateProblemMutation.isPending}
-              className="border-[#10B981]/40 text-[#10B981] hover:bg-[#10B981]/10"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Generate AI DSA Problem
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {problems.map((p) => (
-            <Card
-              key={p.id}
-              className="border-[#242429] bg-[#151518] hover:border-zinc-600 transition-colors"
-            >
-              <CardContent className="p-4 flex flex-col justify-between gap-3 h-full">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge
-                      variant={
-                        p.difficulty === "EASY"
-                          ? "emerald"
-                          : p.difficulty === "MEDIUM"
-                            ? "amber"
-                            : "danger"
-                      }
-                    >
-                      {p.difficulty}
-                    </Badge>
-                    <span className="font-mono text-[10px] text-zinc-400">
-                      {p.pattern}
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-semibold text-white line-clamp-1">
-                    {p.title}
-                  </h3>
-                  <p className="text-xs text-zinc-400 line-clamp-2">
-                    {p.statement}
-                  </p>
-                </div>
-
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onSelectProblem(p)}
-                  className="w-full"
-                >
-                  Solve Problem
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      <StandaloneProblemBank
+        problems={problems}
+        isLoading={problemsQuery.isLoading}
+        onSelectProblem={onSelectProblem}
+        onGenerateProblem={handleGenerateProblem}
+        isGenerating={generateProblemMutation.isPending}
+      />
 
       {/* Recent Session History */}
       {history.length > 0 && (
