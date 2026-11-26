@@ -2,7 +2,7 @@
 
 **All-in-One AI Interview & DSA Command Center**
 
-TechQuery AI is a zero-cost (`₹0`), full-stack TypeScript monorepo that combines ATS resume intelligence, JD skill-gap analysis, AI-grounded interview & DSA question generation, a live Monaco + Judge0 CE Coding Arena with refresh-safe timed/untimed assessments, and a curated **400-Problem Master DSA Pattern Sheet** across all 22 core interview topics.
+TechQuery AI is a zero-cost (`₹0`), full-stack TypeScript monorepo that combines ATS resume intelligence, JD skill-gap analysis, AI-grounded interview & DSA question generation, a live Monaco + Judge0 CE Coding Arena with refresh-safe timed/untimed assessments, and a curated **520-Problem Weighted Master DSA Pattern Sheet** across all 22 core interview topics.
 
 ---
 
@@ -23,8 +23,8 @@ TechQuery AI is a zero-cost (`₹0`), full-stack TypeScript monorepo that combin
   - **LeetCode-Style `class Solution` Signatures:** Clean method signatures backed by hidden server-side `driverCode` harnesses (`{{USER_CODE}}` injection), 12 curated Arena problems (4 Easy, 4 Medium, 4 Hard), and custom AI DSA problem generation.
   - **Configurable Sessions & Refresh-Safe Persistence:** Choose **Untimed Practice** or **Timed OA Simulation** (`30/45/60/75m`), difficulty tracks (`Foundation / EASY_ONLY`, `Placement Ready / EASY_TO_MEDIUM`, `Product / MIXED_WITH_HARD`, `Single Focus`), and `1–3` problem slots. Server-enforced `expiresAt` timers, partial 100-point scoring, dual-layer draft persistence (`localStorage` + debounced PostgreSQL `draftsJson`) surviving browser refreshes, and Recent Sessions management (delete individual past sessions or clear history).
   - **Smart Hidden Test Visibility:** Masks hidden test cases (`[Hidden]`) during `TIMED` OA sessions while revealing full edge-case inputs/outputs in standalone & `UNTIMED` practice.
-- **400-Problem Master DSA Pattern Sheet (`/practice` → `Master DSA Sheet (400)`)**
-  - **400 distinct, verified LeetCode problems** spanning **all 22 core topics & patterns** (Arrays & Matrix, Prefix Sum & Difference Array, Hashing, Strings & Pattern Matching, Two Pointers, Sliding Window, Stack & Monotonic Stack, Queue & Monotonic Deque, Binary Search, Linked List, Binary Trees, BSTs, Tries, Heap/Priority Queue, Recursion & Backtracking, Graphs BFS/DFS, Topo Sort/Shortest Path/DSU, 1-D DP, 2-D DP, Greedy, Intervals, and Bit Manipulation & Math), strictly ordered **Easy → Medium → Hard** within every category.
+- **520-Problem Weighted Master DSA Pattern Sheet (`/practice` → `Master DSA Sheet (520)`)**
+  - **520 distinct, verified LeetCode problems** spanning **all 22 core topics & patterns**, weighted realistically toward core interview pillars (Arrays & Matrix: 45, Strings: 32, Hashing: 25, Two Pointers & Sliding Window: 22 each, Stack: 22, Binary Search: 28, Linked List: 24, Binary Trees & BSTs: 48, Heap: 20, Recursion & Backtracking: 24, Graphs & Topo/Shortest Path/DSU: 47, 1-D & 2-D DP: 58, Greedy: 22, plus supporting topics), strictly ordered **Easy → Medium → Hard** within every category.
   - Synthesized across **Blind 75**, **NeetCode 150**, **Grind 169**, **Striver SDE Sheet**, **Striver A2Z**, **Apna College (Shradha Ma'am's DSA Sheet)**, **Love Babbar 450**, and **LeetCode Top Interview 150**.
   - Includes clickable 22-pattern mastery telemetry, source-sheet/company/difficulty/status filters with exact filtered counts, persistent `SOLVED`/`REVISION` tracking, personal notes, LeetCode links, and 1-click **`Solve in Arena`** handoff.
   - **AI Guide Slide-Over Drawer:** Plain-English problem explanation, pattern intuition, and **collapsible Brute Force & Optimal reference code** (`Java`, `Python`, `C++`, `JavaScript`) with VS Code Dark+ syntax highlighting, line numbers, and complexity breakdowns.
@@ -43,7 +43,7 @@ techquery-ai/
 │   ├── web/            # React 19 SPA (Vite + TypeScript + Tailwind CSS v4 + Monaco Editor)
 │   └── api/            # Modular Monolith REST API (Node.js + Express + Prisma + PostgreSQL)
 ├── packages/
-│   └── shared/         # Shared Zod schemas, DTO contracts & 400-problem DSA Sheet dataset
+│   └── shared/         # Shared Zod schemas, DTO contracts & 520-problem weighted DSA Sheet dataset
 └── docs/               # Product discovery, system design, OpenAPI spec & phase reports
 ```
 
@@ -72,7 +72,7 @@ techquery-ai/
 | `answers` | `/api/v1/answers` | Structured STAR / code model answer generation (`INTERVIEW`, `CONCISE`, `DETAILED`) |
 | `coding` | `/api/v1/coding` | 12 curated LeetCode problems, AI DSA problem generator, Judge0 CE runner (`SAMPLE`/`SUBMIT`) |
 | `assessments` | `/api/v1/assessments` | Refresh-safe `TIMED`/`UNTIMED` sessions, `draftsJson` autosave, `finish`/`cancel`/`delete` lifecycle |
-| `dsa-sheet` | `/api/v1/dsa-sheet` | 400-problem sheet progress (`UNSOLVED`/`SOLVED`/`REVISION`), notes & multi-language AI walkthroughs |
+| `dsa-sheet` | `/api/v1/dsa-sheet` | 520-problem sheet progress (`UNSOLVED`/`SOLVED`/`REVISION`), notes & multi-language AI walkthroughs |
 | `collections` | `/api/v1/collections` | Saved study collections & PDF packet export |
 | `dashboard` / `usage` | `/api/v1/dashboard`, `/usage` | Preparation streaks, activity feed & `FREE`/`PRO` quota enforcement |
 
