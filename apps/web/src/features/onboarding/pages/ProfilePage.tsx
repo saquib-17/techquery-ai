@@ -306,11 +306,10 @@ export function ProfilePage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-ink">
-            Candidate Profile
+            My Profile
           </h2>
           <p className="mt-1 text-sm text-ink-muted">
-            Manage your engineering identity, academic background, core stack, and
-            account session security.
+            Update your name, college background, core tech skills, and account settings.
           </p>
         </div>
 

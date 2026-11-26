@@ -34,12 +34,12 @@ describe("Editorial Engineering Design System & AppLayout (Phase F1)", () => {
 
     // Navigation items
     const expectedLinks = [
-      "Dashboard",
-      "Resumes & ATS",
-      "Job Descriptions",
-      "Match Studio",
-      "Question Studio",
-      "Saved Library",
+      "Home",
+      "Resume Check",
+      "Target Jobs",
+      "Skill Match",
+      "Interview Q&A",
+      "Saved Notes",
       "Quotas & Plan",
     ];
     for (const label of expectedLinks) {
@@ -47,7 +47,7 @@ describe("Editorial Engineering Design System & AppLayout (Phase F1)", () => {
     }
 
     // Active route highlighting on /resumes
-    const activeLink = screen.getByRole("link", { name: "Resumes & ATS" });
+    const activeLink = screen.getByRole("link", { name: "Resume Check" });
     expect(activeLink.className).toContain("bg-primary-soft");
     expect(activeLink.className).toContain("text-primary");
 

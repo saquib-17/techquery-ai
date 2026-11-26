@@ -268,12 +268,12 @@ describe("Question & Model Answer Studio (Phase F7)", () => {
 
     await waitFor(() => {
       expect(
-        screen.getAllByRole("button", { name: /Open Answer Studio/i }).length,
+        screen.getAllByRole("button", { name: /View Sample Answer/i }).length,
       ).toBe(2);
     });
 
     fireEvent.click(
-      screen.getAllByRole("button", { name: /Open Answer Studio/i })[0],
+      screen.getAllByRole("button", { name: /View Sample Answer/i })[0],
     );
 
     await waitFor(() => {

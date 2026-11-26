@@ -115,6 +115,39 @@ describe("Candidate Dashboard Page & Widgets (Phase F4)", () => {
         collectionsCount: 2,
         bookmarkedQuestionsCount: 7,
       },
+      dsaMastery: {
+        solvedCount: 12,
+        revisionCount: 3,
+        totalProblems: 520,
+        nextProblem: {
+          slug: "maximum-subarray",
+          title: "Maximum Subarray",
+          pattern: "Kadane's Algorithm",
+          difficulty: "MEDIUM",
+        },
+      },
+      csAndHrMastery: {
+        learnedCount: 18,
+        revisionCount: 2,
+        totalTopics: 210,
+        nextTopic: {
+          slug: "os-process-vs-thread",
+          title: "Process vs Thread & PCB vs TCB",
+          subject: "Operating Systems",
+        },
+      },
+      roadmapProgress: {
+        activeRoadmapId: "rm-1",
+        activeRoadmapTitle: "Backend Engineer — 8W Roadmap",
+        completedTasks: 4,
+        totalTasks: 8,
+        percentage: 50,
+        nextTask: {
+          title: "Relational Schema & Query Optimization",
+          weekLabel: "Weeks 3–4",
+        },
+      },
+      completedOaSessions: 2,
       streak: {
         currentStreak: 4,
         longestStreak: 6,
@@ -160,16 +193,30 @@ describe("Candidate Dashboard Page & Widgets (Phase F4)", () => {
     // KPI values & circular ring
     expect(screen.getByLabelText("Average match score ring")).toBeInTheDocument();
     expect(screen.getByText("84.5%")).toBeInTheDocument();
-    expect(screen.getByText("20")).toBeInTheDocument();
-    expect(screen.getByText("15")).toBeInTheDocument();
-    expect(screen.getByText("7")).toBeInTheDocument();
-    expect(screen.getByText("75% question coverage")).toBeInTheDocument();
+    expect(screen.getByText("12 / 520")).toBeInTheDocument();
+    expect(screen.getByText("3 to revise")).toBeInTheDocument();
+    expect(screen.getByText("18 / 210")).toBeInTheDocument();
+    expect(screen.getByText("7 Subjects")).toBeInTheDocument();
+    expect(screen.getByText("50%")).toBeInTheDocument();
+    expect(screen.getByText("4/8 tasks")).toBeInTheDocument();
+
+    // Quick-action buttons
+    expect(screen.getByRole("button", { name: /Practice Coding/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /CS & HR Prep/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /My Study Plan/i })).toBeInTheDocument();
 
     // StreakMatrix counters & heatmap
     expect(screen.getByText("Last 30 Days")).toBeInTheDocument();
     expect(screen.getByText("4d")).toBeInTheDocument();
     expect(screen.getByText("6d")).toBeInTheDocument();
     expect(screen.getByRole("grid", { name: "30-day preparation activity heatmap" })).toBeInTheDocument();
+
+    // Pick Up Where You Left Off card
+    expect(screen.getByText("Pick Up Where You Left Off")).toBeInTheDocument();
+    expect(screen.getByText("Maximum Subarray")).toBeInTheDocument();
+    expect(screen.getByText("Process vs Thread & PCB vs TCB")).toBeInTheDocument();
+    expect(screen.getByText("Relational Schema & Query Optimization")).toBeInTheDocument();
+    expect(screen.getByText("2 Resumes · 3 Target Jobs Saved · 2 Timed Tests Done")).toBeInTheDocument();
 
     // Interview Readiness Checklist
     expect(screen.getByText("Interview Readiness Checklist")).toBeInTheDocument();
@@ -184,11 +231,6 @@ describe("Candidate Dashboard Page & Widgets (Phase F4)", () => {
     expect(screen.getByText("Distributed Systems (HARD)")).toBeInTheDocument();
     expect(screen.getByText("Evaluated resume-to-JD match")).toBeInTheDocument();
     expect(screen.getByText("Match Score: 88%")).toBeInTheDocument();
-
-    // QuotaSnapshotCard
-    expect(screen.getByText("PRO TIER")).toBeInTheDocument();
-    expect(screen.getByText("2 / 10")).toBeInTheDocument();
-    expect(screen.getByText("15 / Unlimited")).toBeInTheDocument();
   });
 
   it("3. renders fresh new-user empty state cleanly with null averageMatchScore and 0 streak", async () => {
@@ -204,6 +246,36 @@ describe("Candidate Dashboard Page & Widgets (Phase F4)", () => {
         collectionsCount: 0,
         bookmarkedQuestionsCount: 0,
       },
+      dsaMastery: {
+        solvedCount: 0,
+        revisionCount: 0,
+        totalProblems: 520,
+        nextProblem: {
+          slug: "two-sum",
+          title: "Two Sum",
+          pattern: "Hash Lookup / Pair Sum",
+          difficulty: "EASY",
+        },
+      },
+      csAndHrMastery: {
+        learnedCount: 0,
+        revisionCount: 0,
+        totalTopics: 210,
+        nextTopic: {
+          slug: "os-kernel-user-mode-syscalls",
+          title: "OS Kernel vs User Mode & System Calls",
+          subject: "Operating Systems",
+        },
+      },
+      roadmapProgress: {
+        activeRoadmapId: null,
+        activeRoadmapTitle: null,
+        completedTasks: 0,
+        totalTasks: 0,
+        percentage: 0,
+        nextTask: null,
+      },
+      completedOaSessions: 0,
       streak: {
         currentStreak: 0,
         longestStreak: 0,
@@ -229,11 +301,14 @@ describe("Candidate Dashboard Page & Widgets (Phase F4)", () => {
       expect(screen.getByText("No preparation activity yet")).toBeInTheDocument();
     });
 
-    // Em dash for null match score, 0% coverage (no NaN)
+    // Em dash for null match score, 0% roadmap, 0/520 & 0/210 zero-states
     expect(screen.getByText("—")).toBeInTheDocument();
-    expect(screen.getByText("0% question coverage")).toBeInTheDocument();
+    expect(screen.getByText("0 / 520")).toBeInTheDocument();
+    expect(screen.getByText("0 / 210")).toBeInTheDocument();
+    expect(screen.getByText("0%")).toBeInTheDocument();
+    expect(screen.getByText("Two Sum")).toBeInTheDocument();
+    expect(screen.getByText("Create Study Plan")).toBeInTheDocument();
     expect(screen.getByText("Last 30 Days")).toBeInTheDocument();
-    expect(screen.getByText("FREE TIER")).toBeInTheDocument();
     expect(screen.getByText("0/4 Done")).toBeInTheDocument();
   });
 

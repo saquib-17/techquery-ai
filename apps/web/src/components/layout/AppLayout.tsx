@@ -41,42 +41,43 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Workspace",
     items: [
-      { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
-      { label: "Resumes & ATS", to: "/resumes", icon: FileText },
-      { label: "Job Descriptions", to: "/job-descriptions", icon: Briefcase },
-      { label: "Match Studio", to: "/matches", icon: GitCompare },
+      { label: "Home", to: "/dashboard", icon: LayoutDashboard },
+      { label: "Resume Check", to: "/resumes", icon: FileText },
+      { label: "Target Jobs", to: "/job-descriptions", icon: Briefcase },
+      { label: "Skill Match", to: "/matches", icon: GitCompare },
     ],
   },
   {
     title: "Practice",
     items: [
-      { label: "Question Studio", to: "/questions", icon: Sparkles },
-      { label: "Coding Arena", to: "/practice", icon: Code2 },
-      { label: "CS Core & SD", to: "/cs-fundamentals", icon: Layers },
-      { label: "Roadmap", to: "/roadmap", icon: MapIcon },
-      { label: "Saved Library", to: "/library", icon: Bookmark },
+      { label: "Interview Q&A", to: "/questions", icon: Sparkles },
+      { label: "Coding Practice", to: "/practice", icon: Code2 },
+      { label: "CS & HR Prep", to: "/cs-fundamentals", icon: Layers },
+      { label: "Study Plan", to: "/roadmap", icon: MapIcon },
+      { label: "Saved Notes", to: "/library", icon: Bookmark },
     ],
   },
   {
     title: "Account",
     items: [
-      { label: "Candidate Profile", to: "/profile", icon: UserCircle },
+      { label: "My Profile", to: "/profile", icon: UserCircle },
       { label: "Quotas & Plan", to: "/usage", icon: Gauge },
     ],
   },
 ];
 
 const ROUTE_TITLES: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/resumes": "Resumes & ATS",
-  "/job-descriptions": "Job Descriptions",
-  "/matches": "Match Studio",
-  "/questions": "Question Studio",
-  "/practice": "Coding Arena",
-  "/cs-fundamentals": "CS Core & SD",
-  "/roadmap": "AI Roadmap Studio",
-  "/library": "Saved Library",
-  "/profile": "Candidate Profile",
+  "/dashboard": "Home",
+  "/resumes": "Resume Check",
+  "/job-descriptions": "Target Jobs",
+  "/matches": "Skill Match",
+  "/questions": "Interview Q&A",
+  "/practice": "Coding Practice",
+  "/coding-arena": "Coding Practice",
+  "/cs-fundamentals": "CS & HR Prep",
+  "/roadmap": "Study Plan",
+  "/library": "Saved Notes",
+  "/profile": "My Profile",
   "/usage": "Quotas & Plan",
 };
 

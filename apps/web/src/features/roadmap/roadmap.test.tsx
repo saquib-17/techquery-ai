@@ -139,7 +139,7 @@ describe("RoadmapPage", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/AI Learning Roadmap Studio/i)
+        screen.getByText(/My Study Plan/i)
       ).toBeInTheDocument();
     });
 
@@ -153,8 +153,8 @@ describe("RoadmapPage", () => {
       expect(screen.getByText("Redis")).toBeInTheDocument();
     });
 
-    // Generate roadmap
-    fireEvent.click(screen.getByRole("button", { name: /Generate Roadmap/i }));
+    // Generate study plan
+    fireEvent.click(screen.getByRole("button", { name: /Create Study Plan/i }));
 
     await waitFor(() => {
       expect(

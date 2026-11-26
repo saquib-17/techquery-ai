@@ -80,10 +80,10 @@ export function ResumesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-ink">
-            Resumes &amp; ATS Intelligence
+            Resume Check
           </h2>
           <p className="mt-1 text-sm text-ink-muted">
-            Upload your resume to get an instant ATS quality audit, section breakdown, and bullet-point rewrites.
+            Upload your resume to get an instant score, section feedback, and clearer bullet-point rewrites.
           </p>
         </div>
 

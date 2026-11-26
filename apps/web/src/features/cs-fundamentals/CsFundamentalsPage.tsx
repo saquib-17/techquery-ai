@@ -4,9 +4,11 @@ import {
   AlertTriangle,
   BookOpen,
   Building2,
+  Check,
   CheckCircle2,
   Circle,
   Clock,
+  Copy,
   FileText,
   Filter,
   Layers,
@@ -47,12 +49,22 @@ const COMPANIES = [
   "Cloudflare",
 ];
 
+const SUBJECT_DISPLAY_LABEL: Record<CsSubject, string> = {
+  "Operating Systems": "Operating Systems",
+  DBMS: "DBMS",
+  "SQL & Query Patterns": "SQL Queries",
+  "Computer Networks": "Computer Networks",
+  "OOP & Software Engineering": "OOP & Software Dev",
+  "System Design": "System Design",
+  "Behavioral & HR": "HR & Behavioral",
+};
+
 const PRIORITY_STYLE: Record<
   CsTopicPriority,
   { label: string; className: string }
 > = {
   MUST_KNOW: {
-    label: "Must Know",
+    label: "Must Learn",
     className: "text-[#10B981] bg-[#10B981]/10 border-[#10B981]/30",
   },
   IMPORTANT: {
@@ -60,7 +72,7 @@ const PRIORITY_STYLE: Record<
     className: "text-[#F59E0B] bg-[#F59E0B]/10 border-[#F59E0B]/30",
   },
   ADVANCED: {
-    label: "Advanced",
+    label: "Deep Dive",
     className: "text-rose-400 bg-rose-500/10 border-rose-500/30",
   },
 };
@@ -86,11 +98,11 @@ function StatusButton({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        title="Learned — click to mark for Revision"
+        title="Done — click to mark Revise Again"
         className="inline-flex items-center gap-1.5 rounded-md border border-[#10B981]/40 bg-[#10B981]/15 px-2.5 py-1 font-mono text-[11px] font-medium text-[#10B981] hover:bg-[#10B981]/25 transition-colors cursor-pointer"
       >
         <CheckCircle2 className="h-3.5 w-3.5" />
-        Learned
+        Done
       </button>
     );
   }
@@ -100,11 +112,11 @@ function StatusButton({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        title="Marked for Revision — click to reset"
+        title="Revise Again — click to reset"
         className="inline-flex items-center gap-1.5 rounded-md border border-[#F59E0B]/40 bg-[#F59E0B]/15 px-2.5 py-1 font-mono text-[11px] font-medium text-[#F59E0B] hover:bg-[#F59E0B]/25 transition-colors cursor-pointer"
       >
         <Clock className="h-3.5 w-3.5" />
-        Revision
+        Revise Again
       </button>
     );
   }
@@ -113,11 +125,11 @@ function StatusButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      title="Unstudied — click to mark Learned"
+      title="Not Started — click to mark Done"
       className="inline-flex items-center gap-1.5 rounded-md border border-[#242429] bg-[#0F0F11] px-2.5 py-1 font-mono text-[11px] text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 transition-colors cursor-pointer"
     >
       <Circle className="h-3.5 w-3.5" />
-      Unstudied
+      Not Started
     </button>
   );
 }
@@ -147,6 +159,7 @@ export function CsFundamentalsPage() {
     React.useState<CsTopicWithProgress | null>(null);
   const [walkthroughData, setWalkthroughData] =
     React.useState<CsWalkthroughDto | null>(null);
+  const [copiedStar, setCopiedStar] = React.useState(false);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["cs-fundamentals"],
@@ -316,7 +329,7 @@ export function CsFundamentalsPage() {
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-[#10B981]" />
           <h1 className="text-lg font-bold text-white">
-            CS Core &amp; System Design
+            CS Subjects, System Design &amp; HR Prep
           </h1>
         </div>
 
@@ -325,18 +338,18 @@ export function CsFundamentalsPage() {
             <span className="font-semibold text-[#10B981]">
               {learnedCount} / {totalCount}
             </span>{" "}
-            Learned
+            Done
           </span>
           {(summary?.revision ?? 0) > 0 && (
             <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-amber-300">
-              {summary?.revision} Revision
+              {summary?.revision} Revise Again
             </span>
           )}
         </div>
       </div>
 
-      {/* ── 6 Exclusive Subject Tabs ───────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+      {/* ── 7 Exclusive Subject Tabs ───────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
         {(summary?.subjects ?? []).map((sub) => {
           const active = selectedSubject === sub.subject;
           const pct =
@@ -354,7 +367,7 @@ export function CsFundamentalsPage() {
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-semibold text-zinc-200 truncate">
-                  {sub.subject}
+                  {SUBJECT_DISPLAY_LABEL[sub.subject]}
                 </span>
                 <span className="font-mono text-[10px] text-[#10B981] shrink-0">
                   {sub.learned}/{sub.total}
@@ -393,9 +406,9 @@ export function CsFundamentalsPage() {
           className="rounded-lg border border-[#242429] bg-[#0F0F11] px-2.5 py-1.5 font-mono text-xs text-zinc-200 focus:border-[#10B981] focus:outline-none"
         >
           <option value="ALL">All Priorities</option>
-          <option value="MUST_KNOW">Must Know</option>
+          <option value="MUST_KNOW">Must Learn</option>
           <option value="IMPORTANT">Important</option>
-          <option value="ADVANCED">Advanced</option>
+          <option value="ADVANCED">Deep Dive</option>
         </select>
 
         <select
@@ -407,9 +420,9 @@ export function CsFundamentalsPage() {
           className="rounded-lg border border-[#242429] bg-[#0F0F11] px-2.5 py-1.5 font-mono text-xs text-zinc-200 focus:border-[#10B981] focus:outline-none"
         >
           <option value="ALL">All Status</option>
-          <option value="UNSTUDIED">Unstudied</option>
-          <option value="LEARNED">Learned</option>
-          <option value="REVISION">Revision</option>
+          <option value="UNSTUDIED">Not Started</option>
+          <option value="LEARNED">Done</option>
+          <option value="REVISION">Revise Again</option>
         </select>
 
         <select
@@ -492,7 +505,7 @@ export function CsFundamentalsPage() {
                 <div className="flex items-center gap-2.5">
                   <BookOpen className="h-4 w-4 text-[#10B981]" />
                   <h2 className="text-sm font-bold text-white">
-                    {group.subject}
+                    {SUBJECT_DISPLAY_LABEL[group.subject]}
                   </h2>
                   <span className="rounded bg-[#0F0F11] border border-[#242429] px-2 py-0.5 font-mono text-[10px] text-zinc-400">
                     {group.items.length} topics
@@ -500,7 +513,7 @@ export function CsFundamentalsPage() {
                 </div>
                 {subjectSummary && (
                   <span className="font-mono text-xs text-[#10B981]">
-                    {subjectSummary.learned}/{subjectSummary.total} learned
+                    {subjectSummary.learned}/{subjectSummary.total} done
                   </span>
                 )}
               </div>
@@ -654,14 +667,14 @@ export function CsFundamentalsPage() {
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-[#10B981]" />
                   <span className="font-mono text-[11px] uppercase tracking-wider text-[#10B981]">
-                    CS Deep-Dive AI Guide
+                    Simple AI Explanation
                   </span>
                 </div>
                 <h3 className="text-lg font-bold text-white mt-1">
                   {walkthroughTarget.title}
                 </h3>
                 <p className="font-mono text-xs text-zinc-400">
-                  {walkthroughTarget.subject} · {walkthroughTarget.subTopic}
+                  {SUBJECT_DISPLAY_LABEL[walkthroughTarget.subject]} · {walkthroughTarget.subTopic}
                 </p>
               </div>
               <button
@@ -684,11 +697,123 @@ export function CsFundamentalsPage() {
               </div>
             )}
 
-            {walkthroughData && (
+            {walkthroughData && walkthroughData.visualType === "STAR" ? (
               <div className="mt-5 space-y-5 text-xs leading-relaxed">
                 <div className="rounded-lg border border-[#242429] bg-[#0F0F11] p-4">
                   <h4 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[#10B981] mb-1.5">
-                    Concept Breakdown
+                    What the Interviewer Is Looking For
+                  </h4>
+                  <p className="text-zinc-200">
+                    {walkthroughData.whatInterviewerTests ||
+                      walkthroughData.conceptBreakdown}
+                  </p>
+                </div>
+
+                {walkthroughData.starFramework && (
+                  <div className="rounded-xl border border-[#242429] bg-[#0D0E12] p-4 space-y-3">
+                    <h4 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[#F59E0B]">
+                      4-Step STAR Blueprint
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {(
+                        [
+                          ["S — Situation", walkthroughData.starFramework.situation],
+                          ["T — Task", walkthroughData.starFramework.task],
+                          ["A — Action", walkthroughData.starFramework.action],
+                          ["R — Result", walkthroughData.starFramework.result],
+                        ] as const
+                      ).map(([label, body]) => (
+                        <div
+                          key={label}
+                          className="rounded-lg border border-[#242429] bg-[#151518] p-3"
+                        >
+                          <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#10B981]">
+                            {label}
+                          </div>
+                          <p className="text-zinc-200 mt-1">{body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {walkthroughData.sampleSpokenAnswer && (
+                  <div className="rounded-lg border border-[#10B981]/30 bg-[#10B981]/5 p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[#10B981]">
+                        Simple Ready-to-Speak Sample Answer
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(
+                              walkthroughData.sampleSpokenAnswer ?? ""
+                            );
+                            setCopiedStar(true);
+                            window.setTimeout(() => setCopiedStar(false), 1500);
+                          } catch {
+                            // Ignore clipboard unavailability in headless tests
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 rounded-md border border-[#242429] bg-[#0F0F11] px-2 py-1 font-mono text-[10px] text-zinc-200 hover:border-zinc-500 cursor-pointer"
+                      >
+                        {copiedStar ? (
+                          <Check className="h-3 w-3 text-[#10B981]" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                        {copiedStar ? "Copied!" : "Copy"}
+                      </button>
+                    </div>
+                    <p className="text-zinc-100 whitespace-pre-line">
+                      {walkthroughData.sampleSpokenAnswer}
+                    </p>
+                  </div>
+                )}
+
+                <div className="rounded-lg border border-[#242429] bg-[#0F0F11] p-4 space-y-3">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-sky-400">
+                    <MessageSquareText className="h-3.5 w-3.5" />
+                    Likely Follow-Up Questions
+                  </div>
+                  {walkthroughData.interviewQuestions.map((qa, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-md border border-[#242429] bg-[#151518] p-3"
+                    >
+                      <p className="font-semibold text-zinc-100">
+                        Q{idx + 1}. {qa.question}
+                      </p>
+                      <p className="mt-1 text-zinc-300">{qa.answer}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-lg border border-rose-500/30 bg-rose-500/5 p-4">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-rose-400 mb-2">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Common Mistakes to Avoid
+                  </div>
+                  <ul className="space-y-1.5 text-zinc-300">
+                    {(
+                      walkthroughData.avoidMistakes ??
+                      walkthroughData.commonTraps
+                    ).map((trap, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-rose-400">•</span>
+                        <span>{trap}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              walkthroughData && (
+              <div className="mt-5 space-y-5 text-xs leading-relaxed">
+                <div className="rounded-lg border border-[#242429] bg-[#0F0F11] p-4">
+                  <h4 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[#10B981] mb-1.5">
+                    What It Means (Simple Explanation)
                   </h4>
                   <p className="text-zinc-200 whitespace-pre-line">
                     {walkthroughData.conceptBreakdown}
@@ -698,7 +823,7 @@ export function CsFundamentalsPage() {
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
                   <div className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#F59E0B] mb-1.5">
                     <Lightbulb className="h-3.5 w-3.5" />
-                    Real-World Analogy
+                    Easy Real-Life Example
                   </div>
                   <p className="text-zinc-300">
                     {walkthroughData.realWorldAnalogy}
@@ -753,7 +878,7 @@ export function CsFundamentalsPage() {
                 <div className="rounded-lg border border-[#242429] bg-[#0F0F11] p-4 space-y-3">
                   <div className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-sky-400">
                     <MessageSquareText className="h-3.5 w-3.5" />
-                    Top Interview Q&amp;As
+                    Questions Interviewers Ask
                   </div>
                   {walkthroughData.interviewQuestions.map((qa, idx) => (
                     <div
@@ -771,7 +896,7 @@ export function CsFundamentalsPage() {
                 <div className="rounded-lg border border-rose-500/30 bg-rose-500/5 p-4">
                   <div className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-rose-400 mb-2">
                     <AlertTriangle className="h-3.5 w-3.5" />
-                    Common Follow-Up Traps
+                    Common Mistakes to Avoid
                   </div>
                   <ul className="space-y-1.5 text-zinc-300">
                     {walkthroughData.commonTraps.map((trap, i) => (
@@ -783,7 +908,7 @@ export function CsFundamentalsPage() {
                   </ul>
                 </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
       )}

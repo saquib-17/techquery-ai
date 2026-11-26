@@ -309,7 +309,7 @@ export function LibraryPage() {
               <EmptyState
                 icon={<Bookmark className="h-6 w-6" />}
                 title="This collection is empty"
-                description="Use the Save button on any question card in Question Studio to bookmark questions into this collection."
+                description="Use the Save button on any question card in Interview Q&A to bookmark questions into this collection."
               />
             ) : (
               <div className="space-y-4">

@@ -119,14 +119,13 @@ export function MatchesPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-            Skill Gap Studio
+            Skill Match
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink">
-            Resume &amp; JD Match Studio
+            Resume &amp; Job Skill Match
           </h1>
           <p className="mt-1 text-sm text-ink-muted">
-            Compare your resume against any saved job description to surface
-            matched strengths, missing skills, and tailored prep priorities.
+            Compare your resume against any saved job to see matched skills, missing skills, and what to learn next.
           </p>
         </div>
       </div>

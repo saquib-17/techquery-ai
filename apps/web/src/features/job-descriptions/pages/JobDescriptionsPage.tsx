@@ -66,10 +66,10 @@ export function JobDescriptionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-ink">
-            Job Description Intelligence
+            Target Jobs
           </h2>
           <p className="mt-1 text-sm text-ink-muted">
-            Paste any job posting to extract required skills, tech stack, and role expectations.
+            Paste any job posting to see required skills, tech stack, and what the role expects.
           </p>
         </div>
 

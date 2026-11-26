@@ -175,7 +175,7 @@ export function QuestionsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-ink">
-            Question &amp; Answer Studio
+            Interview Q&amp;A
           </h2>
           <p className="mt-1 text-sm text-ink-muted">
             Generate targeted technical &amp; behavioral sets and rehearse with

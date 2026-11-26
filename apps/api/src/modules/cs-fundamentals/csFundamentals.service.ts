@@ -18,10 +18,31 @@ import { NotFoundError } from "../../core/errors/AppError.js";
 const CodeLangSchema = z.enum(["sql", "java", "python", "cpp", "javascript"]);
 type CodeLang = z.infer<typeof CodeLangSchema>;
 
+const StarWalkthroughAISchema = z.object({
+  whatInterviewerTests: z.string().min(10),
+  starFramework: z.object({
+    situation: z.string().min(10),
+    task: z.string().min(10),
+    action: z.string().min(10),
+    result: z.string().min(10),
+  }),
+  sampleSpokenAnswer: z.string().min(40),
+  avoidMistakes: z.array(z.string().min(4)).min(1).max(5),
+  interviewQuestions: z
+    .array(
+      z.object({
+        question: z.string().min(5),
+        answer: z.string().min(10),
+      })
+    )
+    .min(1)
+    .max(4),
+});
+
 const CsWalkthroughAISchema = z.object({
   conceptBreakdown: z.string().min(20),
   realWorldAnalogy: z.string().min(10),
-  visualType: z.enum(["CODE", "DIAGRAM"]),
+  visualType: z.enum(["CODE", "DIAGRAM", "STAR"]),
   visualTitle: z.string().min(3),
   codeOrQueryExample: z.string().default(""),
   exampleLanguage: CodeLangSchema.default("java"),
@@ -70,6 +91,9 @@ export function normalizeMultilineText(raw: string): string {
 }
 
 function resolveExpectedVisualType(topic: CsFundamentalItem): CsVisualType {
+  if (topic.subject === "Behavioral & HR") {
+    return "STAR";
+  }
   if (topic.subject === "SQL & Query Patterns") {
     return "CODE";
   }
@@ -303,9 +327,119 @@ export class CsFundamentalsService {
       );
     }
 
-    const cacheKey = `v5:${topicSlug}`;
+    const expectedType = resolveExpectedVisualType(topic);
+    const cacheKey =
+      expectedType === "STAR"
+        ? `v6:${topicSlug}:${userId}`
+        : `v6:${topicSlug}`;
     const cached = this.walkthroughCache.get(cacheKey);
     if (cached) return cached;
+
+    if (expectedType === "STAR") {
+      const latestResume = await prisma.resume.findFirst({
+        where: { userId },
+        orderBy: [{ isPrimary: "desc" }, { createdAt: "desc" }],
+        select: { extractedText: true },
+      });
+      const resumeSnippet = latestResume?.extractedText
+        ? latestResume.extractedText.slice(0, 1200)
+        : "No uploaded resume yet — use realistic college / SDE-1 student project examples (e.g. a full-stack web app, hackathon project, or college team project).";
+
+      const starPrompt = [
+        "You are a friendly senior engineer & placement coach helping a college student/SDE-1 candidate answer a Behavioral / HR interview question.",
+        `Question: "${topic.title}"`,
+        `Category: ${topic.subTopic}`,
+        `What it tests: ${topic.oneLineHook}`,
+        `Candidate Resume Context:\n${resumeSnippet}`,
+        "",
+        "Return ONLY valid JSON matching this exact schema:",
+        "{",
+        '  "whatInterviewerTests": "1-2 plain-English sentences explaining what trait the interviewer is really looking for",',
+        '  "starFramework": {',
+        '    "situation": "1-2 simple sentences setting the scene",',
+        '    "task": "1-2 simple sentences explaining what you needed to do",',
+        '    "action": "2-3 simple sentences explaining the exact steps you took",',
+        '    "result": "1-2 simple sentences sharing the outcome and what you learned"',
+        "  },",
+        '  "sampleSpokenAnswer": "A natural, conversational 120-160 word sample answer written in simple everyday spoken English (NO robotic corporate buzzwords like leverage, synergy, paradigm)",',
+        '  "avoidMistakes": ["3 crisp red-flag mistakes candidates make on this question"],',
+        '  "interviewQuestions": [{"question": "likely follow-up question HR will ask next", "answer": "simple tip on how to answer it"}]',
+        "}",
+        "",
+        "CRITICAL RULES:",
+        "- Write in warm, natural, spoken English — like a real person talking in an interview.",
+        "- Provide 3 avoidMistakes and 2-3 follow-up interviewQuestions.",
+      ].join("\n");
+
+      const starFallback = (): z.infer<typeof StarWalkthroughAISchema> => ({
+        whatInterviewerTests: `${topic.oneLineHook} Interviewers want to see real ownership, honesty, and clear communication rather than rehearsed buzzwords.`,
+        starFramework: {
+          situation:
+            "Set the scene in 1–2 lines: mention the college project, internship, or team situation you were in.",
+          task: `Explain clearly what your responsibility was when facing "${topic.title}".`,
+          action:
+            "Describe 2–3 concrete steps you personally took (e.g. broke the problem down, talked to teammates, tested edge cases, or built a working fix).",
+          result:
+            "Share the positive outcome (e.g. shipped on time, fixed the bug, improved speed) and one honest lesson you carried forward.",
+        },
+        sampleSpokenAnswer: `Sure! When I think about "${topic.title}", a good example is from a full-stack project I built with a small team during my final year. Halfway through, we ran into unexpected delays and had to rethink how we divided the work. My goal was to keep our core features working smoothly before our demo deadline. Instead of panicking, I listed the remaining tasks, picked up the backend API debugging myself, and synced with my teammate daily for 15 minutes so nobody stayed stuck. We ended up delivering the working app on time, and the experience taught me how important early communication and calm prioritization are when things get busy.`,
+        avoidMistakes: [
+          "Giving a vague, memorized textbook answer without a real story.",
+          "Blaming teammates, professors, or tools instead of showing what you learned.",
+          "Speaking for 4+ minutes without getting to your actions and the final result.",
+        ],
+        interviewQuestions: [
+          {
+            question: "What would you do differently if you faced that same situation today?",
+            answer:
+              "Mention one specific habit you improved since then, like writing tests earlier or aligning expectations upfront.",
+          },
+          {
+            question: "How did your teammates or mentor react to your approach?",
+            answer:
+              "Share a brief, honest reaction showing how collaboration improved after your action.",
+          },
+        ],
+      });
+
+      const starResult = await this.ai.completeStructured(
+        starPrompt,
+        StarWalkthroughAISchema,
+        {
+          taskType: "AGEN",
+          userId,
+          rawInputText: `${topic.subject} ${topic.title}`,
+          fallbackFn: starFallback,
+        }
+      );
+
+      const starDto: CsWalkthroughDto = {
+        topicSlug,
+        title: topic.title,
+        subject: topic.subject,
+        conceptBreakdown: starResult.data.whatInterviewerTests,
+        realWorldAnalogy: "",
+        visualType: "STAR",
+        visualTitle: "STAR Method Blueprint & Sample Answer",
+        codeOrQueryExample: "",
+        exampleLanguage: "java",
+        diagramFlow: "",
+        comparisonPoints: [],
+        whatInterviewerTests: starResult.data.whatInterviewerTests,
+        starFramework: starResult.data.starFramework,
+        sampleSpokenAnswer: starResult.data.sampleSpokenAnswer,
+        avoidMistakes: starResult.data.avoidMistakes,
+        interviewQuestions: starResult.data.interviewQuestions,
+        commonTraps: starResult.data.avoidMistakes,
+        providerUsed:
+          starResult.providerUsed === "MOCK"
+            ? "FALLBACK"
+            : starResult.providerUsed,
+      };
+
+      this.walkthroughCache.set(cacheKey, starDto);
+      return starDto;
+    }
 
     const mode = resolveVisualMode(topic);
     const visualInstructions =

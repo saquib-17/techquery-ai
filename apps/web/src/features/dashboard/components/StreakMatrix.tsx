@@ -2,10 +2,21 @@ import * as React from "react";
 import { Flame, CalendarCheck2, Trophy } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { StreakResult } from "@/features/dashboard/dashboard.api";
+import type {
+  CsAndHrMasterySummary,
+  DashboardMetrics,
+  DsaMasterySummary,
+  RoadmapProgressSummary,
+  StreakResult,
+} from "@/features/dashboard/dashboard.api";
 
 export interface StreakMatrixProps {
   streak: StreakResult;
+  metrics?: DashboardMetrics;
+  dsaMastery?: DsaMasterySummary;
+  csAndHrMastery?: CsAndHrMasterySummary;
+  roadmapProgress?: RoadmapProgressSummary;
+  completedOaSessions?: number;
 }
 
 function buildLast30Days(matrix: Array<{ date: string; count: number }>) {
@@ -54,7 +65,14 @@ function getHeatStyle(count: number): React.CSSProperties {
   };
 }
 
-export function StreakMatrix({ streak }: StreakMatrixProps) {
+export function StreakMatrix({
+  streak,
+  metrics,
+  dsaMastery,
+  csAndHrMastery,
+  roadmapProgress,
+  completedOaSessions = 0,
+}: StreakMatrixProps) {
   const days = React.useMemo(
     () => buildLast30Days(streak.activityMatrix),
     [streak.activityMatrix]
@@ -66,14 +84,49 @@ export function StreakMatrix({ streak }: StreakMatrixProps) {
     count: number;
   } | null>(null);
 
+  const dsaSolved = dsaMastery?.solvedCount ?? 0;
+  const csLearned = csAndHrMastery?.learnedCount ?? 0;
+  const csTotal = csAndHrMastery?.totalTopics ?? 210;
+  const rmDone = roadmapProgress?.completedTasks ?? 0;
+  const rmTotal = roadmapProgress?.totalTasks ?? 0;
+  const resumesCount = metrics?.resumesCount ?? 0;
+  const jobsCount = metrics?.jobDescriptionsCount ?? 0;
+
+  const breakdownPills = [
+    {
+      label: "DSA & Coding",
+      value: `${dsaSolved + completedOaSessions}`,
+      sub: `${dsaSolved} solved · ${completedOaSessions} tests`,
+      accent: "text-[#10B981]",
+    },
+    {
+      label: "CS & HR Prep",
+      value: `${csLearned}`,
+      sub: `of ${csTotal} done`,
+      accent: "text-[#F59E0B]",
+    },
+    {
+      label: "Study Plans",
+      value: `${rmDone}`,
+      sub: rmTotal > 0 ? `of ${rmTotal} tasks` : "No plan yet",
+      accent: "text-sky-400",
+    },
+    {
+      label: "Resume & Jobs",
+      value: `${resumesCount + jobsCount}`,
+      sub: `${resumesCount} resumes · ${jobsCount} jobs`,
+      accent: "text-zinc-200",
+    },
+  ];
+
   return (
-    <Card className="h-full flex flex-col justify-between">
-      <CardHeader className="pb-4">
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle>Preparation Consistency</CardTitle>
+            <CardTitle>Daily Study Streak</CardTitle>
             <CardDescription>
-              30-day activity matrix across resumes, matching, questions, and exports.
+              Your last 30 days of coding, CS prep, and resume practice.
             </CardDescription>
           </div>
           <Badge variant="neutral" className="px-2.5 py-1 text-xs">
@@ -82,7 +135,27 @@ export function StreakMatrix({ streak }: StreakMatrixProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-4">
+        {/* 4-Pill Activity Breakdown Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {breakdownPills.map((pill) => (
+            <div
+              key={pill.label}
+              className="rounded-lg border border-[#242429] bg-[#0F0F11] px-3 py-2.5 min-w-0"
+            >
+              <p className="text-[11px] font-medium text-zinc-400 truncate">
+                {pill.label}
+              </p>
+              <p className={`mt-0.5 text-base font-bold font-mono tabular-nums ${pill.accent}`}>
+                {pill.value}
+              </p>
+              <p className="text-[10px] font-mono text-zinc-500 truncate">
+                {pill.sub}
+              </p>
+            </div>
+          ))}
+        </div>
+
         {/* Streak Summary Counters */}
         <div className="grid grid-cols-3 gap-3 rounded-xl border border-border bg-surface-muted/60 p-3.5">
           <div>

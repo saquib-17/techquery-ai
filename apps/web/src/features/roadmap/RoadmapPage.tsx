@@ -188,9 +188,9 @@ export function RoadmapPage() {
     if (!latestMatch || !latestMatch.missingSkills?.length) {
       toast({
         variant: "error",
-        title: "No JD Gaps Found",
+        title: "No Skill Gaps Found",
         description:
-          "Run a Resume vs JD Match in Match Studio first to import missing skills.",
+          "Run a Resume vs Job Check in Skill Match first to import missing skills.",
       });
       return;
     }
@@ -250,12 +250,12 @@ export function RoadmapPage() {
           <div className="flex items-center gap-2">
             <MapIcon className="h-4 w-4 text-[#10B981]" />
             <h1 className="text-lg font-bold text-white">
-              AI Learning Roadmap Studio
+              My Study Plan
             </h1>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Generate week-by-week preparation roadmaps with curated resources,
-            deliverables, and persistent milestone tracking.
+            Create a week-by-week study schedule with helpful links, practice
+            goals, and daily progress tracking.
           </p>
         </div>
 
@@ -443,17 +443,17 @@ export function RoadmapPage() {
               <Sparkles className="h-3.5 w-3.5" />
             )}
             {generateMutation.isPending
-              ? "Generating Roadmap..."
-              : "Generate Roadmap"}
+              ? "Creating Study Plan..."
+              : "Create Study Plan"}
           </button>
         </div>
       </form>
 
-      {/* ── Saved Roadmaps Switcher ────────────────────────────────────────── */}
+      {/* ── Saved Study Plans Switcher ─────────────────────────────────────── */}
       {roadmaps.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] text-zinc-400 mr-1">
-            Saved Roadmaps:
+            Saved Plans:
           </span>
           {roadmaps.map((rm) => {
             const active = activeRoadmap?.id === rm.id;
@@ -499,8 +499,8 @@ export function RoadmapPage() {
         </div>
       ) : !activeRoadmap ? (
         <div className="rounded-xl border border-[#242429] bg-[#151518] p-10 text-center text-sm text-zinc-400">
-          No roadmaps yet. Configure your target role and timeline above, then
-          click <span className="text-[#10B981] font-semibold">Generate Roadmap</span>.
+          No study plans yet. Choose your target role and timeline above, then
+          click <span className="text-[#10B981] font-semibold">Create Study Plan</span>.
         </div>
       ) : (
         <div className="space-y-4">
@@ -645,11 +645,11 @@ export function RoadmapPage() {
                     </div>
                   </div>
 
-                  {/* Phase Milestone Deliverable */}
+                  {/* Practice Goal */}
                   <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
                     <div className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#F59E0B] mb-1">
                       <Award className="h-3.5 w-3.5" />
-                      Phase Milestone Deliverable
+                      Practice Goal
                     </div>
                     <p className="text-xs text-zinc-200">
                       {phase.milestoneDeliverable}

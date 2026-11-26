@@ -56,8 +56,47 @@ export interface UserQuotasResponse {
   };
 }
 
+export interface DsaMasterySummary {
+  solvedCount: number;
+  revisionCount: number;
+  totalProblems: number;
+  nextProblem: {
+    slug: string;
+    title: string;
+    pattern: string;
+    difficulty: string;
+  } | null;
+}
+
+export interface CsAndHrMasterySummary {
+  learnedCount: number;
+  revisionCount: number;
+  totalTopics: number;
+  nextTopic: {
+    slug: string;
+    title: string;
+    subject: string;
+  } | null;
+}
+
+export interface RoadmapProgressSummary {
+  activeRoadmapId: string | null;
+  activeRoadmapTitle: string | null;
+  completedTasks: number;
+  totalTasks: number;
+  percentage: number;
+  nextTask: {
+    title: string;
+    weekLabel: string;
+  } | null;
+}
+
 export interface DashboardSummary {
   metrics: DashboardMetrics;
+  dsaMastery?: DsaMasterySummary;
+  csAndHrMastery?: CsAndHrMasterySummary;
+  roadmapProgress?: RoadmapProgressSummary;
+  completedOaSessions?: number;
   streak: StreakResult;
   recentActivities: UserActivityItem[];
   usage: UserQuotasResponse;

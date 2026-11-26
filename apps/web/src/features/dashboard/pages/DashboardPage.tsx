@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import {
-  FileUp,
-  Briefcase,
-  Sparkles,
+  Code2,
+  Layers,
+  Map as MapIcon,
   AlertCircle,
   RefreshCw,
   ArrowRight,
@@ -13,7 +13,7 @@ import { useProfileQuery } from "@/features/onboarding/useCandidateProfile";
 import { useDashboardSummaryQuery } from "@/features/dashboard/useDashboardSummary";
 import { MetricKpiGrid } from "@/features/dashboard/components/MetricKpiGrid";
 import { StreakMatrix } from "@/features/dashboard/components/StreakMatrix";
-import { QuotaSnapshotCard } from "@/features/dashboard/components/QuotaSnapshotCard";
+import { ContinuePrepCard } from "@/features/dashboard/components/ContinuePrepCard";
 import { ActivityFeed } from "@/features/dashboard/components/ActivityFeed";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -157,42 +157,60 @@ export function DashboardPage() {
             Welcome back, {firstName}
           </h2>
           <p className="mt-1 text-sm text-ink-muted">
-            Track your interview readiness, skill alignment, and daily preparation streak.
+            Track your daily study streak, solved problems, and placement readiness.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Link to="/resumes">
+          <Link to="/practice">
             <Button variant="outline" size="sm">
-              <FileUp className="h-3.5 w-3.5" />
-              Upload Resume
+              <Code2 className="h-3.5 w-3.5" />
+              Practice Coding
             </Button>
           </Link>
-          <Link to="/job-descriptions">
+          <Link to="/cs-fundamentals">
             <Button variant="outline" size="sm">
-              <Briefcase className="h-3.5 w-3.5" />
-              Analyze JD
+              <Layers className="h-3.5 w-3.5" />
+              CS &amp; HR Prep
             </Button>
           </Link>
-          <Link to="/questions">
+          <Link to="/roadmap">
             <Button size="sm">
-              <Sparkles className="h-3.5 w-3.5" />
-              Generate Questions
+              <MapIcon className="h-3.5 w-3.5" />
+              My Study Plan
             </Button>
           </Link>
         </div>
       </div>
 
       {/* Row 1: KPI Cards */}
-      <MetricKpiGrid metrics={data.metrics} />
+      <MetricKpiGrid
+        metrics={data.metrics}
+        dsaMastery={data.dsaMastery}
+        csAndHrMastery={data.csAndHrMastery}
+        roadmapProgress={data.roadmapProgress}
+      />
 
-      {/* Row 2: 8-col StreakMatrix + 4-col QuotaSnapshotCard */}
+      {/* Row 2: 7-col StreakMatrix + 5-col ContinuePrepCard */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8">
-          <StreakMatrix streak={data.streak} />
+        <div className="lg:col-span-7 min-w-0">
+          <StreakMatrix
+            streak={data.streak}
+            metrics={data.metrics}
+            dsaMastery={data.dsaMastery}
+            csAndHrMastery={data.csAndHrMastery}
+            roadmapProgress={data.roadmapProgress}
+            completedOaSessions={data.completedOaSessions}
+          />
         </div>
-        <div className="lg:col-span-4">
-          <QuotaSnapshotCard usage={data.usage} />
+        <div className="lg:col-span-5 min-w-0">
+          <ContinuePrepCard
+            metrics={data.metrics}
+            dsaMastery={data.dsaMastery}
+            csAndHrMastery={data.csAndHrMastery}
+            roadmapProgress={data.roadmapProgress}
+            completedOaSessions={data.completedOaSessions}
+          />
         </div>
       </div>
 

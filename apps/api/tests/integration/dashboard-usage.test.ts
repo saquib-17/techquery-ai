@@ -87,6 +87,63 @@ describe("Dashboard, Preparation Streaks & Usage Quotas Integration Tests (Phase
       expect(data.usage.tier).toBe("FREE");
       expect(data.usage.quotas.resumes.used).toBe(0);
       expect(data.usage.quotas.resumes.limit).toBe(3);
+
+      expect(data.dsaMastery.solvedCount).toBe(0);
+      expect(data.dsaMastery.totalProblems).toBe(520);
+      expect(data.dsaMastery.nextProblem?.slug).toBe("two-sum");
+
+      expect(data.csAndHrMastery.learnedCount).toBe(0);
+      expect(data.csAndHrMastery.totalTopics).toBe(210);
+      expect(data.csAndHrMastery.nextTopic?.slug).toBe("os-kernel-user-mode-syscalls");
+
+      expect(data.roadmapProgress.activeRoadmapId).toBeNull();
+      expect(data.roadmapProgress.percentage).toBe(0);
+      expect(data.completedOaSessions).toBe(0);
+    });
+
+    it("aggregates real DSA, CS/HR, and Roadmap progress into dashboard summary and streak", async () => {
+      await request(app)
+        .put("/api/v1/dsa-sheet/two-sum/progress")
+        .set("Authorization", `Bearer ${user1Token}`)
+        .send({ status: "SOLVED" });
+
+      await request(app)
+        .put("/api/v1/cs-fundamentals/os-kernel-user-mode-syscalls/progress")
+        .set("Authorization", `Bearer ${user1Token}`)
+        .send({ status: "LEARNED" });
+
+      const rmRes = await request(app)
+        .post("/api/v1/roadmaps/generate")
+        .set("Authorization", `Bearer ${user1Token}`)
+        .send({
+          targetRole: "Backend Engineer",
+          durationWeeks: 8,
+          dailyHours: 2,
+          currentLevel: "INTERMEDIATE",
+        });
+      expect(rmRes.status).toBe(201);
+      const rm = rmRes.body.data.roadmap;
+      const firstTaskId = rm.phases[0].tasks[0].id;
+
+      await request(app)
+        .patch(`/api/v1/roadmaps/${rm.id}/tasks`)
+        .set("Authorization", `Bearer ${user1Token}`)
+        .send({ taskId: firstTaskId, completed: true });
+
+      const summaryRes = await request(app)
+        .get("/api/v1/dashboard/summary")
+        .set("Authorization", `Bearer ${user1Token}`);
+
+      expect(summaryRes.status).toBe(200);
+      const d = summaryRes.body.data;
+      expect(d.dsaMastery.solvedCount).toBe(1);
+      expect(d.dsaMastery.nextProblem?.slug).not.toBe("two-sum");
+      expect(d.csAndHrMastery.learnedCount).toBe(1);
+      expect(d.csAndHrMastery.nextTopic?.slug).not.toBe("os-kernel-user-mode-syscalls");
+      expect(d.roadmapProgress.activeRoadmapId).toBe(rm.id);
+      expect(d.roadmapProgress.completedTasks).toBe(1);
+      expect(d.roadmapProgress.percentage).toBeGreaterThan(0);
+      expect(d.streak.totalActiveDays).toBeGreaterThanOrEqual(1);
     });
 
     it(

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Link } from "react-router-dom";
 import {
   Bookmark,
   CheckCircle2,
@@ -219,7 +220,7 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
     } catch {
       toast({
         variant: "error",
-        title: "AI Walkthrough unavailable",
+        title: "Simple Solution Guide unavailable",
         description: "Please try again in a moment.",
       });
     }
@@ -565,6 +566,15 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
                               {p.difficulty}
                             </Badge>
                             <Badge variant="mono">{p.subPattern}</Badge>
+                            {p.arenaSlug && (
+                              <Link
+                                to={`/coding-arena?problem=${p.arenaSlug}`}
+                                title="Open in Coding Practice IDE"
+                                className="inline-flex items-center gap-1 rounded border border-[#10B981]/40 bg-[#10B981]/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#10B981] hover:bg-[#10B981]/20 transition-colors"
+                              >
+                                &lt;/&gt; IDE
+                              </Link>
+                            )}
                           </div>
 
                           <p className="text-xs text-zinc-400">
@@ -691,11 +701,11 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
         </div>
       </Dialog>
 
-      {/* AI Walkthrough Drawer */}
+      {/* Simple Solution Guide Drawer */}
       <Drawer
         open={walkthroughTarget !== null}
         onClose={() => setWalkthroughTarget(null)}
-        title={walkthroughTarget?.title ?? "AI Walkthrough"}
+        title={walkthroughTarget?.title ?? "Simple Solution Guide"}
         description={
           walkthroughTarget
             ? `${walkthroughTarget.category} · ${walkthroughTarget.subPattern}`
@@ -756,11 +766,11 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
                 </div>
               </div>
 
-              {/* 2. Brute Force Approach + Collapsible Code */}
+              {/* 2. Basic Approach (Brute Force) + Collapsible Code */}
               <div className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-3.5 space-y-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="font-semibold text-amber-400 uppercase tracking-wider text-[10px]">
-                    Brute Force Approach
+                    Basic Approach (Brute Force)
                   </div>
                   <div className="flex items-center gap-1.5 font-mono">
                     <Badge variant="amber">
@@ -782,8 +792,8 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
                 >
                   <Code2 className="h-3.5 w-3.5 text-amber-400" />
                   {showBruteCode
-                    ? "Hide Brute Force Code"
-                    : "View Brute Force Code"}
+                    ? "Hide Basic Approach Code"
+                    : "View Basic Approach Code"}
                   {showBruteCode ? (
                     <ChevronUp className="h-3.5 w-3.5" />
                   ) : (
@@ -799,11 +809,11 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
                 )}
               </div>
 
-              {/* 3. Optimal Approach + Collapsible Code */}
+              {/* 3. Best Approach (Optimal) + Collapsible Code */}
               <div className="rounded-lg border border-[#10B981]/30 bg-[#10B981]/5 p-3.5 space-y-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="font-semibold text-[#10B981] uppercase tracking-wider text-[10px]">
-                    Optimal Approach
+                    Best Approach (Optimal)
                   </div>
                   <div className="flex items-center gap-1.5 font-mono">
                     <Badge variant="emerald">
@@ -825,8 +835,8 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
                 >
                   <Code2 className="h-3.5 w-3.5" />
                   {showOptimalCode
-                    ? "Hide Optimal Code"
-                    : "View Optimal Code"}
+                    ? "Hide Best Approach Code"
+                    : "View Best Approach Code"}
                   {showOptimalCode ? (
                     <ChevronUp className="h-3.5 w-3.5" />
                   ) : (

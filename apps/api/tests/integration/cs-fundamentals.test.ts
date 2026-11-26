@@ -33,8 +33,14 @@ describe("CS Core & System Design Mastery Sheet API & Dataset Tests (V2.3)", () 
     });
   });
 
-  it("validates >= 165 unique topics across all 6 core CS subjects with 1..N per-subject numbering", () => {
-    expect(CS_FUNDAMENTALS_TOPICS.length).toBeGreaterThanOrEqual(165);
+  it("validates >= 210 unique topics across all 7 subjects (including 45 Behavioral & HR) with 1..N per-subject numbering", () => {
+    expect(CS_FUNDAMENTALS_TOPICS.length).toBeGreaterThanOrEqual(210);
+    expect(CS_SUBJECTS).toContain("Behavioral & HR");
+
+    const hrTopics = CS_FUNDAMENTALS_TOPICS.filter(
+      (t) => t.subject === "Behavioral & HR"
+    );
+    expect(hrTopics).toHaveLength(45);
 
     const slugs = new Set(CS_FUNDAMENTALS_TOPICS.map((t) => t.slug));
     const titles = new Set(CS_FUNDAMENTALS_TOPICS.map((t) => t.title));
@@ -62,7 +68,7 @@ describe("CS Core & System Design Mastery Sheet API & Dataset Tests (V2.3)", () 
       CS_FUNDAMENTALS_TOPICS.length
     );
     expect(initialRes.body.data.summary.learned).toBe(0);
-    expect(initialRes.body.data.summary.subjects).toHaveLength(6);
+    expect(initialRes.body.data.summary.subjects).toHaveLength(7);
 
     const learnedRes = await request(app)
       .put("/api/v1/cs-fundamentals/os-process-vs-thread/progress")
@@ -149,5 +155,19 @@ describe("CS Core & System Design Mastery Sheet API & Dataset Tests (V2.3)", () 
       "┌────┐\\n│ A  │\\r\\n\\t──▶ B"
     );
     expect(normalized).toBe("┌────┐\n│ A  │\n    ──▶ B");
+
+    const hrRes = await request(app)
+      .post("/api/v1/cs-fundamentals/hr-tell-me-about-yourself/walkthrough")
+      .set("Authorization", `Bearer ${userToken}`);
+    expect(hrRes.status).toBe(200);
+    const hrw = hrRes.body.data.walkthrough;
+    expect(hrw.visualType).toBe("STAR");
+    expect(hrw.whatInterviewerTests).toBeTruthy();
+    expect(hrw.starFramework.situation).toBeTruthy();
+    expect(hrw.starFramework.task).toBeTruthy();
+    expect(hrw.starFramework.action).toBeTruthy();
+    expect(hrw.starFramework.result).toBeTruthy();
+    expect(hrw.sampleSpokenAnswer).toBeTruthy();
+    expect(hrw.avoidMistakes.length).toBeGreaterThanOrEqual(1);
   });
 });

@@ -156,7 +156,7 @@ export function QuestionCard({
                 className="border-[#10B981]/50 text-[#10B981] hover:bg-[#10B981]/10"
               >
                 <Code2 className="h-3.5 w-3.5" />
-                Solve in Coding Arena
+                Solve in Coding Practice
               </Button>
             </Link>
           )}
@@ -167,7 +167,7 @@ export function QuestionCard({
             onClick={() => onOpenAnswerStudio(question)}
           >
             <Sparkles className="h-3.5 w-3.5" />
-            Open Answer Studio
+            View Sample Answer
           </Button>
         </div>
 
