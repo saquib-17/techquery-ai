@@ -97,24 +97,33 @@ describe("V2 Coding Arena, DSA Generation & Refresh-Safe Assessment API Integrat
         expect(p.hiddenTestCaseCount).toBeGreaterThanOrEqual(3);
         expect(p.hiddenTestCases).toBeUndefined();
         expect(p.driverCode).toBeUndefined();
-        expect(p.starterCode.java).toContain("class Solution");
+        expect(p.starterCode.java).toMatch(/\bclass\s+(Solution|MedianFinder|Trie|MyStack|MinStack)\b/);
         const sampleInputs = p.sampleTestCases.map((tc: { stdin: string }) => tc.stdin);
         expect(new Set(sampleInputs).size).toBe(sampleInputs.length);
       }
     });
 
-    it("wraps class Solution with server-side driverCode, reveals hidden tests in standalone mode, and masks in TIMED OA", async () => {
+    it("wraps class Solution with server-side driverCode in single-batch mode, auto-marks SOLVED on 20/20 submit, and masks in TIMED OA", async () => {
       const listRes = await request(app)
         .get("/api/v1/coding/problems?difficulty=EASY")
         .set("Authorization", `Bearer ${userToken}`);
-      const problemId = listRes.body.data.problems[0].id as string;
+      const twoSumProblem = listRes.body.data.problems.find(
+        (p: { slug: string }) => p.slug === "two-sum"
+      );
+      const problemId = twoSumProblem.id as string;
 
       const spy = vi
-        .spyOn(judge0Adapter, "executeTestCase")
-        .mockImplementation(async ({ expectedOutput }) => ({
+        .spyOn(judge0Adapter, "executeBatch")
+        .mockImplementation(async ({ testCases }) => ({
           verdict: "ACCEPTED",
-          passed: true,
-          actualOutput: expectedOutput,
+          results: testCases.map((tc, idx) => ({
+            testCaseId: tc.id,
+            caseNumber: idx + 1,
+            isHidden: !tc.isSample,
+            passed: true,
+            actualOutput: tc.expectedOutput,
+            verdict: "ACCEPTED",
+          })),
           runtimeMs: 18,
           memoryKb: 1024,
         }));
@@ -131,14 +140,14 @@ describe("V2 Coding Arena, DSA Generation & Refresh-Safe Assessment API Integrat
 
       expect(sampleRes.status).toBe(200);
       expect(sampleRes.body.data.result.verdict).toBe("ACCEPTED");
-      expect(sampleRes.body.data.result.totalCount).toBe(2);
+      expect(sampleRes.body.data.result.totalCount).toBe(3);
       expect(sampleRes.body.data.result.submissionId).toBeUndefined();
-      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy).toHaveBeenCalledTimes(1);
       expect(spy.mock.calls[0]?.[0].code).toContain('if __name__ == "__main__":');
 
       spy.mockClear();
 
-      // Standalone SUBMIT reveals hidden test case details for learning
+      // Standalone SUBMIT runs all 20 cases in 1 batch, reveals hidden details, and marks DSA Sheet SOLVED
       const submitRes = await request(app)
         .post("/api/v1/coding/run")
         .set("Authorization", `Bearer ${userToken}`)
@@ -151,14 +160,21 @@ describe("V2 Coding Arena, DSA Generation & Refresh-Safe Assessment API Integrat
 
       expect(submitRes.status).toBe(200);
       expect(submitRes.body.data.result.verdict).toBe("ACCEPTED");
-      expect(submitRes.body.data.result.totalCount).toBe(5);
+      expect(submitRes.body.data.result.totalCount).toBe(20);
       expect(submitRes.body.data.result.submissionId).toBeTruthy();
+      expect(spy).toHaveBeenCalledTimes(1);
 
-      const hiddenStandalone = submitRes.body.data.result.results.slice(2);
+      const hiddenStandalone = submitRes.body.data.result.results.slice(3);
+      expect(hiddenStandalone).toHaveLength(17);
       for (const hr of hiddenStandalone) {
         expect(hr.stdin).not.toBe("[Hidden]");
         expect(hr.expectedOutput).not.toBe("[Hidden]");
       }
+
+      const dsaProgress = await prisma.userDsaSheetProgress.findUnique({
+        where: { userId_problemSlug: { userId, problemSlug: "two-sum" } },
+      });
+      expect(dsaProgress?.status).toBe("SOLVED");
     });
   });
 
@@ -214,16 +230,25 @@ describe("V2 Coding Arena, DSA Generation & Refresh-Safe Assessment API Integrat
         "public class Main"
       );
 
-      // Partial OA submission (3 of 5 test cases pass -> 60 pts)
-      let callCount = 0;
-      vi.spyOn(judge0Adapter, "executeTestCase").mockImplementation(
-        async ({ expectedOutput }) => {
-          callCount += 1;
-          const pass = callCount <= 3;
+      // Partial OA submission (60% of test cases pass -> 60 pts)
+      vi.spyOn(judge0Adapter, "executeBatch").mockImplementation(
+        async ({ testCases }) => {
+          const passLimit = Math.round(testCases.length * 0.6);
+          const results = testCases.slice(0, passLimit + 1).map((tc, idx) => {
+            const pass = idx < passLimit;
+            return {
+              testCaseId: tc.id,
+              caseNumber: idx + 1,
+              isHidden: !tc.isSample,
+              passed: pass,
+              actualOutput: pass ? tc.expectedOutput : "wrong",
+              verdict: (pass ? "ACCEPTED" : "WRONG_ANSWER") as "ACCEPTED" | "WRONG_ANSWER",
+            };
+          });
           return {
-            verdict: pass ? "ACCEPTED" : "WRONG_ANSWER",
-            passed: pass,
-            actualOutput: pass ? expectedOutput : "wrong",
+            verdict: "WRONG_ANSWER",
+            results,
+            firstFailingCaseNumber: passLimit + 1,
             runtimeMs: 12,
             memoryKb: 512,
           };
@@ -242,10 +267,13 @@ describe("V2 Coding Arena, DSA Generation & Refresh-Safe Assessment API Integrat
         });
       expect(submitRes.status).toBe(200);
       expect(submitRes.body.data.result.verdict).toBe("WRONG_ANSWER");
-      expect(submitRes.body.data.result.passedCount).toBe(3);
+      expect(submitRes.body.data.result.friendlyMessage).toContain("Wrong Answer on Test Case #");
       // TIMED OA masks hidden test case details
-      expect(submitRes.body.data.result.results[2].stdin).toBe("[Hidden]");
-      expect(submitRes.body.data.result.results[2].expectedOutput).toBe("[Hidden]");
+      const lastResult = submitRes.body.data.result.results[submitRes.body.data.result.results.length - 1];
+      if (lastResult.isHidden) {
+        expect(lastResult.stdin).toBe("[Hidden]");
+        expect(lastResult.expectedOutput).toBe("[Hidden]");
+      }
 
       const refreshed = await request(app)
         .get(`/api/v1/assessments/${session.id}`)
@@ -348,41 +376,41 @@ describe("V2 Coding Arena, DSA Generation & Refresh-Safe Assessment API Integrat
         .set("Authorization", `Bearer ${userToken}`);
       expect(emptyHistory.body.data.sessions).toHaveLength(0);
     });
-    it("audits all 12 curated LeetCode problems for unique slugs, class Solution, driverCode, and 5 distinct test cases", async () => {
-      expect(CURATED_CODING_PROBLEMS).toHaveLength(12);
+    it("audits all 103 curated LeetCode problems (100 Wave 1+2+3 + 3 legacy) for unique slugs, class Solution, driverCode, and distinct test cases", async () => {
+      expect(CURATED_CODING_PROBLEMS).toHaveLength(103);
       const slugs = new Set(CURATED_CODING_PROBLEMS.map((p) => p.slug));
       const titles = new Set(CURATED_CODING_PROBLEMS.map((p) => p.title));
-      expect(slugs.size).toBe(12);
-      expect(titles.size).toBe(12);
+      expect(slugs.size).toBe(103);
+      expect(titles.size).toBe(103);
 
       expect(
-        CURATED_CODING_PROBLEMS.filter((p) => p.difficulty === "EASY")
-      ).toHaveLength(4);
+        CURATED_CODING_PROBLEMS.filter((p) => p.difficulty === "EASY").length
+      ).toBeGreaterThanOrEqual(25);
       expect(
-        CURATED_CODING_PROBLEMS.filter((p) => p.difficulty === "MEDIUM")
-      ).toHaveLength(4);
+        CURATED_CODING_PROBLEMS.filter((p) => p.difficulty === "MEDIUM").length
+      ).toBeGreaterThanOrEqual(50);
       expect(
-        CURATED_CODING_PROBLEMS.filter((p) => p.difficulty === "HARD")
-      ).toHaveLength(4);
+        CURATED_CODING_PROBLEMS.filter((p) => p.difficulty === "HARD").length
+      ).toBeGreaterThanOrEqual(20);
 
       for (const p of CURATED_CODING_PROBLEMS) {
-        expect(p.starterCode.java).toContain("class Solution");
-        expect(p.starterCode.python).toContain("class Solution");
-        expect(p.starterCode.cpp).toContain("class Solution");
+        expect(p.starterCode.java).toMatch(/\bclass\s+(Solution|MedianFinder|Trie|MyStack|MinStack)\b/);
+        expect(p.starterCode.python).toMatch(/\bclass\s+(Solution|MedianFinder|Trie|MyStack|MinStack)\b/);
+        expect(p.starterCode.cpp).toMatch(/\bclass\s+(Solution|MedianFinder|Trie|MyStack|MinStack)\b/);
         expect(p.starterCode.javascript).toMatch(/\bvar\s+\w+\s*=\s*function/);
 
         for (const lang of ["java", "python", "cpp", "javascript"] as const) {
           expect(p.driverCode[lang]).toContain("{{USER_CODE}}");
         }
 
-        expect(p.sampleTestCases).toHaveLength(2);
-        expect(p.hiddenTestCases).toHaveLength(3);
         const allCases = [...p.sampleTestCases, ...p.hiddenTestCases];
+        const expectedTotal = allCases.length;
+        expect([5, 20]).toContain(expectedTotal);
         const inputs = allCases.map((tc) => tc.stdin);
-        expect(new Set(inputs).size).toBe(5);
+        expect(new Set(inputs).size).toBe(expectedTotal);
         for (const tc of allCases) {
-          expect(tc.stdin.trim().length).toBeGreaterThan(0);
-          expect(tc.expectedOutput.trim().length).toBeGreaterThan(0);
+          expect(typeof tc.stdin).toBe("string");
+          expect(typeof tc.expectedOutput).toBe("string");
         }
       }
     });

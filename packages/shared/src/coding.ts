@@ -107,6 +107,8 @@ export type RunCodeInput = z.infer<typeof RunCodeInputSchema>;
 
 export const TestCaseExecutionDetailSchema = z.object({
   testCaseId: z.string(),
+  caseNumber: z.number().int().positive().optional(),
+  isHidden: z.boolean().optional(),
   passed: z.boolean(),
   stdin: z.string(),
   expectedOutput: z.string(),
@@ -126,6 +128,7 @@ export const CodeExecutionResultDtoSchema = z.object({
   runtimeMs: z.number().nonnegative(),
   memoryKb: z.number().nonnegative(),
   results: z.array(TestCaseExecutionDetailSchema),
+  friendlyMessage: z.string().optional(),
   submissionId: z.string().uuid().optional(),
 });
 export type CodeExecutionResultDto = z.infer<
@@ -191,3 +194,32 @@ export const AssessmentSessionDtoSchema = z.object({
   drafts: z.record(z.string(), AssessmentDraftEntrySchema),
 });
 export type AssessmentSessionDto = z.infer<typeof AssessmentSessionDtoSchema>;
+
+export interface CuratedTestCase {
+  id: string;
+  stdin: string;
+  expectedOutput: string;
+  isHidden: boolean;
+}
+
+export type Wave1Pattern =
+  | "Arrays & Hashing"
+  | "Two Pointers"
+  | "Sliding Window"
+  | "Binary Search"
+  | "Prefix Sum & String Algorithms";
+
+export interface CuratedCodingProblem {
+  title: string;
+  slug: string;
+  difficulty: ProblemDifficulty;
+  pattern: DsaPattern;
+  sheetPattern: Wave1Pattern | string;
+  statement: string;
+  constraints: string[];
+  examples: ProblemExample[];
+  hints: string[];
+  starterCode: StarterCodeMap;
+  driverCode: StarterCodeMap;
+  testCases: CuratedTestCase[];
+}

@@ -250,7 +250,7 @@ describe("Coding Arena, Refresh-Safe OA & Question Studio DSA Mode", () => {
     );
 
     const arenaLink = screen.getByRole("link", {
-      name: /Solve in Coding Arena/i,
+      name: /Solve in Coding Practice/i,
     });
     expect(arenaLink).toHaveAttribute(
       "href",
@@ -358,10 +358,10 @@ describe("Coding Arena, Refresh-Safe OA & Question Studio DSA Mode", () => {
     renderWithProviders(<CodingArenaPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Master DSA Sheet \(520\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/DSA Practice Sheet \(520\)/i)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Master DSA Sheet \(520\)/i }));
+    fireEvent.click(screen.getByRole("button", { name: /DSA Practice Sheet \(520\)/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Two Sum")).toBeInTheDocument();
@@ -502,9 +502,9 @@ describe("Coding Arena, Refresh-Safe OA & Question Studio DSA Mode", () => {
     renderWithProviders(<CodingArenaPage />);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Master DSA Sheet \(520\)/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /DSA Practice Sheet \(520\)/i })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole("button", { name: /Master DSA Sheet \(520\)/i }));
+    fireEvent.click(screen.getByRole("button", { name: /DSA Practice Sheet \(520\)/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /AI Guide/i })).toBeInTheDocument();
@@ -519,11 +519,11 @@ describe("Coding Arena, Refresh-Safe OA & Question Studio DSA Mode", () => {
     expect(screen.queryByText(/\/\* brute \*\//)).not.toBeInTheDocument();
     expect(screen.queryByText(/\/\* optimal \*\//)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /View Brute Force Code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /View Basic Approach Code/i }));
     expect(screen.getByText(/\/\* brute \*\//)).toBeInTheDocument();
     expect(screen.getByText("VS Code Dark+")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /View Optimal Code/i }));
+    fireEvent.click(screen.getByRole("button", { name: /View Best Approach Code/i }));
     expect(screen.getByText(/\/\* optimal \*\//)).toBeInTheDocument();
   });
 

@@ -12,12 +12,14 @@ import { cn } from "@/lib/cn";
 
 export interface ExecutionConsoleProps {
   result: CodeExecutionResultDto | null;
+  mode?: "SAMPLE" | "SUBMIT" | null;
   isRunning: boolean;
   errorMessage?: string | null;
 }
 
 export function ExecutionConsole({
   result,
+  mode,
   isRunning,
   errorMessage,
 }: ExecutionConsoleProps) {
@@ -62,6 +64,125 @@ export function ExecutionConsole({
 
   const isAccepted = result.verdict === "ACCEPTED";
   const activeCase = result.results[selectedIdx] ?? result.results[0];
+  const firstFailedCase =
+    result.results.find((tc) => !tc.passed) ??
+    result.results[result.results.length - 1];
+
+  if (mode === "SUBMIT" && isAccepted) {
+    return (
+      <div className="rounded-xl border border-[#10B981]/40 bg-[#10B981]/10 p-5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="h-5 w-5 text-[#10B981]" />
+            <span className="font-mono text-sm font-bold text-[#10B981]">
+              ✓ ACCEPTED · {result.passedCount} / {result.totalCount} Test Cases Passed
+            </span>
+          </div>
+          <span className="rounded-full border border-[#10B981]/40 bg-[#0F0F11] px-2.5 py-0.5 font-mono text-[10px] font-semibold text-[#10B981]">
+            Synced to Master DSA Sheet
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 font-mono text-xs text-zinc-300">
+          <span className="inline-flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-[#10B981]" />
+            Runtime: {result.runtimeMs} ms
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Cpu className="h-3.5 w-3.5 text-[#10B981]" />
+            Memory: {result.memoryKb} KB
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "SUBMIT" && !isAccepted) {
+    const failedCaseNum =
+      firstFailedCase?.caseNumber ?? result.results.length;
+    return (
+      <div className="rounded-xl border border-red-500/35 bg-[#0B0B0D] overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-red-500/30 bg-red-500/10 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <XCircle className="h-4 w-4 text-red-400" />
+            <span className="font-mono text-xs font-bold tracking-wide text-red-400">
+              {result.verdict.replace(/_/g, " ")}
+            </span>
+            <span className="font-mono text-xs text-zinc-200">
+              ({result.passedCount} / {result.totalCount} Test Cases Passed)
+            </span>
+          </div>
+          <div className="flex items-center gap-3 font-mono text-[11px] text-zinc-400">
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3 w-3 text-zinc-500" />
+              {result.runtimeMs} ms
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Cpu className="h-3 w-3 text-zinc-500" />
+              {result.memoryKb} KB
+            </span>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-3 font-mono text-xs">
+          {result.friendlyMessage && (
+            <div className="rounded-lg border border-red-500/25 bg-red-500/5 p-3 text-red-200 font-sans">
+              {result.friendlyMessage}
+            </div>
+          )}
+
+          {firstFailedCase?.compileOutput && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-amber-200 whitespace-pre-wrap">
+              <div className="text-[10px] uppercase tracking-wider text-amber-400 mb-1">
+                Compiler Output
+              </div>
+              {firstFailedCase.compileOutput}
+            </div>
+          )}
+
+          {firstFailedCase?.isHidden ? (
+            <div className="rounded-lg border border-[#242429] bg-[#131317] p-3 text-zinc-300">
+              Failed on Hidden Edge Case #{failedCaseNum}
+            </div>
+          ) : (
+            firstFailedCase && (
+              <div className="space-y-2">
+                <div className="text-[11px] font-semibold text-zinc-400">
+                  Failed on Sample Case #{failedCaseNum}
+                </div>
+                <div className="rounded-lg border border-[#242429] bg-[#131317] p-2.5">
+                  <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">
+                    Input
+                  </div>
+                  <div className="text-zinc-200 whitespace-pre-wrap">
+                    {firstFailedCase.stdin || "(empty)"}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="rounded-lg border border-[#242429] bg-[#131317] p-2.5">
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">
+                      Expected Output
+                    </div>
+                    <div className="text-[#10B981] whitespace-pre-wrap">
+                      {firstFailedCase.expectedOutput}
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-[#242429] bg-[#131317] p-2.5">
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">
+                      Your Output
+                    </div>
+                    <div className="text-red-300 whitespace-pre-wrap">
+                      {firstFailedCase.actualOutput || "(empty)"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-[#242429] bg-[#0B0B0D] overflow-hidden">
@@ -105,6 +226,12 @@ export function ExecutionConsole({
         </div>
       </div>
 
+      {result.friendlyMessage && !isAccepted && (
+        <div className="border-b border-red-500/20 bg-red-500/5 px-4 py-2 text-xs text-red-200">
+          {result.friendlyMessage}
+        </div>
+      )}
+
       {/* Test Case Tabs */}
       {result.results.length > 0 && (
         <div className="p-3 space-y-3">
@@ -127,7 +254,12 @@ export function ExecutionConsole({
                     tc.passed ? "bg-[#10B981]" : "bg-red-400"
                   )}
                 />
-                Case {idx + 1}
+                Case {tc.caseNumber ?? idx + 1}
+                {tc.isHidden && (
+                  <span className="text-[9px] uppercase text-zinc-500">
+                    Hidden
+                  </span>
+                )}
               </button>
             ))}
           </div>

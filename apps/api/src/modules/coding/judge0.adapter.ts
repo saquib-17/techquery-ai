@@ -1,9 +1,12 @@
 import type {
   ExecutionVerdict,
+  ProblemTestCase,
   SupportedCodeLanguage,
 } from "@techquery/shared";
 import { config } from "../../core/config/index.js";
 import { AppError } from "../../core/errors/AppError.js";
+import { buildBatchCode, parseBatchStdout, type BatchCaseResult } from "./batchHarness.js";
+import { translateJudge0ServiceError } from "./errorTranslator.js";
 
 export const JUDGE0_LANGUAGE_IDS: Record<SupportedCodeLanguage, number> = {
   java: 62,
@@ -22,6 +25,16 @@ interface Judge0SubmissionResponse {
     id: number;
     description?: string;
   };
+}
+
+export interface Judge0BatchOutcome {
+  verdict: ExecutionVerdict;
+  results: BatchCaseResult[];
+  firstFailingCaseNumber?: number;
+  stderr?: string;
+  compileOutput?: string;
+  runtimeMs: number;
+  memoryKb: number;
 }
 
 export interface Judge0ExecutionOutcome {
@@ -68,10 +81,8 @@ export class Judge0Adapter {
         signal: AbortSignal.timeout(15000),
       });
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Judge0 network request failed";
       throw new AppError(
-        `Code execution service unavailable: ${msg}`,
+        translateJudge0ServiceError(err),
         503,
         "JUDGE0_UNAVAILABLE"
       );
@@ -79,7 +90,7 @@ export class Judge0Adapter {
 
     if (!response.ok) {
       throw new AppError(
-        `Code execution service returned HTTP ${response.status}`,
+        translateJudge0ServiceError(new Error(`HTTP ${response.status}`)),
         502,
         "JUDGE0_BAD_GATEWAY"
       );
@@ -120,6 +131,107 @@ export class Judge0Adapter {
       verdict,
       passed: verdict === "ACCEPTED",
       actualOutput: stdout,
+      stderr,
+      compileOutput,
+      runtimeMs,
+      memoryKb,
+    };
+  }
+
+  /**
+   * Executes all requested test cases in a single Judge0 CE submission.
+   */
+  public async executeBatch(params: {
+    language: SupportedCodeLanguage;
+    code: string;
+    testCases: ProblemTestCase[];
+  }): Promise<Judge0BatchOutcome> {
+    const batchSource = buildBatchCode(
+      params.language,
+      params.code,
+      params.testCases
+    );
+    const baseUrl = config.JUDGE0_API_URL.replace(/\/+$/, "");
+    const url = `${baseUrl}/submissions?base64_encoded=false&wait=true`;
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (config.JUDGE0_API_KEY) {
+      headers["X-RapidAPI-Key"] = config.JUDGE0_API_KEY;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          language_id: JUDGE0_LANGUAGE_IDS[params.language],
+          source_code: batchSource,
+          stdin: "",
+        }),
+        signal: AbortSignal.timeout(20000),
+      });
+    } catch (err) {
+      throw new AppError(
+        translateJudge0ServiceError(err),
+        503,
+        "JUDGE0_UNAVAILABLE"
+      );
+    }
+
+    if (!response.ok) {
+      throw new AppError(
+        translateJudge0ServiceError(new Error(`HTTP ${response.status}`)),
+        502,
+        "JUDGE0_BAD_GATEWAY"
+      );
+    }
+
+    const payload = (await response.json()) as Judge0SubmissionResponse;
+    const statusId = payload.status?.id ?? 13;
+    const stdout = payload.stdout ?? "";
+    const stderr = payload.stderr ? payload.stderr.trim() : undefined;
+    const compileOutput = payload.compile_output
+      ? payload.compile_output.trim()
+      : undefined;
+    const runtimeMs = payload.time
+      ? Math.max(0, Math.round(parseFloat(payload.time) * 1000))
+      : 0;
+    const memoryKb = payload.memory ? Math.max(0, Math.round(payload.memory)) : 0;
+
+    if (statusId === 6) {
+      return {
+        verdict: "COMPILATION_ERROR",
+        results: params.testCases.slice(0, 1).map((tc, idx) => ({
+          testCaseId: tc.id,
+          caseNumber: idx + 1,
+          isHidden: !tc.isSample,
+          passed: false,
+          actualOutput: "",
+          verdict: "COMPILATION_ERROR",
+        })),
+        firstFailingCaseNumber: 1,
+        stderr,
+        compileOutput,
+        runtimeMs,
+        memoryKb,
+      };
+    }
+
+    const rawVerdict: ExecutionVerdict =
+      statusId === 5
+        ? "TIME_LIMIT_EXCEEDED"
+        : statusId >= 7
+          ? "RUNTIME_ERROR"
+          : "ACCEPTED";
+
+    const parsed = parseBatchStdout(stdout, params.testCases, rawVerdict);
+    return {
+      verdict: parsed.verdict,
+      results: parsed.results,
+      firstFailingCaseNumber: parsed.firstFailingCaseNumber,
       stderr,
       compileOutput,
       runtimeMs,

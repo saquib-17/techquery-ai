@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "@/components/ui/toast";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { NotFoundPage } from "@/components/NotFoundPage";
 import { AuthProvider } from "@/features/auth/auth.context";
 import { PublicRoute, ProtectedRoute, OnboardingGuard } from "@/app/guards";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -31,51 +33,55 @@ const queryClient = new QueryClient({
 
 export function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Guest-Only Authentication Routes */}
-              <Route element={<PublicRoute />}>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/verify-email" element={<VerifyEmailPage />} />
-              </Route>
-
-              {/* Protected Candidate Workspace Routes */}
-              <Route element={<ProtectedRoute />}>
-                {/* Onboarding Wizard (only accessible while onboarding is incomplete) */}
-                <Route element={<OnboardingGuard requireCompleted={false} />}>
-                  <Route path="/onboarding" element={<OnboardingPage />} />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Guest-Only Authentication Routes */}
+                <Route element={<PublicRoute />}>
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/verify-email" element={<VerifyEmailPage />} />
                 </Route>
 
-                {/* Onboarded AppLayout Workspace */}
-                <Route element={<OnboardingGuard requireCompleted={true} />}>
-                  <Route element={<AppLayout />}>
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/resumes" element={<ResumesPage />} />
-                  <Route path="/job-descriptions" element={<JobDescriptionsPage />} />
-                  <Route path="/matches" element={<MatchesPage />} />
-                  <Route path="/questions" element={<QuestionsPage />} />
-                  <Route path="/practice" element={<CodingArenaPage />} />
-                  <Route path="/cs-fundamentals" element={<CsFundamentalsPage />} />
-                  <Route path="/roadmap" element={<RoadmapPage />} />
-                  <Route path="/library" element={<LibraryPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/usage" element={<UsagePage />} />
+                {/* Protected Candidate Workspace Routes */}
+                <Route element={<ProtectedRoute />}>
+                  {/* Onboarding Wizard (only accessible while onboarding is incomplete) */}
+                  <Route element={<OnboardingGuard requireCompleted={false} />}>
+                    <Route path="/onboarding" element={<OnboardingPage />} />
+                  </Route>
+
+                  {/* Onboarded AppLayout Workspace */}
+                  <Route element={<OnboardingGuard requireCompleted={true} />}>
+                    <Route element={<AppLayout />}>
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/dashboard" element={<DashboardPage />} />
+                      <Route path="/resumes" element={<ResumesPage />} />
+                      <Route path="/job-descriptions" element={<JobDescriptionsPage />} />
+                      <Route path="/matches" element={<MatchesPage />} />
+                      <Route path="/questions" element={<QuestionsPage />} />
+                      <Route path="/practice" element={<CodingArenaPage />} />
+                      <Route path="/coding-arena" element={<CodingArenaPage />} />
+                      <Route path="/cs-fundamentals" element={<CsFundamentalsPage />} />
+                      <Route path="/roadmap" element={<RoadmapPage />} />
+                      <Route path="/library" element={<LibraryPage />} />
+                      <Route path="/profile" element={<ProfilePage />} />
+                      <Route path="/usage" element={<UsagePage />} />
+                      <Route path="*" element={<NotFoundPage />} />
+                    </Route>
                   </Route>
                 </Route>
-              </Route>
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </ToastProvider>
-    </QueryClientProvider>
+                {/* Fallback */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+        </ToastProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

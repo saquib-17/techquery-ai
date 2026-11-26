@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { BookOpen, Code2 } from "lucide-react";
 import type { AssessmentSessionDto, CodingProblemDto } from "@techquery/shared";
 import { cn } from "@/lib/cn";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { NotFoundPage } from "@/components/NotFoundPage";
 import {
   useActiveAssessmentQuery,
   useCodingProblemQuery,
@@ -16,6 +18,7 @@ import { DsaSheetView } from "@/features/dsa-sheet/DsaSheetView";
 export function CodingArenaPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const problemIdParam = searchParams.get("problemId");
+  const problemSlugParam = searchParams.get("problem");
 
   const activeQuery = useActiveAssessmentQuery();
   const standaloneQuery = useCodingProblemQuery(
@@ -32,8 +35,24 @@ export function CodingArenaPage() {
     React.useState<AssessmentSessionDto | null>(null);
 
   const activeSession = activeQuery.data ?? null;
+  const slugMatchedProblem = React.useMemo(() => {
+    if (!problemSlugParam || !problemsBankQuery.data) return null;
+    return (
+      problemsBankQuery.data.find((p) => p.slug === problemSlugParam) ?? null
+    );
+  }, [problemSlugParam, problemsBankQuery.data]);
+
   const effectiveStandalone =
-    selectedStandalone ?? standaloneQuery.data?.problem ?? null;
+    selectedStandalone ??
+    standaloneQuery.data?.problem ??
+    slugMatchedProblem ??
+    null;
+
+  const isInvalidProblemSlug =
+    Boolean(problemSlugParam) &&
+    problemsBankQuery.isFetched &&
+    !slugMatchedProblem &&
+    !selectedStandalone;
 
   const handleTimerExpired = React.useCallback(async () => {
     await activeQuery.refetch();
@@ -42,7 +61,7 @@ export function CodingArenaPage() {
   const handleSelectProblem = (problem: CodingProblemDto) => {
     setSelectedStandalone(problem);
     setArenaTab("practice");
-    setSearchParams({ problemId: problem.id });
+    setSearchParams({ problem: problem.slug });
   };
 
   const handleSolveFromSheet = (arenaSlug: string) => {
@@ -69,6 +88,15 @@ export function CodingArenaPage() {
     );
   }
 
+  if (!activeSession && isInvalidProblemSlug) {
+    return (
+      <NotFoundPage
+        title="Coding Problem Not Found"
+        description={`No runnable problem matched "${problemSlugParam}". Return to Coding Practice to pick another problem.`}
+      />
+    );
+  }
+
   return (
     <div className="space-y-5">
       {/* Top Workspace Switcher (hidden while an active OA session or standalone IDE is open) */}
@@ -85,7 +113,7 @@ export function CodingArenaPage() {
             )}
           >
             <Code2 className="h-3.5 w-3.5 text-[#10B981]" />
-            Practice &amp; Timed OA
+            Practice &amp; Timed Coding Test
           </button>
           <button
             type="button"
@@ -98,24 +126,31 @@ export function CodingArenaPage() {
             )}
           >
             <BookOpen className="h-3.5 w-3.5" />
-            Master DSA Sheet (520)
+            DSA Practice Sheet (520)
           </button>
         </div>
       )}
 
       {activeSession ? (
-        <ActiveCodingWorkspace
-          session={activeSession}
-          onSessionCompleted={(finalSession) => setScorecardSession(finalSession)}
-          onTimerExpired={handleTimerExpired}
-        />
+        <ErrorBoundary onReset={() => void activeQuery.refetch()}>
+          <ActiveCodingWorkspace
+            session={activeSession}
+            problemsBank={problemsBankQuery.data ?? []}
+            onSessionCompleted={(finalSession) => setScorecardSession(finalSession)}
+            onTimerExpired={handleTimerExpired}
+          />
+        </ErrorBoundary>
       ) : effectiveStandalone ? (
-        <ActiveCodingWorkspace
-          standaloneProblem={effectiveStandalone}
-          onExitStandalone={handleExitStandalone}
-          onSessionCompleted={() => {}}
-          onTimerExpired={() => {}}
-        />
+        <ErrorBoundary onReset={handleExitStandalone}>
+          <ActiveCodingWorkspace
+            standaloneProblem={effectiveStandalone}
+            problemsBank={problemsBankQuery.data ?? []}
+            onSelectStandaloneProblem={handleSelectProblem}
+            onExitStandalone={handleExitStandalone}
+            onSessionCompleted={() => {}}
+            onTimerExpired={() => {}}
+          />
+        </ErrorBoundary>
       ) : arenaTab === "sheet" ? (
         <DsaSheetView onSolveInArena={handleSolveFromSheet} />
       ) : (

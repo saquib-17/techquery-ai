@@ -23,6 +23,7 @@ import {
 import { deterministicDsaQuestionFallback } from "../questions/question.fallback.js";
 import { ensureCuratedProblemsSeeded } from "./curatedProblems.js";
 import { judge0Adapter, Judge0Adapter } from "./judge0.adapter.js";
+import { translateExecutionError } from "./errorTranslator.js";
 
 export function toCodingProblemDto(row: CodingProblem): CodingProblemDto {
   const sampleTestCases = Array.isArray(row.sampleTestCases)
@@ -267,70 +268,41 @@ export class CodingService {
       );
     }
 
-    const results: TestCaseExecutionDetail[] = [];
-    let overallVerdict: ExecutionVerdict = "ACCEPTED";
-    let maxRuntimeMs = 0;
-    let maxMemoryKb = 0;
-    let compileErrorOutput: string | undefined;
+    const batchOutcome = await this.judge0.executeBatch({
+      language: input.language,
+      code: executableCode,
+      testCases: casesToRun,
+    });
 
-    for (const tc of casesToRun) {
-      if (compileErrorOutput !== undefined) {
-        const showDetails = tc.isSample || revealHiddenDetails;
-        results.push({
-          testCaseId: tc.id,
-          passed: false,
-          stdin: showDetails ? tc.stdin : "[Hidden]",
-          expectedOutput: showDetails ? tc.expectedOutput : "[Hidden]",
-          actualOutput: showDetails ? "" : "[Hidden]",
-          compileOutput: compileErrorOutput,
-          runtimeMs: 0,
-        });
-        continue;
-      }
+    const overallVerdict = batchOutcome.verdict;
+    const maxRuntimeMs = batchOutcome.runtimeMs;
+    const maxMemoryKb = batchOutcome.memoryKb;
 
-      const outcome = await this.judge0.executeTestCase({
-        language: input.language,
-        code: executableCode,
-        stdin: tc.stdin,
-        expectedOutput: tc.expectedOutput,
-      });
-
-      maxRuntimeMs = Math.max(maxRuntimeMs, outcome.runtimeMs);
-      maxMemoryKb = Math.max(maxMemoryKb, outcome.memoryKb);
-
-      if (outcome.verdict === "COMPILATION_ERROR") {
-        overallVerdict = "COMPILATION_ERROR";
-        compileErrorOutput = outcome.compileOutput || "Compilation failed";
-      } else if (
-        outcome.verdict === "TIME_LIMIT_EXCEEDED" &&
-        overallVerdict !== "COMPILATION_ERROR"
-      ) {
-        overallVerdict = "TIME_LIMIT_EXCEEDED";
-      } else if (
-        outcome.verdict === "RUNTIME_ERROR" &&
-        overallVerdict !== "COMPILATION_ERROR" &&
-        overallVerdict !== "TIME_LIMIT_EXCEEDED"
-      ) {
-        overallVerdict = "RUNTIME_ERROR";
-      } else if (!outcome.passed && overallVerdict === "ACCEPTED") {
-        overallVerdict = "WRONG_ANSWER";
-      }
-
+    const results: TestCaseExecutionDetail[] = batchOutcome.results.map((r) => {
+      const tc = casesToRun[r.caseNumber - 1]!;
       const showDetails = tc.isSample || revealHiddenDetails;
-      results.push({
-        testCaseId: tc.id,
-        passed: outcome.passed,
+      return {
+        testCaseId: r.testCaseId,
+        caseNumber: r.caseNumber,
+        isHidden: r.isHidden,
+        passed: r.passed,
         stdin: showDetails ? tc.stdin : "[Hidden]",
         expectedOutput: showDetails ? tc.expectedOutput : "[Hidden]",
-        actualOutput: showDetails ? outcome.actualOutput : "[Hidden]",
-        stderr: outcome.stderr,
-        compileOutput: outcome.compileOutput,
-        runtimeMs: outcome.runtimeMs,
-      });
-    }
+        actualOutput: showDetails ? r.actualOutput : "[Hidden]",
+        stderr: batchOutcome.stderr,
+        compileOutput: batchOutcome.compileOutput,
+        runtimeMs: batchOutcome.runtimeMs,
+      };
+    });
 
     const passedCount = results.filter((r) => r.passed).length;
-    const totalCount = results.length;
+    const totalCount = casesToRun.length;
+    const friendlyMessage = translateExecutionError({
+      verdict: overallVerdict,
+      caseNumber: batchOutcome.firstFailingCaseNumber,
+      compileOutput: batchOutcome.compileOutput,
+      stderr: batchOutcome.stderr,
+    });
 
     let submissionId: string | undefined;
     if (input.mode === "SUBMIT") {
@@ -350,6 +322,23 @@ export class CodingService {
       });
       submissionId = submission.id;
 
+      if (overallVerdict === "ACCEPTED") {
+        await prisma.userDsaSheetProgress.upsert({
+          where: {
+            userId_problemSlug: {
+              userId,
+              problemSlug: problem.slug,
+            },
+          },
+          update: { status: "SOLVED" },
+          create: {
+            userId,
+            problemSlug: problem.slug,
+            status: "SOLVED",
+          },
+        });
+      }
+
       if (input.assessmentSessionId) {
         await this.updateAssessmentSlotScore(
           input.assessmentSessionId,
@@ -368,6 +357,7 @@ export class CodingService {
       runtimeMs: maxRuntimeMs,
       memoryKb: maxMemoryKb,
       results,
+      friendlyMessage,
       submissionId,
     };
   }

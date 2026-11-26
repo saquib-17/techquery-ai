@@ -2,16 +2,21 @@ import * as React from "react";
 import Editor from "@monaco-editor/react";
 import {
   ArrowLeft,
+  Check,
   CheckCircle2,
   ChevronDown,
-  ChevronUp,
   Clock,
+  Copy,
+  FileText,
   Flag,
   Lightbulb,
+  ListFilter,
   Play,
   RotateCcw,
+  Search,
   Send,
   ShieldCheck,
+  Wand2,
   XOctagon,
 } from "lucide-react";
 import type {
@@ -58,9 +63,47 @@ function formatCountdown(totalSeconds: number): string {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
+function formatStarterCode(
+  source: string,
+  lang: SupportedCodeLanguage
+): string {
+  const lines = source.replace(/\r\n/g, "\n").split("\n");
+  if (lang === "python") {
+    return lines
+      .map((l) => l.replace(/\s+$/, ""))
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trimEnd();
+  }
+  let indent = 0;
+  const out: string[] = [];
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      out.push("");
+      continue;
+    }
+    if (line.startsWith("}") || line.startsWith("]")) {
+      indent = Math.max(0, indent - 1);
+    }
+    out.push("  ".repeat(indent) + line);
+    const opens = (line.match(/\{/g) || []).length;
+    const closes = (line.match(/\}/g) || []).length;
+    if (line.startsWith("}")) {
+      indent = Math.max(0, indent + Math.max(0, opens - (closes - 1)));
+    } else {
+      indent = Math.max(0, indent + opens - closes);
+    }
+  }
+  return out.join("\n").trimEnd();
+}
+
 export interface ActiveCodingWorkspaceProps {
   session?: AssessmentSessionDto;
   standaloneProblem?: CodingProblemDto;
+  problemsBank?: CodingProblemDto[];
+  solvedSlugs?: Set<string>;
+  onSelectStandaloneProblem?: (problem: CodingProblemDto) => void;
   onExitStandalone?: () => void;
   onSessionCompleted: (finalSession: AssessmentSessionDto) => void;
   onTimerExpired: () => void;
@@ -69,6 +112,9 @@ export interface ActiveCodingWorkspaceProps {
 export function ActiveCodingWorkspace({
   session,
   standaloneProblem,
+  problemsBank = [],
+  solvedSlugs,
+  onSelectStandaloneProblem,
   onExitStandalone,
   onSessionCompleted,
   onTimerExpired,
@@ -76,12 +122,26 @@ export function ActiveCodingWorkspace({
   const [activeSlotIdx, setActiveSlotIdx] = React.useState(0);
   const [language, setLanguage] = React.useState<SupportedCodeLanguage>("java");
   const [code, setCode] = React.useState("");
-  const [showHints, setShowHints] = React.useState(false);
+  const [leftTab, setLeftTab] = React.useState<"description" | "hints">(
+    "description"
+  );
+  const [revealedHints, setRevealedHints] = React.useState<Set<number>>(
+    () => new Set()
+  );
+  const [copiedCode, setCopiedCode] = React.useState(false);
+  const [confirmReset, setConfirmReset] = React.useState(false);
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [pickerSearch, setPickerSearch] = React.useState("");
+  const [pickerDifficulty, setPickerDifficulty] = React.useState<string>("ALL");
+  const [pickerPattern, setPickerPattern] = React.useState<string>("ALL");
   const [draftStatus, setDraftStatus] = React.useState<"saved" | "saving">(
     "saved"
   );
   const [executionResult, setExecutionResult] =
     React.useState<CodeExecutionResultDto | null>(null);
+  const [executionMode, setExecutionMode] = React.useState<
+    "SAMPLE" | "SUBMIT" | null
+  >(null);
   const [executionError, setExecutionError] = React.useState<string | null>(null);
   const [confirmAction, setConfirmAction] = React.useState<
     "finish" | "cancel" | null
@@ -136,6 +196,9 @@ export function ActiveCodingWorkspace({
     if (!activeProblem) return;
     setExecutionResult(null);
     setExecutionError(null);
+    setConfirmReset(false);
+    setRevealedHints(new Set());
+    setLeftTab("description");
 
     const key = buildDraftStorageKey(session?.id, activeProblem.id, language);
     const localDraft = window.localStorage.getItem(key);
@@ -184,14 +247,54 @@ export function ActiveCodingWorkspace({
   };
 
   const handleResetCode = () => {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      return;
+    }
     const starter = activeProblem.starterCode[language] ?? "";
     setCode(starter);
+    setConfirmReset(false);
     const key = buildDraftStorageKey(session?.id, activeProblem.id, language);
     window.localStorage.setItem(key, starter);
   };
 
+  const handleFormatCode = () => {
+    const formatted = formatStarterCode(code, language);
+    setCode(formatted);
+    const key = buildDraftStorageKey(session?.id, activeProblem.id, language);
+    window.localStorage.setItem(key, formatted);
+  };
+
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(true);
+      window.setTimeout(() => setCopiedCode(false), 1500);
+    } catch {
+      // Ignore clipboard unavailability in headless environments
+    }
+  };
+
+  const filteredPickerProblems = React.useMemo(() => {
+    const q = pickerSearch.trim().toLowerCase();
+    return problemsBank.filter((p, idx) => {
+      if (pickerDifficulty !== "ALL" && p.difficulty !== pickerDifficulty) {
+        return false;
+      }
+      if (pickerPattern !== "ALL" && p.pattern !== pickerPattern) {
+        return false;
+      }
+      if (q) {
+        const hay = `${idx + 1} ${p.title} ${p.slug}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [problemsBank, pickerSearch, pickerDifficulty, pickerPattern]);
+
   const handleExecute = async (mode: "SAMPLE" | "SUBMIT") => {
     setExecutionError(null);
+    setExecutionMode(mode);
     try {
       const result = await runMutation.mutateAsync({
         problemId: activeProblem.id,
@@ -264,9 +367,115 @@ export function ActiveCodingWorkspace({
                   Lobby
                 </Button>
               )}
-              <span className="text-sm font-semibold text-white">
-                {activeProblem.title}
-              </span>
+              {problemsBank.length > 0 && onSelectStandaloneProblem ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setPickerOpen((prev) => !prev)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-[#242429] bg-[#0F0F11] px-3 py-1.5 text-sm font-semibold text-white hover:border-[#10B981]/50 cursor-pointer"
+                  >
+                    <ListFilter className="h-3.5 w-3.5 text-[#10B981]" />
+                    <span className="truncate max-w-[220px]">
+                      {activeProblem.title}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
+                  </button>
+
+                  {pickerOpen && (
+                    <div className="absolute left-0 top-full z-40 mt-2 w-[340px] sm:w-[400px] rounded-xl border border-[#242429] bg-[#151518] p-3 shadow-2xl space-y-2.5">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+                        <input
+                          type="text"
+                          value={pickerSearch}
+                          onChange={(e) => setPickerSearch(e.target.value)}
+                          placeholder="Search by # or problem title..."
+                          className="w-full rounded-lg border border-[#242429] bg-[#0F0F11] pl-8 pr-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-500 focus:border-[#10B981] focus:outline-none"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          aria-label="Filter problems by difficulty"
+                          value={pickerDifficulty}
+                          onChange={(e) => setPickerDifficulty(e.target.value)}
+                          className="rounded-lg border border-[#242429] bg-[#0F0F11] px-2 py-1 font-mono text-[11px] text-zinc-200"
+                        >
+                          <option value="ALL">All Difficulties</option>
+                          <option value="EASY">Easy</option>
+                          <option value="MEDIUM">Medium</option>
+                          <option value="HARD">Hard</option>
+                        </select>
+                        <select
+                          aria-label="Filter problems by pattern"
+                          value={pickerPattern}
+                          onChange={(e) => setPickerPattern(e.target.value)}
+                          className="rounded-lg border border-[#242429] bg-[#0F0F11] px-2 py-1 font-mono text-[11px] text-zinc-200"
+                        >
+                          <option value="ALL">All Patterns</option>
+                          <option value="ARRAYS_TWO_POINTERS">Arrays &amp; Two Pointers</option>
+                          <option value="SLIDING_WINDOW">Sliding Window</option>
+                          <option value="BINARY_SEARCH">Binary Search</option>
+                          <option value="STACK_HEAP">Stack &amp; Heap</option>
+                          <option value="DYNAMIC_PROGRAMMING">Dynamic Programming</option>
+                        </select>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto divide-y divide-[#242429]/60">
+                        {filteredPickerProblems.map((p, idx) => {
+                          const isSolved = solvedSlugs?.has(p.slug);
+                          const isCurrent = p.id === activeProblem.id;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => {
+                                onSelectStandaloneProblem(p);
+                                setPickerOpen(false);
+                              }}
+                              className={cn(
+                                "flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left text-xs hover:bg-[#1E1E24] cursor-pointer",
+                                isCurrent && "bg-[#10B981]/10 text-[#10B981]"
+                              )}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="font-mono text-[10px] text-zinc-500 w-5 shrink-0">
+                                  #{idx + 1}
+                                </span>
+                                {isSolved && (
+                                  <Check className="h-3.5 w-3.5 text-[#10B981] shrink-0" />
+                                )}
+                                <span className="truncate font-medium">
+                                  {p.title}
+                                </span>
+                              </div>
+                              <span
+                                className={cn(
+                                  "font-mono text-[10px] shrink-0",
+                                  p.difficulty === "EASY"
+                                    ? "text-[#10B981]"
+                                    : p.difficulty === "MEDIUM"
+                                      ? "text-[#F59E0B]"
+                                      : "text-rose-400"
+                                )}
+                              >
+                                {p.difficulty}
+                              </span>
+                            </button>
+                          );
+                        })}
+                        {filteredPickerProblems.length === 0 && (
+                          <p className="py-4 text-center text-xs text-zinc-500">
+                            No matching problems.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <span className="text-sm font-semibold text-white">
+                  {activeProblem.title}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -341,85 +550,141 @@ export function ActiveCodingWorkspace({
             </h2>
           </div>
 
-          <p className="text-sm leading-relaxed text-zinc-300 whitespace-pre-line">
-            {activeProblem.statement}
-          </p>
+          <div className="flex items-center gap-1 border-b border-[#242429] pb-2">
+            <button
+              type="button"
+              onClick={() => setLeftTab("description")}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs font-medium cursor-pointer transition-colors",
+                leftTab === "description"
+                  ? "bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30"
+                  : "text-zinc-400 hover:text-zinc-200"
+              )}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Description
+            </button>
+            <button
+              type="button"
+              onClick={() => setLeftTab("hints")}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs font-medium cursor-pointer transition-colors",
+                leftTab === "hints"
+                  ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                  : "text-zinc-400 hover:text-zinc-200"
+              )}
+            >
+              <Lightbulb className="h-3.5 w-3.5" />
+              Hints ({activeProblem.hints.length})
+            </button>
+          </div>
 
-          {/* Examples */}
-          {activeProblem.examples.length > 0 && (
-            <div className="space-y-2.5">
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                Examples
-              </div>
-              {activeProblem.examples.map((ex, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-3 font-mono text-xs space-y-1.5"
-                >
-                  <div>
-                    <span className="text-zinc-500">Input: </span>
-                    <span className="text-zinc-200 whitespace-pre-wrap">
-                      {ex.input}
-                    </span>
+          {leftTab === "description" ? (
+            <>
+              <p className="text-sm leading-relaxed text-zinc-300 whitespace-pre-line">
+                {activeProblem.statement}
+              </p>
+
+              {/* Examples */}
+              {activeProblem.examples.length > 0 && (
+                <div className="space-y-2.5">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    Examples
                   </div>
-                  <div>
-                    <span className="text-zinc-500">Output: </span>
-                    <span className="text-[#10B981]">{ex.output}</span>
-                  </div>
-                  {ex.explanation && (
-                    <div className="text-zinc-400 font-sans text-[11px] pt-0.5">
-                      {ex.explanation}
+                  {activeProblem.examples.map((ex, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-3 font-mono text-xs space-y-1.5"
+                    >
+                      <div>
+                        <span className="text-zinc-500">Input: </span>
+                        <span className="text-zinc-200 whitespace-pre-wrap">
+                          {ex.input}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">Output: </span>
+                        <span className="text-[#10B981]">{ex.output}</span>
+                      </div>
+                      {ex.explanation && (
+                        <div className="text-zinc-400 font-sans text-[11px] pt-0.5">
+                          {ex.explanation}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Constraints */}
-          {activeProblem.constraints.length > 0 && (
-            <div className="space-y-1.5">
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                Constraints
-              </div>
-              <ul className="space-y-1">
-                {activeProblem.constraints.map((c, idx) => (
-                  <li
-                    key={idx}
-                    className="font-mono text-xs text-zinc-300 flex items-start gap-2"
-                  >
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#10B981] shrink-0" />
-                    <span>{c}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Hints */}
-          {activeProblem.hints.length > 0 && (
-            <div className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-3">
-              <button
-                type="button"
-                onClick={() => setShowHints((prev) => !prev)}
-                className="flex w-full items-center justify-between text-xs font-semibold text-zinc-300 cursor-pointer"
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
-                  Hints ({activeProblem.hints.length})
-                </span>
-                {showHints ? (
-                  <ChevronUp className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                )}
-              </button>
-              {showHints && (
-                <ul className="mt-2.5 space-y-1.5 border-t border-[#242429] pt-2.5 text-xs text-zinc-400">
-                  {activeProblem.hints.map((h, idx) => (
-                    <li key={idx}>• {h}</li>
                   ))}
-                </ul>
+                </div>
+              )}
+
+              {/* Constraints */}
+              {activeProblem.constraints.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    Constraints
+                  </div>
+                  <ul className="space-y-1">
+                    {activeProblem.constraints.map((c, idx) => (
+                      <li
+                        key={idx}
+                        className="font-mono text-xs text-zinc-300 flex items-start gap-2"
+                      >
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#10B981] shrink-0" />
+                        <span>{c}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="space-y-2.5">
+              {activeProblem.hints.length === 0 ? (
+                <p className="text-xs text-zinc-400">
+                  No hints available for this problem.
+                </p>
+              ) : (
+                activeProblem.hints.map((hint, idx) => {
+                  const revealed = revealedHints.has(idx);
+                  return (
+                    <div
+                      key={idx}
+                      className="rounded-lg border border-[#242429] bg-[#0B0B0D] p-3 space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-amber-400">
+                          <Lightbulb className="h-3.5 w-3.5" />
+                          Hint {idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRevealedHints((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(idx)) {
+                                next.delete(idx);
+                              } else {
+                                next.add(idx);
+                              }
+                              return next;
+                            })
+                          }
+                          className="font-mono text-[11px] text-[#10B981] hover:underline cursor-pointer"
+                        >
+                          {revealed ? "Hide Hint" : "Reveal Hint"}
+                        </button>
+                      </div>
+                      {revealed ? (
+                        <p className="text-xs leading-relaxed text-zinc-300">
+                          {hint}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-zinc-500">
+                          Click &quot;Reveal Hint&quot; when you need a nudge.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           )}
@@ -450,10 +715,34 @@ export function ActiveCodingWorkspace({
                   type="button"
                   size="sm"
                   variant="ghost"
+                  onClick={handleFormatCode}
+                >
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Format
+                </Button>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleCopyCode}
+                >
+                  {copiedCode ? (
+                    <Check className="h-3.5 w-3.5 text-[#10B981]" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                  {copiedCode ? "Copied" : "Copy"}
+                </Button>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={confirmReset ? "danger" : "ghost"}
                   onClick={handleResetCode}
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  Reset Code
+                  {confirmReset ? "Confirm Reset?" : "Reset"}
                 </Button>
               </div>
 
@@ -518,6 +807,7 @@ export function ActiveCodingWorkspace({
 
           <ExecutionConsole
             result={executionResult}
+            mode={executionMode}
             isRunning={runMutation.isPending}
             errorMessage={executionError}
           />

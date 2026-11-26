@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getRunnableProblemSlugs } from "./coding-problems/index.js";
 import {
   ProblemDifficultySchema,
   type SupportedCodeLanguage,
@@ -111,17 +112,9 @@ export interface DsaSheetSummary {
 }
 
 const ARENA_SLUGS = new Set([
-  "two-sum",
+  ...getRunnableProblemSlugs(),
   "valid-parentheses",
-  "best-time-to-buy-and-sell-stock",
-  "binary-search",
-  "longest-substring-without-repeating-characters",
-  "three-sum",
-  "search-in-rotated-sorted-array",
   "coin-change",
-  "trapping-rain-water",
-  "minimum-window-substring",
-  "median-of-two-sorted-arrays",
   "edit-distance",
 ]);
 
