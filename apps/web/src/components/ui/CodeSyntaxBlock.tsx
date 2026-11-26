@@ -3,7 +3,7 @@ import { Check, Copy } from "lucide-react";
 
 export interface CodeSyntaxBlockProps {
   code: string;
-  language: "java" | "python" | "cpp" | "javascript";
+  language: "java" | "python" | "cpp" | "javascript" | "sql" | "text";
 }
 
 export function formatCodeForDisplay(
@@ -16,7 +16,13 @@ export function formatCodeForDisplay(
     .replace(/\\t/g, "    ")
     .trim();
 
-  if (!normalized || language === "python" || normalized.split("\n").length > 2) {
+  if (
+    !normalized ||
+    language === "python" ||
+    language === "sql" ||
+    language === "text" ||
+    normalized.split("\n").length > 2
+  ) {
     return normalized;
   }
 
@@ -116,6 +122,8 @@ const LANGUAGE_DISPLAY: Record<CodeSyntaxBlockProps["language"], string> = {
   python: "Python",
   cpp: "C++",
   javascript: "JavaScript",
+  sql: "SQL",
+  text: "Architecture / Notes",
 };
 
 const CONTROL_KEYWORDS = new Set([
@@ -214,11 +222,32 @@ const TYPE_IDENTIFIERS = new Set([
   "Number",
 ]);
 
-const TOKEN_REGEX =
-  /(\/\/.*$|\/\*[\s\S]*?\*\/|#.*$|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b\d+(?:\.\d+)?\b|\b[A-Za-z_]\w*\b)/gm;
+const SQL_KEYWORDS = new Set([
+  "SELECT", "FROM", "WHERE", "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "FULL",
+  "CROSS", "ON", "GROUP", "BY", "HAVING", "ORDER", "LIMIT", "OFFSET", "WITH",
+  "AS", "OVER", "PARTITION", "ROW_NUMBER", "RANK", "DENSE_RANK", "LEAD", "LAG",
+  "BEGIN", "TRANSACTION", "COMMIT", "ROLLBACK", "FOR", "UPDATE", "COUNT", "SUM",
+  "AVG", "MAX", "MIN", "DISTINCT", "UNION", "ALL", "EXISTS", "NOT", "NULL", "IS",
+  "IN", "AND", "OR", "CASE", "WHEN", "THEN", "ELSE", "END", "DESC", "ASC",
+  "CREATE", "INDEX", "TABLE", "INSERT", "INTO", "VALUES", "SET", "DELETE",
+  "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "COALESCE", "NULLIF", "BETWEEN",
+]);
 
-function tokenizeLine(line: string): React.ReactNode[] {
+const TOKEN_REGEX =
+  /(--.*$|\/\/.*$|\/\*[\s\S]*?\*\/|#.*$|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b\d+(?:\.\d+)?\b|\b[A-Za-z_]\w*\b)/gm;
+
+function tokenizeLine(
+  line: string,
+  language: CodeSyntaxBlockProps["language"]
+): React.ReactNode[] {
   if (!line) return [" "];
+  if (language === "text") {
+    return [
+      <span key="plain" className="text-[#D4D4D4]">
+        {line}
+      </span>,
+    ];
+  }
 
   const nodes: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -238,6 +267,7 @@ function tokenizeLine(line: string): React.ReactNode[] {
     const key = `t-${match.index}`;
 
     if (
+      token.startsWith("--") ||
       token.startsWith("//") ||
       token.startsWith("#") ||
       token.startsWith("/*")
@@ -260,6 +290,12 @@ function tokenizeLine(line: string): React.ReactNode[] {
     } else if (/^\d/.test(token)) {
       nodes.push(
         <span key={key} className="text-[#B5CEA8]">
+          {token}
+        </span>
+      );
+    } else if (language === "sql" && SQL_KEYWORDS.has(token.toUpperCase())) {
+      nodes.push(
+        <span key={key} className="text-[#569CD6] font-semibold">
           {token}
         </span>
       );
@@ -369,7 +405,9 @@ export function CodeSyntaxBlock({ code, language }: CodeSyntaxBlockProps) {
               <span className="select-none w-7 shrink-0 pr-3 text-right text-zinc-600 tabular-nums">
                 {idx + 1}
               </span>
-              <span className="whitespace-pre">{tokenizeLine(line)}</span>
+              <span className="whitespace-pre">
+                {tokenizeLine(line, language)}
+              </span>
             </div>
           ))}
         </div>
