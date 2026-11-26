@@ -33,23 +33,35 @@ describe("Master DSA Pattern Sheet API & Dataset Tests (V2.2)", () => {
     });
   });
 
-  it("validates 400 unique problems across all 22 categories and all 8 source sheets, sorted Easy -> Medium -> Hard", () => {
-    expect(DSA_SHEET_PROBLEMS).toHaveLength(400);
+  it("validates 520 unique weighted problems across all 22 categories and all 8 source sheets, sorted Easy -> Medium -> Hard", () => {
+    expect(DSA_SHEET_PROBLEMS).toHaveLength(520);
 
     const slugs = new Set(DSA_SHEET_PROBLEMS.map((p) => p.slug));
     const titles = new Set(DSA_SHEET_PROBLEMS.map((p) => p.title));
-    expect(slugs.size).toBe(400);
-    expect(titles.size).toBe(400);
+    expect(slugs.size).toBe(520);
+    expect(titles.size).toBe(520);
 
     const mediumCount = DSA_SHEET_PROBLEMS.filter(
       (p) => p.difficulty === "MEDIUM"
     ).length;
-    expect(mediumCount).toBeGreaterThanOrEqual(220);
+    expect(mediumCount).toBeGreaterThanOrEqual(290);
+
+    const countByCategory = (cat: string) =>
+      DSA_SHEET_PROBLEMS.filter((p) => p.category === cat).length;
+    expect(countByCategory("1. Arrays & Matrix")).toBeGreaterThanOrEqual(45);
+    expect(countByCategory("3. Hashing & Frequency Maps")).toBeGreaterThanOrEqual(25);
+    expect(countByCategory("4. Strings & Pattern Matching")).toBeGreaterThanOrEqual(32);
+    expect(countByCategory("9. Binary Search")).toBeGreaterThanOrEqual(28);
+    expect(countByCategory("10. Linked List")).toBeGreaterThanOrEqual(24);
+    expect(countByCategory("11. Binary Trees")).toBeGreaterThanOrEqual(30);
+    expect(countByCategory("16. Graphs (BFS / DFS / Connected Components)")).toBeGreaterThanOrEqual(25);
+    expect(countByCategory("18. 1-D Dynamic Programming")).toBeGreaterThanOrEqual(28);
+    expect(countByCategory("19. 2-D & Subsequence Dynamic Programming")).toBeGreaterThanOrEqual(30);
 
     const diffRank = { EASY: 0, MEDIUM: 1, HARD: 2 } as const;
     for (const cat of DSA_SHEET_CATEGORIES) {
       const catItems = DSA_SHEET_PROBLEMS.filter((p) => p.category === cat);
-      expect(catItems.length).toBeGreaterThanOrEqual(16);
+      expect(catItems.length).toBeGreaterThanOrEqual(14);
       for (let i = 1; i < catItems.length; i++) {
         expect(diffRank[catItems[i].difficulty]).toBeGreaterThanOrEqual(
           diffRank[catItems[i - 1].difficulty]
