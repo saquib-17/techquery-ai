@@ -1,8 +1,8 @@
-# TechQuery AI (V2.2)
+# TechQuery AI (V2.3)
 
-**All-in-One AI Interview & DSA Command Center**
+**360-Degree AI Placement & Interview Operating System**
 
-TechQuery AI is a zero-cost (`₹0`), full-stack TypeScript monorepo that combines ATS resume intelligence, JD skill-gap analysis, AI-grounded interview & DSA question generation, a live Monaco + Judge0 CE Coding Arena with refresh-safe timed/untimed assessments, and a curated **520-Problem Weighted Master DSA Pattern Sheet** across all 22 core interview topics.
+TechQuery AI is a zero-cost (`₹0`), full-stack TypeScript monorepo that unifies ATS resume intelligence, JD skill-gap analysis, AI-grounded interview & DSA question generation, a live Monaco + Judge0 CE Coding Arena with refresh-safe timed/untimed assessments, a **520-Problem Weighted Master DSA Pattern Sheet**, a **165-Topic CS Core & System Design Mastery Sheet**, and an **AI Learning Roadmap Studio**.
 
 ---
 
@@ -28,6 +28,12 @@ TechQuery AI is a zero-cost (`₹0`), full-stack TypeScript monorepo that combin
   - Synthesized across **Blind 75**, **NeetCode 150**, **Grind 169**, **Striver SDE Sheet**, **Striver A2Z**, **Apna College (Shradha Ma'am's DSA Sheet)**, **Love Babbar 450**, and **LeetCode Top Interview 150**.
   - Includes clickable 22-pattern mastery telemetry, source-sheet/company/difficulty/status filters with exact filtered counts, persistent `SOLVED`/`REVISION` tracking, personal notes, LeetCode links, and 1-click **`Solve in Arena`** handoff.
   - **AI Guide Slide-Over Drawer:** Plain-English problem explanation, pattern intuition, and **collapsible Brute Force & Optimal reference code** (`Java`, `Python`, `C++`, `JavaScript`) with VS Code Dark+ syntax highlighting, line numbers, and complexity breakdowns.
+- **CS Core & System Design Mastery Sheet (`/cs-fundamentals`)**
+  - **165 distinct, step-by-step ordered topics** across **6 core placement subjects** (`Operating Systems`: 30, `DBMS`: 28, `SQL & Query Patterns`: 28, `Computer Networks`: 28, `OOP & Software Engineering`: 25, `System Design`: 26), numbered `#1..N` per subject in focused single-subject tabs.
+  - Persistent `UNSTUDIED` / `LEARNED` / `REVISION` status tracking, personal revision notes, Priority/Status/Company filters, and **Adaptive AI Deep-Dive Guides** that deterministically render multi-line Unicode architecture/sequence diagrams (`DIAGRAM` mode) for System Design (HLD & LLD), OS, DBMS, Networks & SDLC, and syntax-highlighted SQL/Java code (`CODE` mode) for SQL & OOP implementation topics.
+- **AI Learning Roadmap Studio (`/roadmap`)**
+  - Dynamic week-by-week preparation generator tailored to target role presets or custom roles, timeline (`4–24` weeks), daily study hours, current level (`BEGINNER`/`INTERMEDIATE`/`ADVANCED`), and focus skills—with 1-click **"Import Gaps from Latest JD Match"**.
+  - Persists multiple saved roadmaps in PostgreSQL with interactive task checkboxes, overall & per-phase progress bars, curated **Where to Learn** resource links, and **Phase Milestone Deliverables**.
 - **Saved Collections, PDF Export & Dashboard Telemetry (`/library`, `/dashboard`, `/usage`, `/profile`)**
   - Organize questions into study collections, export multi-page PDF packets via `PDFKit`, track 30-day preparation streaks, and manage `FREE` ↔ `PRO` (`₹0` Demo) quotas.
 
@@ -43,7 +49,7 @@ techquery-ai/
 │   ├── web/            # React 19 SPA (Vite + TypeScript + Tailwind CSS v4 + Monaco Editor)
 │   └── api/            # Modular Monolith REST API (Node.js + Express + Prisma + PostgreSQL)
 ├── packages/
-│   └── shared/         # Shared Zod schemas, DTO contracts & 520-problem weighted DSA Sheet dataset
+│   └── shared/         # Shared Zod schemas, DTO contracts, 520-problem DSA Sheet & 165-topic CS Core datasets
 └── docs/               # Product discovery, system design, OpenAPI spec & phase reports
 ```
 
@@ -53,9 +59,9 @@ techquery-ai/
 | :--- | :--- |
 | **Frontend (`apps/web`)** | React 19, TypeScript, Vite, Tailwind CSS v4 ("Obsidian Precision" dark theme), `@monaco-editor/react`, TanStack Query v5, React Router v7, React Hook Form + Zod, Axios (single-flight 401 refresh), Lucide Icons |
 | **Backend (`apps/api`)** | Node.js, Express 5, TypeScript, Prisma ORM (`PostgreSQL`), Pino structured logging, Multer, `pdf-parse`, `mammoth`, `pdfkit`, Judge0 CE HTTP adapter |
-| **Shared (`packages/shared`)** | TypeScript + Zod domain contracts (`coding.ts`, `questions.ts`, `dsaSheet.ts`) |
+| **Shared (`packages/shared`)** | TypeScript + Zod domain contracts (`coding.ts`, `questions.ts`, `dsaSheet.ts`, `csFundamentals.ts`, `roadmap.ts`) |
 | **AI Gateway** | Provider-agnostic `AIGateway` supporting **Groq Cloud** (`openai/gpt-oss-20b` default), local **Ollama** (`llama3.2:3b`), and deterministic offline fallbacks with `JsonSanitizer`, Zod validation, and 1-turn auto-repair |
-| **Testing** | Vitest + Supertest (**312** API unit/integration tests) and Vitest + React Testing Library (**38** Web tests) |
+| **Testing** | Vitest + Supertest (**315** API unit/integration tests) and Vitest + React Testing Library (**40** Web tests) |
 
 ---
 
@@ -73,6 +79,8 @@ techquery-ai/
 | `coding` | `/api/v1/coding` | 12 curated LeetCode problems, AI DSA problem generator, Judge0 CE runner (`SAMPLE`/`SUBMIT`) |
 | `assessments` | `/api/v1/assessments` | Refresh-safe `TIMED`/`UNTIMED` sessions, `draftsJson` autosave, `finish`/`cancel`/`delete` lifecycle |
 | `dsa-sheet` | `/api/v1/dsa-sheet` | 520-problem sheet progress (`UNSOLVED`/`SOLVED`/`REVISION`), notes & multi-language AI walkthroughs |
+| `cs-fundamentals` | `/api/v1/cs-fundamentals` | 165-topic CS Core & SD progress (`UNSTUDIED`/`LEARNED`/`REVISION`), notes & adaptive `DIAGRAM`/`CODE` AI guides |
+| `roadmaps` | `/api/v1/roadmaps` | Dynamic AI learning roadmap generation, PostgreSQL milestone persistence & task toggling |
 | `collections` | `/api/v1/collections` | Saved study collections & PDF packet export |
 | `dashboard` / `usage` | `/api/v1/dashboard`, `/usage` | Preparation streaks, activity feed & `FREE`/`PRO` quota enforcement |
 
@@ -126,8 +134,8 @@ npm run dev --workspace=@techquery/web
 
 ### 6. Automated Verification
 ```bash
-npm run test --workspace=@techquery/api    # 37 test files, 312 tests
-npm run test --workspace=@techquery/web    # 10 test files, 38 tests
+npm run test --workspace=@techquery/api    # 39 test files, 315 tests
+npm run test --workspace=@techquery/web    # 12 test files, 40 tests
 npm run typecheck                          # @techquery/shared, @techquery/api, @techquery/web
 npm run build                              # Full monorepo production build
 ```
