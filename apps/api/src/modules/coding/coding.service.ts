@@ -5,6 +5,7 @@ import type {
   CodingProblemDto,
   DsaPattern,
   ExecutionVerdict,
+  ProblemAttemptStatus,
   ProblemDifficulty,
   ProblemExample,
   ProblemTestCase,
@@ -58,10 +59,13 @@ export class CodingService {
     private ai: AIGateway = aiGateway
   ) {}
 
-  public async listProblems(filters: {
-    difficulty?: ProblemDifficulty;
-    pattern?: DsaPattern;
-  }): Promise<CodingProblemDto[]> {
+  public async listProblems(
+    filters: {
+      difficulty?: ProblemDifficulty;
+      pattern?: DsaPattern;
+    },
+    userId?: string
+  ): Promise<CodingProblemDto[]> {
     await ensureCuratedProblemsSeeded();
 
     const where: Prisma.CodingProblemWhereInput = {};
@@ -85,7 +89,43 @@ export class CodingService {
       return true;
     });
 
-    return uniqueRows.map(toCodingProblemDto);
+    if (!userId) {
+      return uniqueRows.map(toCodingProblemDto);
+    }
+
+    const [dsaSolvedRows, submissionRows] = await Promise.all([
+      prisma.userDsaSheetProgress.findMany({
+        where: { userId, status: "SOLVED" },
+        select: { problemSlug: true },
+      }),
+      prisma.codingSubmission.findMany({
+        where: { userId },
+        select: { problemId: true, verdict: true },
+      }),
+    ]);
+
+    const solvedSlugs = new Set(dsaSolvedRows.map((r) => r.problemSlug));
+    const acceptedProblemIds = new Set<string>();
+    const attemptedProblemIds = new Set<string>();
+    for (const sub of submissionRows) {
+      attemptedProblemIds.add(sub.problemId);
+      if (sub.verdict === "ACCEPTED") {
+        acceptedProblemIds.add(sub.problemId);
+      }
+    }
+
+    return uniqueRows.map((row) => {
+      const userStatus: ProblemAttemptStatus =
+        solvedSlugs.has(row.slug) || acceptedProblemIds.has(row.id)
+          ? "SOLVED"
+          : attemptedProblemIds.has(row.id)
+            ? "ATTEMPTED"
+            : "UNSOLVED";
+      return {
+        ...toCodingProblemDto(row),
+        userStatus,
+      };
+    });
   }
 
   public async getProblemById(
@@ -102,14 +142,31 @@ export class CodingService {
       throw new NotFoundError("Coding problem not found", "PROBLEM_NOT_FOUND");
     }
 
-    const submissions = await prisma.codingSubmission.findMany({
-      where: { userId, problemId: id },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    });
+    const [submissions, dsaProgress] = await Promise.all([
+      prisma.codingSubmission.findMany({
+        where: { userId, problemId: id },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+      prisma.userDsaSheetProgress.findUnique({
+        where: { userId_problemSlug: { userId, problemSlug: row.slug } },
+        select: { status: true },
+      }),
+    ]);
+
+    const hasAccepted = submissions.some((s) => s.verdict === "ACCEPTED");
+    const userStatus: ProblemAttemptStatus =
+      dsaProgress?.status === "SOLVED" || hasAccepted
+        ? "SOLVED"
+        : submissions.length > 0
+          ? "ATTEMPTED"
+          : "UNSOLVED";
 
     return {
-      problem: toCodingProblemDto(row),
+      problem: {
+        ...toCodingProblemDto(row),
+        userStatus,
+      },
       submissions: submissions.map((s) => ({
         ...s,
         createdAt: s.createdAt.toISOString(),

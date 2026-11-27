@@ -231,6 +231,10 @@ export function useRunCodingCodeMutation() {
       void queryClient.invalidateQueries({
         queryKey: codingKeys.problem(variables.problemId),
       });
+      if (variables.mode === "SUBMIT") {
+        void queryClient.invalidateQueries({ queryKey: ["coding", "problems"] });
+        void queryClient.invalidateQueries({ queryKey: ["dsa-sheet"] });
+      }
       if (variables.assessmentSessionId) {
         void queryClient.invalidateQueries({
           queryKey: codingKeys.activeAssessment,

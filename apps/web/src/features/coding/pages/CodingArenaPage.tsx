@@ -35,6 +35,15 @@ export function CodingArenaPage() {
     React.useState<AssessmentSessionDto | null>(null);
 
   const activeSession = activeQuery.data ?? null;
+  const solvedSlugs = React.useMemo(() => {
+    const set = new Set<string>();
+    for (const p of problemsBankQuery.data ?? []) {
+      if (p.userStatus === "SOLVED") {
+        set.add(p.slug);
+      }
+    }
+    return set;
+  }, [problemsBankQuery.data]);
   const slugMatchedProblem = React.useMemo(() => {
     if (!problemSlugParam || !problemsBankQuery.data) return null;
     return (
@@ -136,6 +145,7 @@ export function CodingArenaPage() {
           <ActiveCodingWorkspace
             session={activeSession}
             problemsBank={problemsBankQuery.data ?? []}
+            solvedSlugs={solvedSlugs}
             onSessionCompleted={(finalSession) => setScorecardSession(finalSession)}
             onTimerExpired={handleTimerExpired}
           />
@@ -145,6 +155,7 @@ export function CodingArenaPage() {
           <ActiveCodingWorkspace
             standaloneProblem={effectiveStandalone}
             problemsBank={problemsBankQuery.data ?? []}
+            solvedSlugs={solvedSlugs}
             onSelectStandaloneProblem={handleSelectProblem}
             onExitStandalone={handleExitStandalone}
             onSessionCompleted={() => {}}

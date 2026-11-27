@@ -19,11 +19,13 @@ import {
   Wand2,
   XOctagon,
 } from "lucide-react";
-import type {
-  AssessmentSessionDto,
-  CodeExecutionResultDto,
-  CodingProblemDto,
-  SupportedCodeLanguage,
+import {
+  DSA_SHEET_PROBLEMS,
+  type AssessmentSessionDto,
+  type CodeExecutionResultDto,
+  type CodingProblemDto,
+  type ProblemAttemptStatus,
+  type SupportedCodeLanguage,
 } from "@techquery/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,6 +50,28 @@ const LANGUAGE_OPTIONS: Array<{
   { value: "cpp", label: "C++", monacoId: "cpp" },
   { value: "javascript", label: "JavaScript", monacoId: "javascript" },
 ];
+
+const SLUG_TO_PATTERN_LABEL = new Map<string, string>(
+  DSA_SHEET_PROBLEMS.map((p) => [p.slug, p.category.replace(/^\d+\.\s*/, "")])
+);
+
+const FALLBACK_PATTERN_LABELS: Record<string, string> = {
+  ALL_PATTERNS: "General Practice",
+  ARRAYS_TWO_POINTERS: "Arrays & Two Pointers",
+  SLIDING_WINDOW: "Sliding Window",
+  BINARY_SEARCH: "Binary Search",
+  TREES_GRAPHS: "Trees & Graphs",
+  DYNAMIC_PROGRAMMING: "Dynamic Programming",
+  STACK_HEAP: "Stack & Heap",
+};
+
+function formatProblemPattern(problem: CodingProblemDto): string {
+  return (
+    SLUG_TO_PATTERN_LABEL.get(problem.slug) ??
+    FALLBACK_PATTERN_LABELS[problem.pattern] ??
+    problem.pattern
+  );
+}
 
 export function buildDraftStorageKey(
   sessionId: string | undefined,
@@ -143,6 +167,9 @@ export function ActiveCodingWorkspace({
     "SAMPLE" | "SUBMIT" | null
   >(null);
   const [executionError, setExecutionError] = React.useState<string | null>(null);
+  const [liveStatusBySlug, setLiveStatusBySlug] = React.useState<
+    Record<string, ProblemAttemptStatus>
+  >({});
   const [confirmAction, setConfirmAction] = React.useState<
     "finish" | "cancel" | null
   >(null);
@@ -292,6 +319,28 @@ export function ActiveCodingWorkspace({
     });
   }, [problemsBank, pickerSearch, pickerDifficulty, pickerPattern]);
 
+  const effectiveStatus: ProblemAttemptStatus = React.useMemo(() => {
+    if (!activeProblem) return "UNSOLVED";
+    const sessionSolved = session?.problems.find(
+      (s) => s.problem.id === activeProblem.id
+    )?.solved;
+    if (
+      liveStatusBySlug[activeProblem.slug] === "SOLVED" ||
+      solvedSlugs?.has(activeProblem.slug) ||
+      activeProblem.userStatus === "SOLVED" ||
+      sessionSolved
+    ) {
+      return "SOLVED";
+    }
+    if (
+      liveStatusBySlug[activeProblem.slug] === "ATTEMPTED" ||
+      activeProblem.userStatus === "ATTEMPTED"
+    ) {
+      return "ATTEMPTED";
+    }
+    return "UNSOLVED";
+  }, [activeProblem, liveStatusBySlug, solvedSlugs, session]);
+
   const handleExecute = async (mode: "SAMPLE" | "SUBMIT") => {
     setExecutionError(null);
     setExecutionMode(mode);
@@ -304,6 +353,19 @@ export function ActiveCodingWorkspace({
         assessmentSessionId: session?.id,
       });
       setExecutionResult(result);
+      if (mode === "SUBMIT") {
+        if (result.verdict === "ACCEPTED") {
+          setLiveStatusBySlug((prev) => ({
+            ...prev,
+            [activeProblem.slug]: "SOLVED",
+          }));
+        } else if (effectiveStatus !== "SOLVED") {
+          setLiveStatusBySlug((prev) => ({
+            ...prev,
+            [activeProblem.slug]: "ATTEMPTED",
+          }));
+        }
+      }
     } catch (err) {
       setExecutionError(
         err instanceof ApiClientError
@@ -543,11 +605,31 @@ export function ActiveCodingWorkspace({
               >
                 {activeProblem.difficulty}
               </Badge>
-              <Badge variant="mono">{activeProblem.pattern}</Badge>
+              <Badge variant="mono">{formatProblemPattern(activeProblem)}</Badge>
             </div>
-            <h2 className="text-lg font-bold text-white">
-              {activeProblem.title}
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-bold text-white">
+                {activeProblem.title}
+              </h2>
+              {effectiveStatus === "SOLVED" && (
+                <span
+                  data-testid="problem-status-badge"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400 shrink-0"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  ✓ Solved
+                </span>
+              )}
+              {effectiveStatus === "ATTEMPTED" && (
+                <span
+                  data-testid="problem-status-badge"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-400 shrink-0"
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                  ◐ Attempted
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-1 border-b border-[#242429] pb-2">

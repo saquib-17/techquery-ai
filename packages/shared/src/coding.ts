@@ -11,6 +11,13 @@ export type SupportedCodeLanguage = z.infer<typeof SupportedCodeLanguageSchema>;
 export const ProblemDifficultySchema = z.enum(["EASY", "MEDIUM", "HARD"]);
 export type ProblemDifficulty = z.infer<typeof ProblemDifficultySchema>;
 
+export const ProblemAttemptStatusSchema = z.enum([
+  "SOLVED",
+  "ATTEMPTED",
+  "UNSOLVED",
+]);
+export type ProblemAttemptStatus = z.infer<typeof ProblemAttemptStatusSchema>;
+
 export const DsaPatternSchema = z.enum([
   "ALL_PATTERNS",
   "ARRAYS_TWO_POINTERS",
@@ -86,6 +93,7 @@ export const CodingProblemDtoSchema = z.object({
   sampleTestCases: z.array(ProblemTestCaseSchema),
   hiddenTestCaseCount: z.number().int().nonnegative(),
   hints: z.array(z.string()),
+  userStatus: ProblemAttemptStatusSchema.optional(),
   createdAt: z.string(),
 });
 export type CodingProblemDto = z.infer<typeof CodingProblemDtoSchema>;

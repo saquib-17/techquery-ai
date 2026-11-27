@@ -73,6 +73,7 @@ const MOCK_PROBLEMS: CodingProblemDto[] = [
     ],
     hiddenTestCaseCount: 19,
     hints: ["Two pointers from ends"],
+    userStatus: "ATTEMPTED",
     createdAt: new Date().toISOString(),
   },
   {
@@ -194,5 +195,18 @@ describe("V2.5 Standalone Problem Bank: Pattern-Grouped Accordion Tables", () =>
     expect(
       screen.getByRole("button", { name: /Expand All|Collapse All/i })
     ).toBeInTheDocument();
+  });
+
+  it("displays amber Attempted (◐) indicator for attempted-but-unsolved problems", () => {
+    renderWithClient(
+      <StandaloneProblemBank
+        problems={MOCK_PROBLEMS}
+        onSelectProblem={() => {}}
+        onGenerateProblem={() => {}}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Expand All/i }));
+    expect(screen.getByLabelText("Attempted")).toHaveTextContent("◐");
   });
 });

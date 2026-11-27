@@ -40,7 +40,7 @@ export class CodingController {
         throw new ValidationError("Invalid query parameters", parsed.error.issues);
       }
 
-      const problems = await this.service.listProblems(parsed.data);
+      const problems = await this.service.listProblems(parsed.data, userId);
       sendSuccess(res, { problems }, 200);
     } catch (err) {
       next(err);

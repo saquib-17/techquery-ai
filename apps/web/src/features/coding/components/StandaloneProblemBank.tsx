@@ -65,17 +65,25 @@ export function StandaloneProblemBank({
 }: StandaloneProblemBankProps) {
   const dsaSheetQuery = useDsaSheetQuery();
 
-  // Solved problems set from database telemetry
-  const solvedSlugs = React.useMemo(() => {
-    const set = new Set<string>();
+  // Solved & Attempted problems sets from database telemetry
+  const { solvedSlugs, attemptedSlugs } = React.useMemo(() => {
+    const solved = new Set<string>();
+    const attempted = new Set<string>();
     const dsaProblems = dsaSheetQuery.data?.problems ?? [];
     for (const p of dsaProblems) {
       if (p.status === "SOLVED") {
-        set.add(p.slug);
+        solved.add(p.slug);
       }
     }
-    return set;
-  }, [dsaSheetQuery.data]);
+    for (const p of problems) {
+      if (p.userStatus === "SOLVED") {
+        solved.add(p.slug);
+      } else if (p.userStatus === "ATTEMPTED" && !solved.has(p.slug)) {
+        attempted.add(p.slug);
+      }
+    }
+    return { solvedSlugs: solved, attemptedSlugs: attempted };
+  }, [dsaSheetQuery.data, problems]);
 
   // Filters state
   const [search, setSearch] = React.useState("");
@@ -499,6 +507,7 @@ export function StandaloneProblemBank({
                   <div className="divide-y divide-[#242429] border-t border-[#242429]">
                     {group.problems.map((p) => {
                       const isSolved = solvedSlugs.has(p.slug);
+                      const isAttempted = !isSolved && attemptedSlugs.has(p.slug);
 
                       return (
                         <div
@@ -509,8 +518,16 @@ export function StandaloneProblemBank({
                           {/* Left: Status + Title */}
                           <div className="flex items-center gap-3 min-w-0">
                             {isSolved ? (
-                              <span title="Solved in Master DSA Sheet" className="shrink-0">
+                              <span title="Solved" className="shrink-0">
                                 <CheckCircle2 className="h-4 w-4 text-[#10B981]" />
+                              </span>
+                            ) : isAttempted ? (
+                              <span
+                                title="Attempted"
+                                aria-label="Attempted"
+                                className="shrink-0 text-sm leading-none text-amber-400 font-semibold w-4 text-center"
+                              >
+                                ◐
                               </span>
                             ) : (
                               <span title="Unsolved" className="shrink-0">
