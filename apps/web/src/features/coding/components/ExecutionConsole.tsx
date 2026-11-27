@@ -17,6 +17,14 @@ export interface ExecutionConsoleProps {
   errorMessage?: string | null;
 }
 
+export function formatMemory(memoryKb?: number | null): string {
+  if (memoryKb == null || memoryKb <= 0) return "—";
+  if (memoryKb >= 1024) {
+    return `${(memoryKb / 1024).toFixed(1)} MB`;
+  }
+  return `${Math.round(memoryKb)} KB`;
+}
+
 export function ExecutionConsole({
   result,
   mode,
@@ -90,7 +98,7 @@ export function ExecutionConsole({
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Cpu className="h-3.5 w-3.5 text-[#10B981]" />
-            Memory: {result.memoryKb} KB
+            Memory: {formatMemory(result.memoryKb)}
           </span>
         </div>
       </div>
@@ -119,7 +127,7 @@ export function ExecutionConsole({
             </span>
             <span className="inline-flex items-center gap-1">
               <Cpu className="h-3 w-3 text-zinc-500" />
-              {result.memoryKb} KB
+              {formatMemory(result.memoryKb)}
             </span>
           </div>
         </div>
@@ -230,7 +238,7 @@ export function ExecutionConsole({
           </span>
           <span className="inline-flex items-center gap-1">
             <Cpu className="h-3 w-3 text-zinc-500" />
-            {result.memoryKb} KB
+            {formatMemory(result.memoryKb)}
           </span>
         </div>
       </div>

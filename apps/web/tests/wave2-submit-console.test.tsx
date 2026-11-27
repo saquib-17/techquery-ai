@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ExecutionConsole } from "@/features/coding/components/ExecutionConsole";
+import { ExecutionConsole, formatMemory } from "@/features/coding/components/ExecutionConsole";
 import type { CodeExecutionResultDto } from "@techquery/shared";
 
 describe("Wave 2: Clean LeetCode Submit Console", () => {
@@ -132,7 +132,26 @@ describe("Wave 2: Clean LeetCode Submit Console", () => {
     expect(screen.getByRole("button", { name: /Case 1/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Case 2/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Case 3/i })).toBeInTheDocument();
+    expect(screen.getByText("512 KB")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Case 2/i }));
     expect(screen.getByText("in-2")).toBeInTheDocument();
+  });
+
+  it("formats Judge0 memory in clean MB (>= 1024 KB) and KB (< 1024 KB)", () => {
+    expect(formatMemory(20932)).toBe("20.4 MB");
+    expect(formatMemory(512)).toBe("512 KB");
+    expect(formatMemory(0)).toBe("—");
+    expect(formatMemory(null)).toBe("—");
+
+    const result: CodeExecutionResultDto = {
+      verdict: "ACCEPTED",
+      passedCount: 20,
+      totalCount: 20,
+      runtimeMs: 36,
+      memoryKb: 20932,
+      results: [],
+    };
+    render(<ExecutionConsole result={result} mode="SUBMIT" isRunning={false} />);
+    expect(screen.getByText(/Memory: 20\.4 MB/i)).toBeInTheDocument();
   });
 });
