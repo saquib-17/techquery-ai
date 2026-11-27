@@ -338,12 +338,16 @@ export class CodingService {
     const results: TestCaseExecutionDetail[] = batchOutcome.results.map((r) => {
       const tc = casesToRun[r.caseNumber - 1]!;
       const showDetails = tc.isSample || revealHiddenDetails;
+      const safeStdin =
+        tc.stdin.length > 500
+          ? `${tc.stdin.slice(0, 500)}... (truncated)`
+          : tc.stdin;
       return {
         testCaseId: r.testCaseId,
         caseNumber: r.caseNumber,
         isHidden: r.isHidden,
         passed: r.passed,
-        stdin: showDetails ? tc.stdin : "[Hidden]",
+        stdin: showDetails ? safeStdin : "[Hidden]",
         expectedOutput: showDetails ? tc.expectedOutput : "[Hidden]",
         actualOutput: showDetails ? r.actualOutput : "[Hidden]",
         stderr: batchOutcome.stderr,

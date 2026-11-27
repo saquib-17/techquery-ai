@@ -68,9 +68,45 @@ describe("Wave 2: Clean LeetCode Submit Console", () => {
 
     expect(screen.getByText(/\(9 \/ 20 Test Cases Passed\)/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/Failed on Hidden Edge Case #10/i)
+      screen.getByText(/Failed on Test Case #10/i)
     ).toBeInTheDocument();
+    expect(screen.getByText(/Hidden Edge Case/i)).toBeInTheDocument();
+    expect(screen.getByText("secret")).toBeInTheDocument();
+    expect(screen.getByText("10")).toBeInTheDocument();
+    expect(screen.getByText("9")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Case 1/i })).not.toBeInTheDocument();
+  });
+
+  it("renders Input, Expected Output, and Runtime Error box on RUNTIME_ERROR failure", () => {
+    const result: CodeExecutionResultDto = {
+      verdict: "RUNTIME_ERROR",
+      passedCount: 4,
+      totalCount: 20,
+      runtimeMs: 18,
+      memoryKb: 1024,
+      results: [
+        {
+          testCaseId: "hidden-2",
+          caseNumber: 5,
+          isHidden: true,
+          passed: false,
+          stdin: "[1,2,3]",
+          expectedOutput: "6",
+          actualOutput: "",
+          stderr: "TypeError: Cannot read properties of undefined",
+        },
+      ],
+    };
+
+    render(<ExecutionConsole result={result} mode="SUBMIT" isRunning={false} />);
+
+    expect(screen.getByText(/Failed on Test Case #5/i)).toBeInTheDocument();
+    expect(screen.getByText("[1,2,3]")).toBeInTheDocument();
+    expect(screen.getByText("6")).toBeInTheDocument();
+    expect(screen.getAllByText(/Runtime Error/i).length).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getByText(/TypeError: Cannot read properties of undefined/i)
+    ).toBeInTheDocument();
   });
 
   it("keeps interactive Case 1..3 tabs in SAMPLE mode", () => {

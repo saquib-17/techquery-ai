@@ -140,44 +140,53 @@ export function ExecutionConsole({
             </div>
           )}
 
-          {firstFailedCase?.isHidden ? (
-            <div className="rounded-lg border border-[#242429] bg-[#131317] p-3 text-zinc-300">
-              Failed on Hidden Edge Case #{failedCaseNum}
-            </div>
-          ) : (
-            firstFailedCase && (
-              <div className="space-y-2">
-                <div className="text-[11px] font-semibold text-zinc-400">
-                  Failed on Sample Case #{failedCaseNum}
+          {firstFailedCase && (
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-zinc-300">
+                <span>Failed on Test Case #{failedCaseNum}</span>
+                {firstFailedCase.isHidden && (
+                  <span className="rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] font-medium text-amber-300">
+                    Hidden Edge Case
+                  </span>
+                )}
+              </div>
+              <div className="rounded-lg border border-[#242429] bg-[#131317] p-2.5">
+                <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">
+                  Input
+                </div>
+                <div className="text-zinc-200 whitespace-pre-wrap">
+                  {firstFailedCase.stdin || "(empty)"}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="rounded-lg border border-[#242429] bg-[#131317] p-2.5">
+                  <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">
+                    Expected Output
+                  </div>
+                  <div className="text-[#10B981] whitespace-pre-wrap">
+                    {firstFailedCase.expectedOutput}
+                  </div>
                 </div>
                 <div className="rounded-lg border border-[#242429] bg-[#131317] p-2.5">
                   <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">
-                    Input
+                    Your Output
                   </div>
-                  <div className="text-zinc-200 whitespace-pre-wrap">
-                    {firstFailedCase.stdin || "(empty)"}
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <div className="rounded-lg border border-[#242429] bg-[#131317] p-2.5">
-                    <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">
-                      Expected Output
-                    </div>
-                    <div className="text-[#10B981] whitespace-pre-wrap">
-                      {firstFailedCase.expectedOutput}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-[#242429] bg-[#131317] p-2.5">
-                    <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">
-                      Your Output
-                    </div>
-                    <div className="text-red-300 whitespace-pre-wrap">
-                      {firstFailedCase.actualOutput || "(empty)"}
-                    </div>
+                  <div className="text-red-300 whitespace-pre-wrap">
+                    {firstFailedCase.actualOutput || "(empty)"}
                   </div>
                 </div>
               </div>
-            )
+              {firstFailedCase.stderr && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-red-200 whitespace-pre-wrap">
+                  <div className="text-[10px] uppercase tracking-wider text-red-400 mb-1">
+                    {result.verdict === "TIME_LIMIT_EXCEEDED"
+                      ? "Timeout Error"
+                      : "Runtime Error"}
+                  </div>
+                  {firstFailedCase.stderr}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
