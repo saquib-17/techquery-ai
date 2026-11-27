@@ -303,53 +303,6 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
               style={{ width: `${completionPct}%` }}
             />
           </div>
-
-          {/* 22-Pattern Mastery Grid */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-                22 Core Patterns &amp; Topics (Click to Filter)
-              </span>
-              {selectedCategory !== "ALL" && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory("ALL")}
-                  className="text-xs text-[#10B981] hover:underline cursor-pointer"
-                >
-                  Reset Pattern Filter (All 22 Categories)
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {(summary?.byCategory ?? []).map((cat) => {
-                const active = selectedCategory === cat.category;
-                return (
-                  <button
-                    key={cat.category}
-                    type="button"
-                    onClick={() => {
-                      setSelectedCategory(active ? "ALL" : cat.category);
-                      setExpandedCategories(new Set([cat.category]));
-                    }}
-                    className={cn(
-                      "rounded-lg border px-2.5 py-2 text-left transition-colors cursor-pointer",
-                      active
-                        ? "border-[#10B981] bg-[#10B981]/15"
-                        : "border-[#242429] bg-[#0F0F11] hover:border-zinc-700"
-                    )}
-                  >
-                    <div className="truncate text-[11px] font-medium text-white">
-                      {cat.category}
-                    </div>
-                    <div className="mt-1 font-mono text-[10px] text-zinc-400">
-                      <span className="text-[#10B981]">{cat.solved}</span>/
-                      {cat.total} solved
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -364,6 +317,26 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
             className="pl-9 h-9 bg-[#0F0F11]"
           />
         </div>
+
+        <select
+          aria-label="Filter by Pattern"
+          value={selectedCategory}
+          onChange={(e) => {
+            const val = e.target.value as DsaSheetCategory | "ALL";
+            setSelectedCategory(val);
+            if (val !== "ALL") {
+              setExpandedCategories(new Set([val]));
+            }
+          }}
+          className="h-9 rounded-lg border border-[#242429] bg-[#0F0F11] px-2.5 text-xs text-white"
+        >
+          <option value="ALL">All 22 Patterns</option>
+          {DSA_SHEET_CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
 
         <select
           aria-label="Filter by Source Sheet"
