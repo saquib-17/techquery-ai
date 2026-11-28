@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "@/components/ui/toast";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -6,6 +6,7 @@ import { NotFoundPage } from "@/components/NotFoundPage";
 import { AuthProvider } from "@/features/auth/auth.context";
 import { PublicRoute, ProtectedRoute, OnboardingGuard } from "@/app/guards";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { LandingPage } from "@/features/landing/LandingPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage";
@@ -39,6 +40,9 @@ export function App() {
           <AuthProvider>
             <BrowserRouter>
               <Routes>
+                {/* Public Showcase Landing Page */}
+                <Route path="/" element={<LandingPage />} />
+
                 {/* Guest-Only Authentication Routes */}
                 <Route element={<PublicRoute />}>
                   <Route path="/login" element={<LoginPage />} />
@@ -56,7 +60,6 @@ export function App() {
                   {/* Onboarded AppLayout Workspace */}
                   <Route element={<OnboardingGuard requireCompleted={true} />}>
                     <Route element={<AppLayout />}>
-                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
                       <Route path="/dashboard" element={<DashboardPage />} />
                       <Route path="/resumes" element={<ResumesPage />} />
                       <Route path="/job-descriptions" element={<JobDescriptionsPage />} />

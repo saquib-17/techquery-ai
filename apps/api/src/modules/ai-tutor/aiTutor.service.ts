@@ -82,7 +82,7 @@ function extractReply(raw: string): string {
 }
 
 export class AiTutorService {
-  constructor(_ai: AIGateway = aiGateway) {}
+  constructor(_ai: AIGateway = aiGateway) { }
 
   public async chat(
     _userId: string,
