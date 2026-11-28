@@ -3,6 +3,7 @@ import type { AssessmentSessionDto } from "@techquery/shared";
 import { Dialog } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AiTutorChat } from "@/components/ai/AiTutorChat";
 
 export interface SessionScorecardModalProps {
   session: AssessmentSessionDto | null;
@@ -95,6 +96,18 @@ export function SessionScorecardModal({
             </div>
           ))}
         </div>
+
+        <AiTutorChat
+          contextType="OA_REVIEW"
+          contextId={session.id}
+          contextTitle={session.title}
+          contextSummary={`Score: ${session.totalScore}/${session.maxTotalScore} (${pct}%) | Solved: ${solvedCount}/${session.problems.length} | Status: ${session.status}\nProblems: ${session.problems
+            .map(
+              (p) =>
+                `${p.problem.title} (${p.problem.difficulty}, ${p.solved ? "Solved" : "Unsolved"}, ${p.earnedPoints}/${p.maxPoints})`
+            )
+            .join("; ")}`}
+        />
 
         <div className="flex justify-end border-t border-[#242429] pt-3">
           <Button type="button" onClick={onClose}>

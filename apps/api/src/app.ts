@@ -22,6 +22,7 @@ import { assessmentRoutes } from "./modules/assessments/assessment.routes.js";
 import { dsaSheetRoutes } from "./modules/dsa-sheet/dsaSheet.routes.js";
 import { csFundamentalsRoutes } from "./modules/cs-fundamentals/csFundamentals.routes.js";
 import { roadmapRoutes } from "./modules/roadmap/roadmap.routes.js";
+import { aiTutorRoutes } from "./modules/ai-tutor/aiTutor.routes.js";
 
 /**
  * Express Application Factory.
@@ -109,6 +110,7 @@ export const createApp = (customRouter?: Router): Application => {
   app.use("/api/v1/dsa-sheet", dsaSheetRoutes);
   app.use("/api/v1/cs-fundamentals", csFundamentalsRoutes);
   app.use("/api/v1/roadmaps", roadmapRoutes);
+  app.use("/api/v1/ai-tutor", aiTutorRoutes);
 
   // Optional custom router for testing or extensions
   if (customRouter) {

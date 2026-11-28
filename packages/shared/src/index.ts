@@ -12,3 +12,4 @@ export * from "./questions.js";
 export * from "./dsaSheet.js";
 export * from "./csFundamentals.js";
 export * from "./roadmap.js";
+export * from "./aiTutor.js";

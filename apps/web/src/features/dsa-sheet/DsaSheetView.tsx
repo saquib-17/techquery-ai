@@ -1,4 +1,5 @@
 import * as React from "react";
+import { AiTutorChat } from "@/components/ai/AiTutorChat";
 import { Link } from "react-router-dom";
 import {
   Bookmark,
@@ -836,6 +837,15 @@ export function DsaSheetView({ onSolveInArena }: DsaSheetViewProps) {
                   ))}
                 </ul>
               </div>
+
+              {walkthroughTarget ? (
+                <AiTutorChat
+                  contextType="DSA_PROBLEM"
+                  contextId={walkthroughTarget.slug}
+                  contextTitle={walkthroughTarget.title}
+                  contextSummary={`Category: ${walkthroughTarget.category} | Difficulty: ${walkthroughTarget.difficulty} | Language: ${walkthroughLang}\nOptimal Approach: ${walkthroughData.optimalApproach}\nComplexity: Time ${walkthroughData.optimalComplexity.time}, Space ${walkthroughData.optimalComplexity.space}`}
+                />
+              ) : null}
             </>
           ) : null}
         </div>

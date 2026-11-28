@@ -1,4 +1,5 @@
 import * as React from "react";
+import { AiTutorChat } from "@/components/ai/AiTutorChat";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -808,6 +809,17 @@ export function CsFundamentalsPage() {
                     ))}
                   </ul>
                 </div>
+
+                <AiTutorChat
+                  contextType="CS_TOPIC"
+                  contextId={walkthroughTarget.slug}
+                  contextTitle={walkthroughTarget.title}
+                  contextSummary={
+                    walkthroughData.whatInterviewerTests ||
+                    walkthroughData.conceptBreakdown ||
+                    walkthroughTarget.oneLineHook
+                  }
+                />
               </div>
             ) : (
               walkthroughData && (
@@ -908,6 +920,17 @@ export function CsFundamentalsPage() {
                     ))}
                   </ul>
                 </div>
+
+                <AiTutorChat
+                  contextType="CS_TOPIC"
+                  contextId={walkthroughTarget.slug}
+                  contextTitle={walkthroughTarget.title}
+                  contextSummary={
+                    walkthroughData.conceptBreakdown ||
+                    walkthroughData.whatInterviewerTests ||
+                    walkthroughTarget.oneLineHook
+                  }
+                />
               </div>
             ))}
           </div>

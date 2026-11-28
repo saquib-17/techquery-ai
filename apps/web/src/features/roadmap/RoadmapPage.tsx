@@ -1,4 +1,5 @@
 import * as React from "react";
+import { AiTutorChat } from "@/components/ai/AiTutorChat";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Award,
@@ -659,6 +660,15 @@ export function RoadmapPage() {
               </div>
             );
           })}
+
+          <AiTutorChat
+            contextType="STUDY_ROADMAP"
+            contextId={activeRoadmap.id}
+            contextTitle={activeRoadmap.title}
+            contextSummary={`Target Role: ${activeRoadmap.targetRole}\nPhases: ${activeRoadmap.phases
+              .map((p) => `${p.title} (${p.tasks.length} tasks)`)
+              .join(", ")}`}
+          />
         </div>
       )}
     </div>

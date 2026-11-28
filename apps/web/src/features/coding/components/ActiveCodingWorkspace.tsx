@@ -1,4 +1,5 @@
 import * as React from "react";
+import { AiTutorChat } from "@/components/ai/AiTutorChat";
 import Editor from "@monaco-editor/react";
 import {
   ArrowLeft,
@@ -768,6 +769,13 @@ export function ActiveCodingWorkspace({
                   );
                 })
               )}
+
+              <AiTutorChat
+                contextType="CODING_IDE"
+                contextId={activeProblem.slug}
+                contextTitle={activeProblem.title}
+                contextSummary={`Language: ${language}\nVerdict: ${executionResult?.verdict ?? (executionError ? "Error" : "Not run yet")}\n${executionError ? `Execution Error: ${executionError}\n` : ""}Problem Statement: ${activeProblem.statement.slice(0, 1200)}\nCurrent Code:\n${code.slice(0, 1200)}`}
+              />
             </div>
           )}
         </div>

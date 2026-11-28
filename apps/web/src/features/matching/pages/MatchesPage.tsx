@@ -18,6 +18,7 @@ import {
   useMatchesQuery,
 } from "@/features/matching/useMatches";
 import { useResumesQuery } from "@/features/resumes/useResumes";
+import { AiTutorChat } from "@/components/ai/AiTutorChat";
 import { ApiClientError } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
@@ -234,10 +235,20 @@ export function MatchesPage() {
 
               {/* Full-Width Skill Gap Matrix */}
               {activeMatch ? (
-                <SkillGapMatrixCard
-                  match={activeMatch}
-                  onRequestDelete={(m) => setMatchToDelete(m)}
-                />
+                <div className="space-y-4">
+                  <SkillGapMatrixCard
+                    match={activeMatch}
+                    onRequestDelete={(m) => setMatchToDelete(m)}
+                  />
+                  <AiTutorChat
+                    contextType="RESUME_MATCH"
+                    contextId={activeMatch.id}
+                    contextTitle={
+                      activeMatch.jobDescription?.title ?? "JD Skill Match"
+                    }
+                    contextSummary={`Match Score: ${activeMatch.matchScore}% | Matched Skills: ${activeMatch.matchedSkills.slice(0, 8).join(", ")} | Missing Skills: ${activeMatch.missingSkills.slice(0, 8).join(", ")}`}
+                  />
+                </div>
               ) : null}
             </div>
           )}

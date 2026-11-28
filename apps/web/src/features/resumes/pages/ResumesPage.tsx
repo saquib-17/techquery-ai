@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { ApiClientError } from "@/lib/api";
+import { AiTutorChat } from "@/components/ai/AiTutorChat";
 
 type WorkbenchTab = "audit" | "parsed";
 
@@ -170,12 +171,22 @@ export function ResumesPage() {
 
               {/* Tab Content */}
               {activeTab === "audit" ? (
-                <AtsAnalysisPanel
-                  analysis={analysis}
-                  isLoading={isLoadingAnalysis}
-                  isAnalyzing={analyzeMutation.isPending}
-                  onRunAudit={() => void handleRunAudit()}
-                />
+                <div className="space-y-4">
+                  <AtsAnalysisPanel
+                    analysis={analysis}
+                    isLoading={isLoadingAnalysis}
+                    isAnalyzing={analyzeMutation.isPending}
+                    onRunAudit={() => void handleRunAudit()}
+                  />
+                  {analysis ? (
+                    <AiTutorChat
+                      contextType="RESUME_MATCH"
+                      contextId={selectedResume.id}
+                      contextTitle={`ATS Audit: ${selectedResume.originalFileName}`}
+                      contextSummary={`ATS Score: ${analysis.atsScore}/100 | Strengths: ${(analysis.strengths ?? []).slice(0, 5).join(", ")} | Issues: ${(analysis.issues ?? []).slice(0, 5).join(", ")}`}
+                    />
+                  ) : null}
+                </div>
               ) : (
                 <ParsedResumeViewer
                   parsedData={parsedData}
