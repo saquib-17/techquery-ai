@@ -192,4 +192,42 @@ describe("<AiTutorChat />", () => {
     );
     expect(screen.getByText("First topic reply")).toBeInTheDocument();
   });
+
+  it("renders structured markdown formatting including bold, inline code, and lists without raw asterisks", async () => {
+    vi.mocked(aiTutorApi.chat).mockResolvedValueOnce({
+      reply:
+        "## Core Principles\n\nHere is the **primary lock** mechanism:\n* Item one with `lock()` method\n* Item two without contention\n\n```python\ndef acquire():\n    pass\n```",
+      providerUsed: "GROQ",
+    });
+
+    render(
+      <AiTutorChat
+        contextType="CS_TOPIC"
+        contextId="os-deadlock"
+        contextTitle="Deadlock"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Explain simpler" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Core Principles")).toBeInTheDocument();
+    });
+
+    // Check bold rendering
+    expect(screen.getByText("primary lock")).toBeInTheDocument();
+    expect(screen.getByText("primary lock").tagName.toLowerCase()).toBe("strong");
+
+    // Check inline code rendering
+    expect(screen.getByText("lock()")).toBeInTheDocument();
+    expect(screen.getByText("lock()").tagName.toLowerCase()).toBe("code");
+
+    // Verify there are no raw double asterisks left in the rendered container
+    const container = screen.getByText("Core Principles").closest("div");
+    expect(container?.textContent).not.toContain("**");
+
+    // Verify code snippet block rendered with language header
+    expect(screen.getByText("python")).toBeInTheDocument();
+    expect(screen.getByText(/def acquire/)).toBeInTheDocument();
+  });
 });

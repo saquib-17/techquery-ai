@@ -19,6 +19,7 @@ export interface CreateGroqCompletionOptions {
   chainType?: GroqChainType;
   temperature?: number;
   maxTokens?: number;
+  maxCompletionTokens?: number;
   jsonMode?: boolean;
   timeoutMs?: number;
   modelChain?: string[];
@@ -34,6 +35,59 @@ const DISALLOWED_MODELS = new Set([
   "meta-llama/llama-prompt-guard-2-86m",
   "meta-llama/llama-prompt-guard-2-22m",
 ]);
+
+/**
+ * Sanitizes multi-turn message history for Groq chat completions.
+ * Enforces strict alternating roles, drops empty turns, and prepends system prompt.
+ */
+export function sanitizeGroqMessages(
+  rawMessages: Array<{ role: string; content?: string | null }>,
+  systemPrompt?: string
+): GroqChatMessage[] {
+  const sanitized: GroqChatMessage[] = [];
+
+  if (systemPrompt && systemPrompt.trim()) {
+    sanitized.push({ role: "system", content: systemPrompt.trim() });
+  }
+
+  for (const m of rawMessages) {
+    const role = m.role?.toLowerCase()?.trim();
+    const content = typeof m.content === "string" ? m.content.trim() : "";
+    if (!content) continue;
+
+    if (role === "system") {
+      if (!sanitized.some((sm) => sm.role === "system")) {
+        sanitized.unshift({ role: "system", content });
+      } else {
+        const existing = sanitized.find((sm) => sm.role === "system")!;
+        existing.content = `${existing.content}\n\n${content}`;
+      }
+      continue;
+    }
+
+    if (role === "user" || role === "assistant") {
+      const prev = sanitized[sanitized.length - 1];
+      if (prev && prev.role === role) {
+        // Enforce strict alternation by combining adjacent same-role messages
+        prev.content = `${prev.content}\n\n${content}`;
+      } else {
+        sanitized.push({ role, content });
+      }
+    }
+  }
+
+  const nonSystem = sanitized.filter((m) => m.role !== "system");
+  if (nonSystem.length === 0) {
+    sanitized.push({ role: "user", content: "Hello" });
+  } else if (nonSystem[0]!.role === "assistant") {
+    sanitized.splice(sanitized.findIndex((m) => m.role !== "system"), 0, {
+      role: "user",
+      content: "Hello",
+    });
+  }
+
+  return sanitized;
+}
 
 /**
  * Ordered fallback model chains:
@@ -107,20 +161,17 @@ export async function createGroqCompletion(
       ? options.modelChain.filter((m) => !DISALLOWED_MODELS.has(m))
       : getGroqModelChain(options.chainType);
 
-  const messages: GroqChatMessage[] = [];
-  if (options.messages && options.messages.length > 0) {
-    if (options.systemPrompt && !options.messages.some((m) => m.role === "system")) {
-      messages.push({ role: "system", content: options.systemPrompt });
-    }
-    messages.push(...options.messages);
-  } else {
-    if (options.systemPrompt) {
-      messages.push({ role: "system", content: options.systemPrompt });
-    }
-    if (options.prompt) {
-      messages.push({ role: "user", content: options.prompt });
-    }
-  }
+  const rawMessagesList =
+    options.messages && options.messages.length > 0
+      ? options.messages
+      : options.prompt
+        ? [{ role: "user", content: options.prompt }]
+        : [];
+
+  const messages: GroqChatMessage[] = sanitizeGroqMessages(
+    rawMessagesList,
+    options.systemPrompt
+  );
 
   const timeoutMs = options.timeoutMs ?? config.AI_TIMEOUT_MS;
 
@@ -130,12 +181,18 @@ export async function createGroqCompletion(
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
+      const isFast = options.chainType === "fast" || options.chainType === "tutor";
+      const maxCompletionTokens =
+        options.maxCompletionTokens ?? (isFast ? 1200 : options.maxTokens ?? 4096);
+
       const payload: Record<string, unknown> = {
         model,
         messages,
         temperature: options.temperature ?? 0.1,
-        max_tokens: options.maxTokens ?? 4096,
-        ...(options.jsonMode !== false ? { response_format: { type: "json_object" } } : {}),
+        max_completion_tokens: maxCompletionTokens,
+        ...(options.jsonMode === true || (options.jsonMode !== false && options.jsonMode !== undefined)
+          ? { response_format: { type: "json_object" } }
+          : {}),
       };
 
       const response = await fetch(endpoint, {
@@ -168,6 +225,9 @@ export async function createGroqCompletion(
           return { content: finalContent, modelUsed: model };
         }
 
+        console.error(
+          `[ai-tutor] Groq error on model ${model}: returned empty content in choices[0].message`
+        );
         logger.warn(
           `[groq-fallback] Model ${model} hit rate limit/error (empty content), failing over to next model...`
         );
@@ -175,10 +235,16 @@ export async function createGroqCompletion(
       }
 
       const status = response.status;
+      const errText = await response.text().catch(() => "");
+      console.error(
+        `[ai-tutor] Groq error on model ${model} (HTTP ${status}):`,
+        errText || response.statusText
+      );
       logger.warn(
         `[groq-fallback] Model ${model} hit rate limit/error (${status}), failing over to next model...`
       );
     } catch (err: any) {
+      console.error(`[ai-tutor] Groq error on model ${model}:`, err?.message || err);
       const errReason = err?.name === "AbortError" ? "timeout" : err?.message || "network error";
       logger.warn(
         `[groq-fallback] Model ${model} hit rate limit/error (${errReason}), failing over to next model...`

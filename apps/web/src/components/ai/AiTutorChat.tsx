@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { AiTutorContextType, AiTutorMessage } from "@techquery/shared";
-import { Bot, Send, Sparkles, Trash2 } from "lucide-react";
+import { Bot, Check, Copy, Send, Sparkles, Trash2 } from "lucide-react";
 import { aiTutorApi } from "./aiTutorApi";
 
 export interface AiTutorChatProps {
@@ -85,31 +85,260 @@ function writeStoredMessages(storageKey: string, messages: AiTutorMessage[]): vo
   }
 }
 
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|(?<!\*)\*[^*]+\*(?!\*))/g);
+
+  return parts.map((part, i) => {
+    if (part.startsWith("`") && part.endsWith("`") && part.length >= 2) {
+      return (
+        <code
+          key={i}
+          className="rounded border border-[#242429] bg-[#0F0F11] px-1.5 py-0.5 font-mono text-[11px] text-[#10B981]"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    if (part.startsWith("**") && part.endsWith("**") && part.length >= 4) {
+      return (
+        <strong key={i} className="font-semibold text-white">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith("*") && part.endsWith("*") && part.length >= 2) {
+      return (
+        <em key={i} className="italic text-zinc-300">
+          {part.slice(1, -1)}
+        </em>
+      );
+    }
+    return part;
+  });
+}
+
+function CodeSnippetBlock({
+  code,
+  language,
+}: {
+  code: string;
+  language: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="my-2.5 overflow-hidden rounded-lg border border-[#242429] bg-[#0F0F11]">
+      <div className="flex items-center justify-between border-b border-[#242429] bg-[#151518] px-3 py-1.5 text-[11px] text-[#A1A1AA]">
+        <span className="font-mono uppercase text-[#10B981] font-semibold text-[10px]">
+          {language || "code"}
+        </span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1 text-[11px] hover:text-white transition"
+        >
+          {copied ? (
+            <>
+              <Check className="h-3 w-3 text-[#10B981]" />
+              <span className="text-[#10B981]">Copied</span>
+            </>
+          ) : (
+            <>
+              <Copy className="h-3 w-3" />
+              <span>Copy</span>
+            </>
+          )}
+        </button>
+      </div>
+      <pre className="overflow-x-auto p-3 font-mono text-xs leading-relaxed text-[#10B981]">
+        <code>{code.trimEnd()}</code>
+      </pre>
+    </div>
+  );
+}
+
+function renderTextBlock(textBlock: string, blockKey: number | string) {
+  const lines = textBlock.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let currentList: { type: "ul" | "ol"; items: string[] } | null = null;
+
+  const flushList = () => {
+    if (!currentList) return;
+    if (currentList.type === "ul") {
+      nodes.push(
+        <ul key={`ul-${nodes.length}`} className="my-1.5 space-y-1.5 pl-1">
+          {currentList.items.map((item, idx) => (
+            <li
+              key={idx}
+              className="flex items-start gap-2 text-xs text-[#E4E4E7] leading-relaxed"
+            >
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#10B981]" />
+              <span className="flex-1">{renderInline(item)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+    } else {
+      nodes.push(
+        <ol key={`ol-${nodes.length}`} className="my-1.5 space-y-1.5 pl-1">
+          {currentList.items.map((item, idx) => (
+            <li
+              key={idx}
+              className="flex items-start gap-2 text-xs text-[#E4E4E7] leading-relaxed"
+            >
+              <span className="shrink-0 font-mono text-[11px] font-semibold text-[#10B981]">
+                {idx + 1}.
+              </span>
+              <span className="flex-1">{renderInline(item)}</span>
+            </li>
+          ))}
+        </ol>
+      );
+    }
+    currentList = null;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i]!;
+    const line = rawLine.trim();
+
+    if (!line) {
+      flushList();
+      continue;
+    }
+
+    // Headings
+    if (line.startsWith("#### ")) {
+      flushList();
+      nodes.push(
+        <h6
+          key={`h4-${i}`}
+          className="mt-2.5 mb-1 text-xs font-semibold uppercase tracking-wider text-[#A1A1AA]"
+        >
+          {renderInline(line.slice(5))}
+        </h6>
+      );
+      continue;
+    }
+    if (line.startsWith("### ")) {
+      flushList();
+      nodes.push(
+        <h5
+          key={`h3-${i}`}
+          className="mt-3 mb-1 text-xs font-bold uppercase tracking-wider text-[#10B981]"
+        >
+          {renderInline(line.slice(4))}
+        </h5>
+      );
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      flushList();
+      nodes.push(
+        <h4
+          key={`h2-${i}`}
+          className="mt-3 mb-1.5 text-sm font-bold text-white tracking-wide"
+        >
+          {renderInline(line.slice(3))}
+        </h4>
+      );
+      continue;
+    }
+    if (line.startsWith("# ")) {
+      flushList();
+      nodes.push(
+        <h3
+          key={`h1-${i}`}
+          className="mt-3.5 mb-1.5 text-base font-bold text-white tracking-wide"
+        >
+          {renderInline(line.slice(2))}
+        </h3>
+      );
+      continue;
+    }
+
+    // Divider
+    if (line === "---" || line === "***") {
+      flushList();
+      nodes.push(<hr key={`hr-${i}`} className="my-2 border-[#242429]" />);
+      continue;
+    }
+
+    // Unordered lists: '* ' or '- '
+    if (line.startsWith("* ") || line.startsWith("- ")) {
+      const itemText = line.slice(2).trim();
+      if (!currentList || currentList.type !== "ul") {
+        flushList();
+        currentList = { type: "ul", items: [itemText] };
+      } else {
+        currentList.items.push(itemText);
+      }
+      continue;
+    }
+
+    // Ordered lists: '1. ', '2. ', etc.
+    const numMatch = line.match(/^(\d+)\.\s+(.*)$/);
+    if (numMatch) {
+      const itemText = numMatch[2]!.trim();
+      if (!currentList || currentList.type !== "ol") {
+        flushList();
+        currentList = { type: "ol", items: [itemText] };
+      } else {
+        currentList.items.push(itemText);
+      }
+      continue;
+    }
+
+    // Regular paragraph line
+    flushList();
+    nodes.push(
+      <p
+        key={`p-${i}`}
+        className="my-1 text-xs leading-relaxed text-[#E4E4E7]"
+      >
+        {renderInline(rawLine)}
+      </p>
+    );
+  }
+
+  flushList();
+
+  return (
+    <div key={blockKey} className="space-y-1">
+      {nodes}
+    </div>
+  );
+}
+
 function renderMessageContent(content: string) {
   const parts = content.split(/(```[\s\S]*?```)/g);
   return parts.map((part, idx) => {
     if (part.startsWith("```") && part.endsWith("```")) {
       const inner = part.slice(3, -3);
       const firstNewline = inner.indexOf("\n");
+      const language =
+        firstNewline !== -1 ? inner.slice(0, firstNewline).trim() : "";
       const codeBody =
         firstNewline !== -1 ? inner.slice(firstNewline + 1) : inner;
+
       return (
-        <pre
+        <CodeSnippetBlock
           key={idx}
-          className="mt-2 overflow-x-auto rounded-lg border border-[#242429] bg-[#0F0F11] p-2.5 font-mono text-xs leading-relaxed text-[#10B981]"
-        >
-          <code>{codeBody.trimEnd()}</code>
-        </pre>
+          language={language}
+          code={codeBody}
+        />
       );
     }
 
     if (!part.trim()) return null;
 
-    return (
-      <p key={idx} className="whitespace-pre-wrap text-xs leading-relaxed">
-        {part}
-      </p>
-    );
+    return renderTextBlock(part, idx);
   });
 }
 

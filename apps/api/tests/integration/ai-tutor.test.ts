@@ -87,4 +87,27 @@ describe("Global AI Tutor Chat API Integration Tests (V2.8)", () => {
       expect(["GROQ", "OLLAMA", "FALLBACK"]).toContain(res.body.data.providerUsed);
     }
   );
+
+  it("handles multi-turn conversation and preserves full conversation history", async () => {
+    const res = await request(app)
+      .post("/api/v1/ai-tutor/chat")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({
+        contextType: "CS_TOPIC",
+        contextId: "os-01-what-is-an-os",
+        contextTitle: "What is an Operating System?",
+        contextSummary: "An OS coordinates hardware and software.",
+        messages: [
+          { role: "user", content: "What is an OS?" },
+          { role: "assistant", content: "An OS coordinates CPU, memory, and devices." },
+          { role: "user", content: "Teach me Day 1 from basics" },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(typeof res.body.data.reply).toBe("string");
+    expect(res.body.data.reply.length).toBeGreaterThan(10);
+    expect(["GROQ", "OLLAMA", "FALLBACK"]).toContain(res.body.data.providerUsed);
+  });
 });

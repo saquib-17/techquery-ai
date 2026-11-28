@@ -4,6 +4,7 @@ import {
   createGroqCompletion,
   createGroqStructured,
   getGroqModelChain,
+  sanitizeGroqMessages,
 } from "../../src/lib/groqClient.js";
 
 describe("Centralized Groq Waterfall Client (V2.8)", () => {
@@ -54,6 +55,38 @@ describe("Centralized Groq Waterfall Client (V2.8)", () => {
       const chain = getGroqModelChain("heavy");
       expect(chain).not.toContain("meta-llama/llama-prompt-guard-2-86m");
       expect(chain[0]).toBe("openai/gpt-oss-120b");
+    });
+  });
+
+  describe("sanitizeGroqMessages", () => {
+    it("prepends system prompt and combines consecutive same-role messages", () => {
+      const sanitized = sanitizeGroqMessages(
+        [
+          { role: "user", content: "Part 1" },
+          { role: "user", content: "Part 2" },
+          { role: "assistant", content: "Answer" },
+          { role: "user", content: "Follow-up" },
+        ],
+        "System context"
+      );
+
+      expect(sanitized).toHaveLength(4);
+      expect(sanitized[0]).toEqual({ role: "system", content: "System context" });
+      expect(sanitized[1]).toEqual({ role: "user", content: "Part 1\n\nPart 2" });
+      expect(sanitized[2]).toEqual({ role: "assistant", content: "Answer" });
+      expect(sanitized[3]).toEqual({ role: "user", content: "Follow-up" });
+    });
+
+    it("filters out empty messages and ensures user starts after system", () => {
+      const sanitized = sanitizeGroqMessages([
+        { role: "assistant", content: "Initial greeting" },
+        { role: "user", content: "" },
+        { role: "user", content: "My question" },
+      ]);
+
+      expect(sanitized[0]?.role).toBe("user");
+      expect(sanitized).toContainEqual({ role: "assistant", content: "Initial greeting" });
+      expect(sanitized).toContainEqual({ role: "user", content: "My question" });
     });
   });
 

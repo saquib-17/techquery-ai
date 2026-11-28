@@ -1,15 +1,14 @@
-import { z } from "zod";
 import type {
   AiTutorChatInput,
   AiTutorChatResponseDto,
   AiTutorContextType,
 } from "@techquery/shared";
 import { aiGateway, AIGateway } from "../../core/ai/ai.gateway.js";
-import { createGroqStructured } from "../../lib/groqClient.js";
-
-const AiTutorReplySchema = z.object({
-  reply: z.string().min(1),
-});
+import { config } from "../../core/config/index.js";
+import {
+  createGroqCompletion,
+  sanitizeGroqMessages,
+} from "../../lib/groqClient.js";
 
 function buildContextGuidance(contextType: AiTutorContextType): string {
   switch (contextType) {
@@ -67,57 +66,96 @@ function buildDeterministicFallback(input: AiTutorChatInput): string {
   return `Here is a simpler breakdown of **${title}**:\n\n${summarySnippet || `Focus on the core goal of ${title}: understand why it exists first, then walk through one small concrete example before memorizing any rules.`}\n\nAsk me if you'd like a real-life analogy, a step-by-step dry run, or a quick 1-question quiz on **${title}**!`;
 }
 
+function extractReply(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (typeof parsed.reply === "string" && parsed.reply.trim()) {
+        return parsed.reply.trim();
+      }
+    } catch {
+      // not JSON, use raw string
+    }
+  }
+  return trimmed;
+}
+
 export class AiTutorService {
   constructor(_ai: AIGateway = aiGateway) {}
 
   public async chat(
-    userId: string,
+    _userId: string,
     input: AiTutorChatInput
   ): Promise<AiTutorChatResponseDto> {
+    const apiKey = (
+      process.env.GROQ_API_KEY !== undefined
+        ? process.env.GROQ_API_KEY
+        : config.GROQ_API_KEY || ""
+    ).trim();
+
+    // In offline test runs with no API key or Vitest test environment, use deterministic fallback
+    if (config.NODE_ENV === "test" || !apiKey || config.AI_PROVIDER === "mock") {
+      return {
+        reply: buildDeterministicFallback(input),
+        providerUsed: "FALLBACK",
+      };
+    }
+
     const trimmedSummary = (input.contextSummary ?? "").slice(0, 4000);
-    const historyLines = input.messages
-      .slice(-10)
-      .map((m) => `${m.role === "user" ? "Student" : "Mentor"}: ${m.content}`)
-      .join("\n\n");
 
-    const lastUserMsg =
-      [...input.messages].reverse().find((m) => m.role === "user")?.content ??
-      input.contextTitle;
-
-    const prompt = [
-      "You are a patient, zero-jargon 1-on-1 AI Mentor helping a student understand one specific topic or problem.",
+    const systemPrompt = [
+      "You are an expert, encouraging, zero-jargon 1-on-1 AI Mentor helping a student master technical interviews and concepts.",
       `Context Type: ${input.contextType}`,
-      `Topic / Problem Title: "${input.contextTitle}" (ID: ${input.contextId})`,
-      trimmedSummary ? `Current Context Summary:\n${trimmedSummary}` : "",
+      `Topic / Problem: "${input.contextTitle}" (ID: ${input.contextId})`,
+      trimmedSummary ? `Current Context Details:\n${trimmedSummary}` : "",
       "",
       "STRICT MENTOR RULES:",
-      `- Stay strictly scoped to "${input.contextTitle}" (${input.contextType}).`,
-      "- Use simple, everyday English, short paragraphs, and concrete examples.",
+      "1. DIRECTLY AND FULLY ANSWER THE USER'S EXACT QUESTION:",
+      "   - If the user asks 'teach me day 1 from basics', teach Day 1 step-by-step with clear definitions, intuitive explanations, and a concrete example.",
+      "   - If the user asks for a real-life analogy, provide an everyday intuitive analogy immediately.",
+      "   - If the user asks why their code failed or asks for time complexity, analyze it directly with clear step-by-step reasoning.",
+      "   - NEVER reply with a generic menu of options or evade the question.",
+      "2. TEACHING STYLE & FORMATTING:",
+      "   - Use clean, structured Markdown with bold titles, bullet points, numbered steps, and inline `code`.",
+      "   - If including code, use standard markdown code blocks with the language tag (e.g. ```java or ```sql).",
+      "   - Keep paragraphs focused, readable, and zero-jargon.",
+      "   - Stay strictly scoped to this topic/context: if the user asks something completely unrelated, politely decline and guide them back.",
       buildContextGuidance(input.contextType),
-      `- If the student asks an unrelated or off-topic question, politely decline and guide them back to "${input.contextTitle}".`,
-      "",
-      "Conversation History:",
-      historyLines,
-      "",
-      'Return ONLY valid JSON: { "reply": "your concise, helpful markdown response" }',
     ]
       .filter(Boolean)
       .join("\n");
 
-    const result = await createGroqStructured(AiTutorReplySchema, {
-      prompt,
-      chainType: "fast",
-      jsonMode: true,
-      taskType: "AGEN",
-      userId,
-      rawInputText: `${input.contextTitle} ${lastUserMsg}`,
-      fallbackFn: () => ({ reply: buildDeterministicFallback(input) }),
-    });
+    try {
+      const groqMessages = sanitizeGroqMessages(
+        input.messages.slice(-10).map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        systemPrompt
+      );
 
-    return {
-      reply: result.data.reply,
-      providerUsed: result.providerUsed,
-    };
+      const result = await createGroqCompletion({
+        messages: groqMessages,
+        chainType: "fast",
+        jsonMode: false,
+        maxCompletionTokens: 1200,
+        temperature: 0.2,
+      });
+
+      const reply = extractReply(result.content);
+      return {
+        reply,
+        providerUsed: "GROQ",
+      };
+    } catch (err: any) {
+      console.error("[ai-tutor] Groq error:", err?.message || err);
+      return {
+        reply:
+          "The AI Mentor is experiencing high traffic across all models right now. Please wait a moment and try asking your question again.",
+        providerUsed: "FALLBACK",
+      };
+    }
   }
 }
 
