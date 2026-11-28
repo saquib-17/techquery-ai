@@ -13,6 +13,7 @@ import {
 } from "@techquery/shared";
 import { prisma } from "../../core/database/index.js";
 import { aiGateway, AIGateway } from "../../core/ai/ai.gateway.js";
+import { createGroqStructured } from "../../lib/groqClient.js";
 import { NotFoundError } from "../../core/errors/AppError.js";
 
 const CodeLangSchema = z.enum(["sql", "java", "python", "cpp", "javascript"]);
@@ -198,7 +199,7 @@ function buildFallbackVisual(topic: CsFundamentalItem): {
 export class CsFundamentalsService {
   private readonly walkthroughCache = new Map<string, CsWalkthroughDto>();
 
-  constructor(private ai: AIGateway = aiGateway) {}
+  constructor(_ai: AIGateway = aiGateway) {}
 
   public async getSheetForUser(userId: string): Promise<{
     summary: CsFundamentalsSummary;
@@ -402,10 +403,11 @@ export class CsFundamentalsService {
         ],
       });
 
-      const starResult = await this.ai.completeStructured(
-        starPrompt,
+      const starResult = await createGroqStructured(
         StarWalkthroughAISchema,
         {
+          prompt: starPrompt,
+          chainType: "heavy",
           taskType: "AGEN",
           userId,
           rawInputText: `${topic.subject} ${topic.title}`,
@@ -431,10 +433,7 @@ export class CsFundamentalsService {
         avoidMistakes: starResult.data.avoidMistakes,
         interviewQuestions: starResult.data.interviewQuestions,
         commonTraps: starResult.data.avoidMistakes,
-        providerUsed:
-          starResult.providerUsed === "MOCK"
-            ? "FALLBACK"
-            : starResult.providerUsed,
+        providerUsed: starResult.providerUsed,
       };
 
       this.walkthroughCache.set(cacheKey, starDto);
@@ -511,10 +510,11 @@ export class CsFundamentalsService {
       ],
     });
 
-    const result = await this.ai.completeStructured(
-      prompt,
+    const result = await createGroqStructured(
       CsWalkthroughAISchema,
       {
+        prompt,
+        chainType: "heavy",
         taskType: "AGEN",
         userId,
         rawInputText: `${topic.subject} ${topic.title} ${topic.subTopic}`,
@@ -549,8 +549,7 @@ export class CsFundamentalsService {
         : [],
       interviewQuestions: result.data.interviewQuestions,
       commonTraps: result.data.commonTraps,
-      providerUsed:
-        result.providerUsed === "MOCK" ? "FALLBACK" : result.providerUsed,
+      providerUsed: result.providerUsed,
     };
 
     this.walkthroughCache.set(cacheKey, dto);

@@ -5,6 +5,7 @@ import type {
   AiTutorContextType,
 } from "@techquery/shared";
 import { aiGateway, AIGateway } from "../../core/ai/ai.gateway.js";
+import { createGroqStructured } from "../../lib/groqClient.js";
 
 const AiTutorReplySchema = z.object({
   reply: z.string().min(1),
@@ -67,7 +68,7 @@ function buildDeterministicFallback(input: AiTutorChatInput): string {
 }
 
 export class AiTutorService {
-  constructor(private ai: AIGateway = aiGateway) {}
+  constructor(_ai: AIGateway = aiGateway) {}
 
   public async chat(
     userId: string,
@@ -103,7 +104,10 @@ export class AiTutorService {
       .filter(Boolean)
       .join("\n");
 
-    const result = await this.ai.completeStructured(prompt, AiTutorReplySchema, {
+    const result = await createGroqStructured(AiTutorReplySchema, {
+      prompt,
+      chainType: "fast",
+      jsonMode: true,
       taskType: "AGEN",
       userId,
       rawInputText: `${input.contextTitle} ${lastUserMsg}`,
@@ -112,8 +116,7 @@ export class AiTutorService {
 
     return {
       reply: result.data.reply,
-      providerUsed:
-        result.providerUsed === "MOCK" ? "FALLBACK" : result.providerUsed,
+      providerUsed: result.providerUsed,
     };
   }
 }

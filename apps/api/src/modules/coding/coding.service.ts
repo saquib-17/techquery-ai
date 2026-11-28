@@ -15,6 +15,7 @@ import type {
 } from "@techquery/shared";
 import { prisma } from "../../core/database/index.js";
 import { aiGateway, AIGateway } from "../../core/ai/ai.gateway.js";
+import { createGroqStructured } from "../../lib/groqClient.js";
 import { PromptRegistry } from "../../core/ai/prompt.registry.js";
 import { BadRequestError, NotFoundError } from "../../core/errors/AppError.js";
 import {
@@ -56,7 +57,7 @@ export function toCodingProblemDto(row: CodingProblem): CodingProblemDto {
 export class CodingService {
   constructor(
     private judge0: Judge0Adapter = judge0Adapter,
-    private ai: AIGateway = aiGateway
+    _ai: AIGateway = aiGateway
   ) {}
 
   public async listProblems(
@@ -188,10 +189,11 @@ export class CodingService {
 
     let problemData: DsaProblemItemAI;
     try {
-      const result = await this.ai.completeStructured<DsaProblemItemAI>(
-        prompt,
+      const result = await createGroqStructured<DsaProblemItemAI>(
         DsaProblemItemAISchema,
         {
+          prompt,
+          chainType: "heavy",
           taskType: "QGEN",
           userId,
           rawInputText: `${input.difficulty} ${input.pattern}`,

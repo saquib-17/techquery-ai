@@ -12,6 +12,7 @@ import {
 } from "@techquery/shared";
 import { prisma } from "../../core/database/index.js";
 import { aiGateway, AIGateway } from "../../core/ai/ai.gateway.js";
+import { createGroqStructured } from "../../lib/groqClient.js";
 import { logger } from "../../core/logger/index.js";
 import { NotFoundError } from "../../core/errors/AppError.js";
 
@@ -64,7 +65,7 @@ function buildFallbackCode(
 export class DsaSheetService {
   private readonly walkthroughCache = new Map<string, DsaSheetWalkthroughDto>();
 
-  constructor(private ai: AIGateway = aiGateway) {}
+  constructor(_ai: AIGateway = aiGateway) {}
 
   public async getSheetForUser(userId: string): Promise<{
     summary: DsaSheetSummary;
@@ -244,10 +245,11 @@ CRITICAL: Format bruteForceCode and optimalCode with proper 4-space indentation 
 
     let dto: DsaSheetWalkthroughDto;
     try {
-      const result = await this.ai.completeStructured(
-        prompt,
+      const result = await createGroqStructured(
         WalkthroughAISchema,
         {
+          prompt,
+          chainType: "heavy",
           taskType: "AGEN",
           userId,
           rawInputText: `${problem.title} ${problem.subPattern} ${language}`,

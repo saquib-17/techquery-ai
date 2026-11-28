@@ -9,6 +9,7 @@ import {
 } from "@techquery/shared";
 import { prisma } from "../../core/database/index.js";
 import { aiGateway, AIGateway } from "../../core/ai/ai.gateway.js";
+import { createGroqStructured } from "../../lib/groqClient.js";
 import { ForbiddenError, NotFoundError } from "../../core/errors/AppError.js";
 
 const RoadmapAISchema = z.object({
@@ -281,7 +282,7 @@ function buildFallbackRoadmap(
 }
 
 export class RoadmapService {
-  constructor(private ai: AIGateway = aiGateway) {}
+  constructor(_ai: AIGateway = aiGateway) {}
 
   public async listRoadmaps(userId: string): Promise<LearningRoadmapDto[]> {
     const rows = await prisma.learningRoadmap.findMany({
@@ -331,7 +332,9 @@ export class RoadmapService {
       "- Use ONLY verified canonical URLs (e.g. https://react.dev, https://nodejs.org/docs, https://leetcode.com/problemset/, https://github.com/donnemartin/system-design-primer, https://www.postgresql.org/docs/, https://developer.mozilla.org/en-US/) or https://www.youtube.com/results?search_query=... URLs so links never 404.",
     ].join("\n");
 
-    const result = await this.ai.completeStructured(prompt, RoadmapAISchema, {
+    const result = await createGroqStructured(RoadmapAISchema, {
+      prompt,
+      chainType: "heavy",
       taskType: "AGEN",
       userId,
       rawInputText: `${input.targetRole} ${input.durationWeeks}w ${input.currentLevel} ${focusLine}`,

@@ -8,6 +8,7 @@ import { DocumentExtractor } from "../../core/storage/document-extractor.js";
 import { NotFoundError, BadRequestError } from "../../core/errors/AppError.js";
 import type { Resume, ResumeAnalysis } from "@prisma/client";
 import { aiGateway, AIGateway } from "../../core/ai/ai.gateway.js";
+import { createGroqStructured } from "../../lib/groqClient.js";
 import { PromptRegistry } from "../../core/ai/prompt.registry.js";
 import {
   ParsedResumeDataSchema,
@@ -40,7 +41,7 @@ export class ResumeService {
     private repo: ResumeRepository = resumeRepository,
     private storage: IStorageService = storageService,
     private candidateRepo: CandidateRepository = candidateRepository,
-    private ai: AIGateway = aiGateway
+    _ai: AIGateway = aiGateway
   ) { }
 
   public toPublicResume(resume: Resume): PublicResume {
@@ -192,27 +193,29 @@ export class ResumeService {
 
     // 1. Structured career intelligence extraction
     const parsePrompt = PromptRegistry.buildResumeParsePrompt(resumeText);
-    const parseResult = await this.ai.completeStructured<ParsedResumeData>(
-      parsePrompt,
+    const parseResult = await createGroqStructured<ParsedResumeData>(
       ParsedResumeDataSchema,
       {
+        prompt: parsePrompt,
+        chainType: "heavy",
         taskType: "RESUME_PARSE",
         userId,
         rawInputText: resumeText,
-        fallbackFn: deterministicParseResume,
+        fallbackFn: (raw = "") => deterministicParseResume(raw || resumeText),
       }
     );
 
     // 2. ATS Quality audit and improvement scoring
     const atsPrompt = PromptRegistry.buildAtsAuditPrompt(resumeText);
-    const atsResult = await this.ai.completeStructured<ATSAuditResponse>(
-      atsPrompt,
+    const atsResult = await createGroqStructured<ATSAuditResponse>(
       ATSAuditResponseSchema,
       {
+        prompt: atsPrompt,
+        chainType: "heavy",
         taskType: "ATS_AUDIT",
         userId,
         rawInputText: resumeText,
-        fallbackFn: deterministicAtsAudit,
+        fallbackFn: (raw = "") => deterministicAtsAudit(raw || resumeText),
       }
     );
 
