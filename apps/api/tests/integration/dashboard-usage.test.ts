@@ -94,7 +94,7 @@ describe("Dashboard, Preparation Streaks & Usage Quotas Integration Tests (Phase
 
       expect(data.csAndHrMastery.learnedCount).toBe(0);
       expect(data.csAndHrMastery.totalTopics).toBe(210);
-      expect(data.csAndHrMastery.nextTopic?.slug).toBe("os-kernel-user-mode-syscalls");
+      expect(data.csAndHrMastery.nextTopic?.slug).toBe("os-01-what-is-an-os");
 
       expect(data.roadmapProgress.activeRoadmapId).toBeNull();
       expect(data.roadmapProgress.percentage).toBe(0);
@@ -108,7 +108,7 @@ describe("Dashboard, Preparation Streaks & Usage Quotas Integration Tests (Phase
         .send({ status: "SOLVED" });
 
       await request(app)
-        .put("/api/v1/cs-fundamentals/os-kernel-user-mode-syscalls/progress")
+        .put("/api/v1/cs-fundamentals/os-01-what-is-an-os/progress")
         .set("Authorization", `Bearer ${user1Token}`)
         .send({ status: "LEARNED" });
 
@@ -139,7 +139,7 @@ describe("Dashboard, Preparation Streaks & Usage Quotas Integration Tests (Phase
       expect(d.dsaMastery.solvedCount).toBe(1);
       expect(d.dsaMastery.nextProblem?.slug).not.toBe("two-sum");
       expect(d.csAndHrMastery.learnedCount).toBe(1);
-      expect(d.csAndHrMastery.nextTopic?.slug).not.toBe("os-kernel-user-mode-syscalls");
+      expect(d.csAndHrMastery.nextTopic?.slug).not.toBe("os-01-what-is-an-os");
       expect(d.roadmapProgress.activeRoadmapId).toBe(rm.id);
       expect(d.roadmapProgress.completedTasks).toBe(1);
       expect(d.roadmapProgress.percentage).toBeGreaterThan(0);

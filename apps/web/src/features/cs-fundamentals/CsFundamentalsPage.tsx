@@ -55,6 +55,7 @@ const SUBJECT_DISPLAY_LABEL: Record<CsSubject, string> = {
   "SQL & Query Patterns": "SQL Queries",
   "Computer Networks": "Computer Networks",
   "OOP & Software Engineering": "OOP & Software Dev",
+  "Software Engineering": "Software Engineering",
   "System Design": "System Design",
   "Behavioral & HR": "HR & Behavioral",
 };
@@ -348,8 +349,8 @@ export function CsFundamentalsPage() {
         </div>
       </div>
 
-      {/* ── 7 Exclusive Subject Tabs ───────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+      {/* ── 8 Exclusive Subject Tabs ───────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
         {(summary?.subjects ?? []).map((sub) => {
           const active = selectedSubject === sub.subject;
           const pct =

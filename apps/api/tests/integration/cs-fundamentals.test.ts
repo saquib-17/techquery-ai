@@ -33,7 +33,7 @@ describe("CS Core & System Design Mastery Sheet API & Dataset Tests (V2.3)", () 
     });
   });
 
-  it("validates >= 210 unique topics across all 7 subjects (including 45 Behavioral & HR) with 1..N per-subject numbering", () => {
+  it("validates >= 210 unique topics across all 8 subjects (including 45 Behavioral & HR) with 1..N per-subject numbering", () => {
     expect(CS_FUNDAMENTALS_TOPICS.length).toBeGreaterThanOrEqual(210);
     expect(CS_SUBJECTS).toContain("Behavioral & HR");
 
@@ -51,7 +51,7 @@ describe("CS Core & System Design Mastery Sheet API & Dataset Tests (V2.3)", () 
       const subjectTopics = CS_FUNDAMENTALS_TOPICS.filter(
         (t) => t.subject === subject
       );
-      expect(subjectTopics.length).toBeGreaterThanOrEqual(25);
+      expect(subjectTopics.length).toBeGreaterThanOrEqual(14);
       subjectTopics.forEach((topic, idx) => {
         expect(topic.order).toBe(idx + 1);
       });
@@ -68,10 +68,10 @@ describe("CS Core & System Design Mastery Sheet API & Dataset Tests (V2.3)", () 
       CS_FUNDAMENTALS_TOPICS.length
     );
     expect(initialRes.body.data.summary.learned).toBe(0);
-    expect(initialRes.body.data.summary.subjects).toHaveLength(7);
+    expect(initialRes.body.data.summary.subjects).toHaveLength(8);
 
     const learnedRes = await request(app)
-      .put("/api/v1/cs-fundamentals/os-process-vs-thread/progress")
+      .put("/api/v1/cs-fundamentals/os-09-threads-vs-processes/progress")
       .set("Authorization", `Bearer ${userToken}`)
       .send({
         status: "LEARNED",
@@ -82,7 +82,7 @@ describe("CS Core & System Design Mastery Sheet API & Dataset Tests (V2.3)", () 
     expect(learnedRes.body.data.progress.status).toBe("LEARNED");
 
     const revRes = await request(app)
-      .put("/api/v1/cs-fundamentals/sql-row-number-rank-dense-rank/progress")
+      .put("/api/v1/cs-fundamentals/sql-12-ctes-and-window-functions/progress")
       .set("Authorization", `Bearer ${userToken}`)
       .send({ status: "REVISION" });
 
@@ -98,37 +98,38 @@ describe("CS Core & System Design Mastery Sheet API & Dataset Tests (V2.3)", () 
     expect(updatedRes.body.data.summary.revision).toBe(1);
 
     const osTopic = updatedRes.body.data.topics.find(
-      (t: { slug: string }) => t.slug === "os-process-vs-thread"
+      (t: { slug: string }) => t.slug === "os-09-threads-vs-processes"
     );
     expect(osTopic.status).toBe("LEARNED");
     expect(osTopic.notes).toContain("Threads share heap");
 
     const walkthroughRes = await request(app)
       .post(
-        "/api/v1/cs-fundamentals/sql-row-number-rank-dense-rank/walkthrough"
+        "/api/v1/cs-fundamentals/sql-12-ctes-and-window-functions/walkthrough"
       )
       .set("Authorization", `Bearer ${userToken}`);
 
     expect(walkthroughRes.status).toBe(200);
     const w = walkthroughRes.body.data.walkthrough;
-    expect(w.topicSlug).toBe("sql-row-number-rank-dense-rank");
+    expect(w.topicSlug).toBe("sql-12-ctes-and-window-functions");
     expect(w.visualType).toBe("CODE");
-    expect(w.conceptBreakdown).toContain("ROW_NUMBER()");
+    expect(w.conceptBreakdown).toContain("ROW_NUMBER");
     expect(w.exampleLanguage).toBe("sql");
     expect(w.codeOrQueryExample).toContain("DENSE_RANK");
     expect(w.diagramFlow).toBe("");
     expect(w.interviewQuestions.length).toBe(3);
-    expect(w.interviewQuestions[0].question).toContain("ROW_NUMBER()");
+    expect(w.interviewQuestions[0].question).toContain("ROW_NUMBER");
     expect(w.commonTraps.length).toBe(3);
-    expect(w.commonTraps[0]).toContain("ROW_NUMBER()");
+    expect(w.commonTraps[0]).toContain("ROW_NUMBER");
 
     const diagramSlugs = [
-      "se-sdlc-agile-scrum-kanban",
-      "sd-lld-parking-lot-elevator",
-      "sd-hld-url-shortener",
-      "os-process-vs-thread",
-      "dbms-normalization-1nf-bcnf",
-      "cn-tcp-3-way-handshake",
+      "oop-16-uml-class-diagrams-basics",
+      "sd-05-what-is-a-load-balancer",
+      "sd-20-case-study-url-shortener",
+      "os-09-threads-vs-processes",
+      "dbms-10-1nf-2nf-3nf-step-by-step",
+      "cn-16-tcp-three-way-handshake",
+      "se-05-agile-manifesto-vs-waterfall",
     ];
 
     for (const slug of diagramSlugs) {
@@ -144,7 +145,7 @@ describe("CS Core & System Design Mastery Sheet API & Dataset Tests (V2.3)", () 
     }
 
     const oopRes = await request(app)
-      .post("/api/v1/cs-fundamentals/oop-pattern-strategy-observer/walkthrough")
+      .post("/api/v1/cs-fundamentals/oop-24-builder-strategy-observer-patterns/walkthrough")
       .set("Authorization", `Bearer ${userToken}`);
     expect(oopRes.status).toBe(200);
     expect(oopRes.body.data.walkthrough.visualType).toBe("CODE");

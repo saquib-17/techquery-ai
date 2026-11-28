@@ -73,13 +73,13 @@ const TOPIC_BY_SLUG = new Map(
 );
 
 const OOP_CODE_SUBTOPICS = new Set([
-  "OOP Core",
-  "OOP Relationships",
+  "OOP Basics & Memory",
+  "Constructors & Encapsulation",
+  "Abstraction, Inheritance & Polymorphism",
+  "Object Copying & Contracts",
   "SOLID & Clean Code",
-  "Creational Patterns",
-  "Behavioral Patterns",
-  "Structural Patterns",
-  "Runtime & Memory",
+  "Exceptions, Collections & Generics",
+  "Design Patterns",
 ]);
 
 export function normalizeMultilineText(raw: string): string {
@@ -330,8 +330,8 @@ export class CsFundamentalsService {
     const expectedType = resolveExpectedVisualType(topic);
     const cacheKey =
       expectedType === "STAR"
-        ? `v6:${topicSlug}:${userId}`
-        : `v6:${topicSlug}`;
+        ? `v14:${topicSlug}:${userId}`
+        : `v14:${topicSlug}`;
     const cached = this.walkthroughCache.get(cacheKey);
     if (cached) return cached;
 
@@ -458,7 +458,7 @@ export class CsFundamentalsService {
           ];
 
     const prompt = [
-      "You are a senior staff engineer & CS interviewer creating a crisp, interview-ready deep dive.",
+      "You are a warm, beginner-first CS mentor & senior staff engineer teaching a Day-1 student from zero background up to interview mastery.",
       `Target Topic (MUST match 100% — never substitute a different topic): "${topic.title}"`,
       `Subject: ${topic.subject} | Sub-Topic: ${topic.subTopic} | Priority: ${topic.priority}`,
       `Core Hook: ${topic.oneLineHook}`,
@@ -466,27 +466,28 @@ export class CsFundamentalsService {
       "",
       "Return ONLY valid JSON matching this exact schema:",
       "{",
-      '  "conceptBreakdown": "3-5 sentences directly explaining the internals, mechanics, and trade-offs of THIS exact topic (no generic boilerplate)",',
-      '  "realWorldAnalogy": "1-2 sentence concrete everyday analogy specific to THIS topic",',
+      '  "conceptBreakdown": "Start From Zero (Plain-English Intuition): first explain WHY this concept exists in 1-2 simple sentences before any formal definition, define every technical term on first use, and walk through the mechanics step-by-step in 3-5 clear sentences.",',
+      '  "realWorldAnalogy": "1-2 sentence concrete everyday analogy specific to THIS topic that anyone without a CS background can picture immediately",',
       `  "visualType": "${mode.visualType}",`,
       '  "visualTitle": "concise title for the visual aid",',
-      '  "codeOrQueryExample": "multi-line SQL/Java code if visualType is CODE, else empty string",',
+      '  "codeOrQueryExample": "multi-line runnable SQL/Java code if visualType is CODE, else empty string",',
       `  "exampleLanguage": "${mode.language}",`,
       '  "diagramFlow": "multi-line Unicode flowchart/architecture diagram if visualType is DIAGRAM, else empty string",',
       '  "comparisonPoints": [{"aspect": "...", "detail": "..."}],',
-      '  "interviewQuestions": [{"question": "specific interview question on THIS topic", "answer": "crisp 2-3 sentence model answer"}],',
-      '  "commonTraps": ["3 specific misconceptions or follow-up traps interviewers test on THIS topic"]',
+      '  "interviewQuestions": [{"question": "specific interview question on THIS topic", "answer": "crisp, spoken-English 2-3 sentence model answer"}],',
+      '  "commonTraps": ["3 beginner mistakes or follow-up traps interviewers test on THIS topic"]',
       "}",
       "",
       "CRITICAL RULES:",
       `- Every field MUST directly reference "${topic.title}" and its core mechanism (${topic.oneLineHook}).`,
+      "- Never assume prior knowledge: define jargon in plain English on first mention and walk through a concrete numerical, code, or step-by-step trace where applicable.",
       "- Provide exactly 3 interviewQuestions and 3 commonTraps.",
       ...visualInstructions.map((line) => `- ${line}`),
     ].join("\n");
 
     const fallbackVisual = buildFallbackVisual(topic);
     const fallback = (): z.infer<typeof CsWalkthroughAISchema> => ({
-      conceptBreakdown: `${topic.title} is a high-frequency ${topic.subject} topic (${topic.subTopic}). ${topic.oneLineHook} In SDE-1 interviews at ${topic.companies.slice(0, 3).join(", ")}, interviewers expect you to explain how ${topic.title} works internally and what performance or correctness trade-offs it introduces.`,
+      conceptBreakdown: `Start From Zero (Plain-English Intuition): ${topic.oneLineHook} Before diving into terminology, think of ${topic.title} as a practical building block in ${topic.subject} (${topic.subTopic}). In interviews at ${topic.companies.slice(0, 3).join(", ")}, interviewers look for a clear step-by-step explanation of how ${topic.title} works and what trade-offs it involves.`,
       realWorldAnalogy: `Analogy for ${topic.title}: ${topic.oneLineHook} — much like coordinating dedicated lanes and checkpoints so concurrent requests never corrupt shared state.`,
       ...fallbackVisual,
       interviewQuestions: [
