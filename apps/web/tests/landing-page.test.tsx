@@ -24,7 +24,7 @@ describe("V2.9 LandingPage & Auth Routing", () => {
     vi.mocked(authApi.refreshApi).mockRejectedValue(new Error("No active session"));
   });
 
-  it("renders the public landing page with obsidian precision sections and CTAs when logged out", async () => {
+  it("renders the redesigned public landing page with ATS positioning, spotlight, and CTAs when logged out", async () => {
     render(
       <ToastProvider>
         <AuthProvider>
@@ -44,19 +44,25 @@ describe("V2.9 LandingPage & Auth Routing", () => {
     await waitFor(() => {
       expect(
         screen.getByRole("heading", {
-          name: /Master DSA, CS Fundamentals & System Design From Day 1 to Offer/i,
+          name: /From ATS Resume Match to Offer Letter/i,
         })
       ).toBeInTheDocument();
     });
 
+    // Pill badge
+    expect(screen.getByText("End-to-End Career & Interview Engineering Studio")).toBeInTheDocument();
+
     // Brand and Navigation links
     expect(screen.getAllByText("TechQuery AI")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Platform Modules")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("ATS & Roadmap")[0]).toBeInTheDocument();
     expect(screen.getAllByText("AI Mentor")[0]).toBeInTheDocument();
     expect(screen.getAllByText("How It Works")[0]).toBeInTheDocument();
 
     // Primary & Secondary CTAs
-    const startPrepLinks = screen.getAllByRole("link", { name: /Start Free Prep|Launch Free Workbench|Create Free Account/i });
+    const startPrepLinks = screen.getAllByRole("link", {
+      name: /Start Free Prep|Launch Free Workbench|Create Free Account/i,
+    });
     expect(startPrepLinks.length).toBeGreaterThanOrEqual(2);
     expect(startPrepLinks[0]).toHaveAttribute("href", "/register");
 
@@ -73,16 +79,21 @@ describe("V2.9 LandingPage & Auth Routing", () => {
     expect(screen.getByText("A-to-Z CS & HR Topics")).toBeInTheDocument();
     expect(screen.getByText("24/7")).toBeInTheDocument();
 
-    // Core module titles
+    // Dedicated Spotlight section
+    expect(screen.getByText("Know Exactly What's Missing Before You Apply")).toBeInTheDocument();
+    expect(screen.getByText("Raw Unaudited Resume")).toBeInTheDocument();
+    expect(screen.getByText("TechQuery Optimized Profile")).toBeInTheDocument();
+
+    // Core module titles in Bento
+    expect(screen.getAllByText("Deterministic ATS Resume & JD Matcher")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Personalized AI Study Roadmaps")[0]).toBeInTheDocument();
     expect(screen.getByText("Master DSA Sheet (520 Problems)")).toBeInTheDocument();
     expect(screen.getByText("Coding Arena & Timed OAs")).toBeInTheDocument();
     expect(screen.getByText("A-to-Z CS & HR Prep Studio")).toBeInTheDocument();
     expect(screen.getByText("Context-Locked Global AI Mentor")).toBeInTheDocument();
-    expect(screen.getByText("Deterministic ATS & JD Matcher")).toBeInTheDocument();
-    expect(screen.getByText("Personalized AI Study Roadmaps")).toBeInTheDocument();
   });
 
-  it("supports interactive tab switching inside the workbench mockup", async () => {
+  it("supports interactive tab switching across all 5 live workbench tabs with state updates", async () => {
     render(
       <ToastProvider>
         <AuthProvider>
@@ -95,26 +106,61 @@ describe("V2.9 LandingPage & Auth Routing", () => {
       </ToastProvider>
     );
 
+    // 1. Default Tab: ATS & JD Skill Match
     await waitFor(() => {
-      expect(screen.getByText(/20\/20 Test Cases Passed/i)).toBeInTheDocument();
+      expect(screen.getByText(/✓ 88% Match Score \(HIGH\)/i)).toBeInTheDocument();
     });
+    expect(screen.getByText("+ Add System Design Caching & Redis")).toBeInTheDocument();
+    expect(screen.getAllByText(/Must-Have \(50%\)/i)[0]).toBeInTheDocument();
 
-    // Switch to CS & HR Studio tab
-    const csTab = screen.getByRole("button", { name: /CS & HR Studio/i });
-    fireEvent.click(csTab);
-    expect(screen.getByText(/Topic #04: Process vs Thread/i)).toBeInTheDocument();
-    expect(screen.getByText(/Day 1 Core Concept/i)).toBeInTheDocument();
+    // 2. Switch to AI Study Roadmap Tab
+    const roadmapTab = screen.getByRole("button", { name: /AI Study Roadmap/i });
+    fireEvent.click(roadmapTab);
+    expect(screen.getAllByText(/14-Day Streak/i)[0]).toBeInTheDocument();
+    expect(screen.getByText(/Interactive Checklist Progress/i)).toBeInTheDocument();
+    expect(screen.getByText(/Week 1: Master Two Pointers/i)).toBeInTheDocument();
 
-    // Switch to Ask AI Mentor tab
-    const mentorTab = screen.getByRole("button", { name: /Ask AI Mentor/i });
-    fireEvent.click(mentorTab);
-    expect(screen.getByText(/AI Mentor • Context: Deadlock/i)).toBeInTheDocument();
-    expect(screen.getByText(/Everyday Analogy: The Single-Lane Bridge/i)).toBeInTheDocument();
+    // Toggle interactive checkbox in Roadmap
+    const task4 = screen.getByText(/Solve 3 Timed Medium Problems/i);
+    fireEvent.click(task4);
+    // Verified checkbox clicked without error
 
-    // Switch back to Coding Arena tab
+    // 3. Switch to Coding Arena Tab & test multi-language switcher
     const codingTab = screen.getByRole("button", { name: /Coding Arena/i });
     fireEvent.click(codingTab);
-    expect(screen.getByText(/#01\. Two Sum/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/20\/20 Test Cases Passed/i)[0]).toBeInTheDocument();
+    expect(screen.getByText(/class Solution {/i)).toBeInTheDocument();
+
+    // Click Python button
+    const pythonBtn = screen.getByRole("button", { name: "Python" });
+    fireEvent.click(pythonBtn);
+    expect(screen.getByText(/def twoSum/i)).toBeInTheDocument();
+
+    // 4. Switch to A-to-Z CS & HR Studio Tab & test subject selector
+    const csTab = screen.getByRole("button", { name: /A-to-Z CS & HR Studio/i });
+    fireEvent.click(csTab);
+    expect(screen.getByText(/Topic #04: Process vs Thread/i)).toBeInTheDocument();
+
+    // Click System Design subject pill
+    const sdBtn = screen.getByRole("button", { name: /HIGH-LEVEL SYSTEM DESIGN/i });
+    fireEvent.click(sdBtn);
+    expect(screen.getByText(/Topic #03: Scalable Caching/i)).toBeInTheDocument();
+
+    // 5. Switch to Context-Locked AI Mentor Tab & test doubt chip switcher
+    const mentorTab = screen.getByRole("button", { name: /Context-Locked AI Mentor/i });
+    fireEvent.click(mentorTab);
+    expect(screen.getByText(/AI Mentor • Context: OS • Coffman Conditions/i)).toBeInTheDocument();
+    expect(screen.getByText(/The Single-Lane Bridge/i)).toBeInTheDocument();
+
+    // Click binary search doubt chip
+    const bsChip = screen.getByRole("button", { name: /Why did my binary search loop fail\?/i });
+    fireEvent.click(bsChip);
+    expect(screen.getByText(/Classic Bug: Integer Overflow & Midpoint Update/i)).toBeInTheDocument();
+
+    // 6. Switch back to ATS & JD Skill Match
+    const atsTab = screen.getByRole("button", { name: /ATS & JD Skill Match/i });
+    fireEvent.click(atsTab);
+    expect(screen.getByText(/✓ 88% Match Score \(HIGH\)/i)).toBeInTheDocument();
   });
 
   it("automatically redirects authenticated users from / to /dashboard", async () => {
@@ -137,7 +183,10 @@ describe("V2.9 LandingPage & Auth Routing", () => {
           <MemoryRouter initialEntries={["/"]}>
             <Routes>
               <Route path="/" element={<LandingPage />} />
-              <Route path="/dashboard" element={<div data-testid="dashboard-screen">Protected Workbench Dashboard</div>} />
+              <Route
+                path="/dashboard"
+                element={<div data-testid="dashboard-screen">Protected Workbench Dashboard</div>}
+              />
             </Routes>
           </MemoryRouter>
         </AuthProvider>
@@ -147,7 +196,9 @@ describe("V2.9 LandingPage & Auth Routing", () => {
     await waitFor(() => {
       expect(screen.getByTestId("dashboard-screen")).toBeInTheDocument();
     });
-    expect(screen.queryByText(/A-to-Z Placement Engineering Studio/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/End-to-End Career & Interview Engineering Studio/i)
+    ).not.toBeInTheDocument();
   });
 
   it("renders 'Back to Overview' link and updated V2.9 highlights on /login page", async () => {
