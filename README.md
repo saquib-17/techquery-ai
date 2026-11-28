@@ -12,9 +12,12 @@ TechQuery AI is an open-source, zero-cost (`₹0`), full-stack TypeScript placem
   - Expanded from 12 initial problems to **100 distinct runnable problems** across all core placement patterns (Arrays, Two Pointers, Sliding Window, Binary Search, Trees, Graphs, Linked Lists, Heaps, Tries, Union-Find, Matrix, 1-D & 2-D Dynamic Programming, Stack & Monotonic Stack, Backtracking, Greedy, Intervals, Bit Manipulation, Math, and System Design Data Structures).
   - Every problem features **20 comprehensive test cases** (3 sample + 17 hidden edge cases = **2,000 verified test cases**) running through our high-performance single-batch Judge0 execution harness in a single network round-trip.
   - Multi-language support: **Java**, **Python**, **C++**, and **JavaScript** with authentic LeetCode-style `class Solution` method signatures and server-side driver harnesses.
-- **Clean LeetCode-Style Submit Console:**
-  - **Accepted Verdict:** Displays a clean green Accepted card showing `✓ ACCEPTED · 20 / 20 Test Cases Passed`, execution runtime (`ms`), memory usage (`KB`/`MB`), and confirmation of Master DSA Sheet sync—eliminating hidden case noise.
-  - **Failing Verdict:** Highlights the exact first failing test case. If sample (`Cases 1–3`), inspect input, expected output, and actual output side-by-side; if hidden (`Cases 4–20`), protects test case integrity by showing an encrypted lock badge without leaking test data.
+- **Clean LeetCode-Style Submit Console & Memory Formatting:**
+  - **Accepted Verdict:** Displays a clean green Accepted card showing `✓ ACCEPTED · 20 / 20 Test Cases Passed`, execution runtime (`ms`), clean memory formatting (`20.4 MB` for `>= 1024 KB`, `512 KB` below `1 MB`), and confirmation of Master DSA Sheet sync—eliminating hidden case noise.
+  - **Failing Verdict:** Highlights the exact first failing test case (`Case #1–#20`) in Coding Practice with **`Input`** (safely truncated at 500 chars), **`Expected Output`**, and **`Your Output`** boxes (plus `Runtime Error` / `Timeout Error` blocks when applicable) and an amber `Hidden Edge Case` badge for `#4–#20`, while keeping `TIMED` OA sessions masked.
+- **Compact Pattern-Grouped Problem Bank & Live Status Sync:**
+  - Replaced the card grid with high-density, collapsible **22-pattern accordion tables** (`Search`, `Difficulty`, `Status`, `Pattern` dropdown, and `Expand All / Collapse All`).
+  - Live **`✓ Solved`** (emerald) and **`◐ Attempted`** (amber) status badges appear right beside the active problem title in the Coding IDE, update immediately on submission, and sync across the Problem Bank and Master DSA Sheet.
 - **IDE Resilience & Productivity Toolbar:**
   - **Progressive Hints Drawer:** Collapsible multi-tier hints (Intuition → Algorithm Approach → Optimal Complexity Target) for unblocking without spoiling the solution.
   - **IDE Actions:** One-click Code Formatting, Solution Clipboard Copy, and 2-step Safe Reset with confirmation dialog.
@@ -50,7 +53,7 @@ TechQuery AI is an open-source, zero-cost (`₹0`), full-stack TypeScript placem
 - **520-Problem Weighted Master DSA Pattern Sheet (`/practice` → `Master DSA Sheet`)**
   - **520 distinct, verified LeetCode problems** spanning all 22 core topics & patterns, weighted toward core interview pillars, strictly ordered **Easy → Medium → Hard**.
   - Synthesized across **Blind 75**, **NeetCode 150**, **Grind 169**, **Striver SDE Sheet**, **Striver A2Z**, **Love Babbar 450**, and **LeetCode Top Interview 150**.
-  - Clickable 22-pattern mastery telemetry, company tags, persistent `SOLVED`/`REVISION` tracking, personal notes, LeetCode links, and 1-click **Solve in Arena** handoff.
+  - Compact telemetry header with stat pills, mastery progress bar, `Filter by Pattern` dropdown, company/source-sheet/difficulty/status filters, persistent `SOLVED`/`REVISION` tracking, personal notes, LeetCode links, and 1-click **Solve in Arena** handoff.
   - **AI Guide Slide-Over Drawer:** Plain-English intuition and collapsible Brute Force & Optimal reference code in Java, Python, C++, and JavaScript with line numbers and Big-O breakdowns.
 - **CS Core, System Design & Behavioral Mastery Sheet (`/cs-fundamentals`)**
   - **210 structured topics & questions** across **7 core placement subjects**:
@@ -93,7 +96,7 @@ techquery-ai/
 | **Backend (`apps/api`)** | Node.js, Express 5, TypeScript, Prisma ORM (`PostgreSQL`), Pino structured logging, Multer, `pdf-parse`, `mammoth`, `pdfkit`, Judge0 CE HTTP adapter |
 | **Shared (`packages/shared`)** | TypeScript + Zod domain contracts, 100 runnable coding problems with 20 test cases each, 520-problem DSA sheet dataset, 210 CS/SD/HR topic definitions |
 | **AI Gateway** | Multi-provider `AIGateway` supporting **Groq Cloud** (`openai/gpt-oss-120b` / `openai/gpt-oss-20b`), local **Ollama** (`llama3.2:3b`), and deterministic offline fallbacks with `JsonSanitizer`, Zod validation, and 1-turn auto-repair |
-| **Testing** | Vitest + Supertest (**355 API tests across 42 suites**) and Vitest + React Testing Library (**46 Web tests across 14 suites**) |
+| **Testing** | Vitest + Supertest (**355 API tests across 42 suites**) and Vitest + React Testing Library (**56 Web tests across 16 suites**) |
 
 ---
 
@@ -170,7 +173,7 @@ npm run dev --workspace=@techquery/web
 ### 6. Automated Verification
 ```bash
 npm run test --workspace=@techquery/api    # 42 test suites, 355 tests passed (100%)
-npm run test --workspace=@techquery/web    # 14 test suites, 46 tests passed (100%)
+npm run test --workspace=@techquery/web    # 16 test suites, 56 tests passed (100%)
 npm run typecheck                          # Zero TypeScript errors across all workspaces
 npm run build                              # Monorepo production build verified
 ```
